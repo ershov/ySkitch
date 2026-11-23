@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.3 · 2026-11-24
+Status: final v1.4 · 2026-11-24
 
 ## 1. Purpose
 
@@ -148,7 +148,7 @@ All annotations are vector objects, editable until export (flattened only on out
 
 ## 6. UI
 
-- Left-side toolbar, Skitch-style, in columns: tools · colors · thickness. Column headings omitted unless the real UI needs them.
+- Left-side toolbar, Skitch-style, in two columns: tools · colors with the thickness slider below them. No column headings.
 - Every toolbar item shows its keyboard key next to it (e.g. small `A` beside the arrow icon). Icons only, no tool names.
 - With an object selected, color/thickness controls reflect and edit it.
 - Icons: SF Symbols or code-drawn; no external assets.
@@ -160,24 +160,24 @@ All annotations are vector objects, editable until export (flattened only on out
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │ ● ● ●                        Screenshot 2026-11-24 at 10.15                             │
-├─────────────────────┬───────────────────────────────────────────────────────────────────┤
-│ V ➤    1 ●      [   │                                                                   │
-│        2 ●      ┬   │           ┌──────────────────────────────────────────────┐        │
-│ T T    3 ●      │   │           │                                              │        │
-│        4 ●      │   │           │                                              │        │
-│ A ↗    5 ●      │   │           │                                              │        │
-│ L ╱    6 ◉      ◆   │           │                                              │        │
-│ R ▭    7 ○      │   │           │             image + annotations              │        │
-│ U ▢    8 ●      │   │           │                (white canvas)                │        │
-│ O ◯    + ◍      │   │           │                                              │        │
-│                 ┴   │           │                                              │        │
-│ P ✎             ]   │           │                                              │        │
-│ H ▬                 │           │                                              │        │
-│                 ●   │           └──────────────────────────────────────────────┘        │
-│ X ▦                 │                                                                   │
-│                     │            (canvas surround: CanvasStyle.surroundColor)           │
-│ C ⌗                 │                                                                   │
-├─────────────────────┴───────────────────────────────────────────────────────────────────┤
+├───────────────┬─────────────────────────────────────────────────────────────────────────┤
+│ V ➤    1 ●    │                                                                         │
+│        2 ●    │              ┌──────────────────────────────────────────────┐           │
+│ T Aa   3 ●    │              │                                              │           │
+│        4 ●    │              │                                              │           │
+│ A ↗    5 ●    │              │                                              │           │
+│ L ╱    6 ◉    │              │                                              │           │
+│ R ▭    7 ○    │              │             image + annotations              │           │
+│ U ▢    8 ●    │              │                (white canvas)                │           │
+│ O ◯      [    │              │                                              │           │
+│          ╷    │              │                                              │           │
+│ P ✎      │    │              │                                              │           │
+│ H ▬      ┃    │              │                                              │           │
+│          ●    │              └──────────────────────────────────────────────┘           │
+│ X ▦      ┃    │                                                                         │
+│          █    │               (canvas surround: CanvasStyle.surroundColor)              │
+│ C ⌗      ]    │                                                                         │
+├───────────────┴─────────────────────────────────────────────────────────────────────────┤
 │ 2880×1800 px · 1440×900 pt · @2x       [⠿ Drag]                   1:1  Fit   −  100%  + │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -191,8 +191,8 @@ All annotations are vector objects, editable until export (flattened only on out
   6. Crop (`C`)
 
   Later tools join the nearest group: step markers, stamps, callouts → after Text; arrow variants → shapes group.
-- **Color column**: 8 palette swatches, keys `1`–`8`, selected one ringed (`◉`); `+` opens the system color panel.
-- **Size column**: vertical slider between `[` (top) and `]` (bottom) key labels; below it a live preview of the current thickness in the current color (for Text: sample glyphs at the font size).
+- **Color column**: 8 palette swatches, keys `1`–`8`, selected one ringed (`◉`); `+` (custom color) comes in Stage 2.
+- **Thickness slider**: directly below the swatches in the same column, horizontally centered under them; it extends down so the color column ends level with the last tool row. The track is a wedge — thin at the `[` end (top, thinner) and thick at the `]` end (bottom, thicker). The thumb doubles as the size preview: a dot of the current thickness in the current color (clamped to the column width); for Text it shows "Aa", for Pixelate a small mosaic.
 - **Status bar**: left — image size (px, pt, scale); center — drag handle (OUT-4); right, in order — `1:1` (actual size, `⌘0`), `Fit` (`⌘9`), zoom `−` / percentage / `+`.
 - Title: source file name, else `ySkitch <date> at <time>` (same as the default export file name, DEF-8).
 
@@ -251,8 +251,7 @@ No Settings UI. Everything uses a sensible default and remembers the last value 
 |---|---|---|
 | NF-1 | macOS only; minimum macOS 26. Apple Silicon native | 1 |
 | NF-2 | Swift 6 (strict concurrency), AppKit for windows/canvas; SwiftUI allowed for the toolbar. Swift Package Manager, no Xcode project. No third-party dependencies | 1 |
-| NF-3 | Cold start to usable window < 1 s; paste-to-window < 300 ms | 1 |
-| NF-4 | Smooth drawing (60 fps) on images up to 8K × 8K px | 1 |
+| NF-3 | Responsive in everyday use. No hard performance targets; optimize when real use shows a problem | 1 |
 | NF-5 | Fully offline; no network access; no telemetry | 1 |
 | NF-6 | Exported pixelated/redacted regions contain no recoverable original data | 1 |
 | NF-7 | Preserve source color profile (sRGB / Display P3) on output | 2 |
