@@ -151,7 +151,7 @@ All annotations are vector objects, editable until export (flattened only on out
 - Every toolbar item shows its keyboard key next to it (e.g. small `A` beside the arrow icon). Icons only, no tool names.
 - With an object selected, color/thickness controls reflect and edit it.
 - Icons: SF Symbols or code-drawn; no external assets.
-- Canvas surround color is an internal constant `CanvasSurroundColor` (neutral grey).
+- Canvas surround color is an internal constant `CanvasStyle.surroundColor` (neutral grey).
 - **No UI is implemented or changed without the user confirming the sketch first.**
 
 ### 6.1 Document window
@@ -174,7 +174,7 @@ All annotations are vector objects, editable until export (flattened only on out
 │ H ▬                 │           │                                              │        │
 │                 ●   │           └──────────────────────────────────────────────┘        │
 │ X ▦                 │                                                                   │
-│                     │               (canvas surround: CanvasSurroundColor)              │
+│                     │            (canvas surround: CanvasStyle.surroundColor)           │
 │ C ⌗                 │                                                                   │
 ├─────────────────────┴───────────────────────────────────────────────────────────────────┤
 │ 2880×1800 px · 1440×900 pt · @2x       [⠿ Drag]                   1:1  Fit   −  100%  + │

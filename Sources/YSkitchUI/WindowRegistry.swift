@@ -1,4 +1,5 @@
 import AppKit
+import YSkitchCore
 
 @MainActor
 final class WindowRegistry {
@@ -9,8 +10,8 @@ final class WindowRegistry {
     private var closeObservers: [ObjectIdentifier: any NSObjectProtocol] = [:]
 
     @discardableResult
-    func openNewDocument() -> DocumentWindowController {
-        let controller = DocumentWindowController()
+    func openNewDocument(_ document: Document? = nil) -> DocumentWindowController {
+        let controller = DocumentWindowController(document: document ?? DocumentWindowController.blankDocument())
         guard let window = controller.window else { return controller }
         if controllers.isEmpty {
             window.center()

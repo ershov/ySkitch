@@ -65,6 +65,15 @@ enum MainMenu {
 
     private static func viewMenu() -> NSMenu {
         let menu = NSMenu(title: "View")
+        menu.addItem(item("Zoom In", #selector(DocumentWindowController.zoomIn(_:)), "+"))
+        let zoomInWithoutShift = item("Zoom In", #selector(DocumentWindowController.zoomIn(_:)), "=")
+        zoomInWithoutShift.isHidden = true
+        zoomInWithoutShift.allowsKeyEquivalentWhenHidden = true
+        menu.addItem(zoomInWithoutShift)
+        menu.addItem(item("Zoom Out", #selector(DocumentWindowController.zoomOut(_:)), "-"))
+        menu.addItem(item("Actual Size", #selector(DocumentWindowController.zoomToActualSize(_:)), "0"))
+        menu.addItem(item("Zoom to Fit", #selector(DocumentWindowController.zoomToFit(_:)), "9"))
+        menu.addItem(.separator())
         menu.addItem(item("Enter Full Screen", #selector(NSWindow.toggleFullScreen(_:)), "f", [.command, .control]))
         return menu
     }
