@@ -3,19 +3,24 @@ import SwiftUI
 import YSkitchCore
 
 struct ToolbarView: View {
-    static let width: CGFloat = 144
+    static let width: CGFloat = 100
     static let rowHeight: CGFloat = 22
     static let groupGap: CGFloat = 10
-    static let previewSize: CGFloat = 36
-    static let sliderHeight: CGFloat = 176
+    static let swatchKeyWidth: CGFloat = 8
+    static let swatchSpacing: CGFloat = 4
+    static let swatchSize: CGFloat = 22
+
+    static var toolsColumnHeight: CGFloat {
+        let rows = Tool.groups.reduce(0) { $0 + $1.count }
+        return CGFloat(rows) * rowHeight + CGFloat(Tool.groups.count - 1) * groupGap
+    }
 
     let model: ToolbarModel
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             toolsColumn
-            colorsColumn
-            thicknessColumn
+            colorsColumn.frame(height: Self.toolsColumnHeight, alignment: .top)
         }
         .padding(.horizontal, 8)
         .padding(.top, 10)
@@ -38,6 +43,15 @@ struct ToolbarView: View {
     }
 
     private var colorsColumn: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            swatches
+            thicknessControl
+                .frame(width: Self.swatchSize)
+                .padding(.leading, Self.swatchKeyWidth + Self.swatchSpacing)
+        }
+    }
+
+    private var swatches: some View {
         let tool = model.activeTool
         let current = model.currentStyle.color
         return VStack(spacing: 0) {
@@ -51,20 +65,16 @@ struct ToolbarView: View {
         .opacity(tool.usesColor ? 1 : 0.35)
     }
 
-    private var thicknessColumn: some View {
+    private var thicknessControl: some View {
         let tool = model.activeTool
-        let style = model.currentStyle
         let range = tool.thicknessRange ?? Tool.strokeRange
         return VStack(spacing: 2) {
             KeyLabel(text: "[")
-            ThicknessSlider(thickness: style.thickness, range: range) { model.setThickness($0) }
-                .frame(width: 22, height: Self.sliderHeight)
+            ThicknessSlider(tool: tool, style: model.currentStyle, range: range) { model.setThickness($0) }
+                .frame(maxHeight: .infinity)
                 .help("Size")
             KeyLabel(text: "]")
-            ThicknessPreview(tool: tool, style: style)
-                .padding(.top, 8)
         }
-        .frame(width: Self.previewSize)
         .disabled(tool.thicknessRange == nil)
         .opacity(tool.thicknessRange == nil ? 0 : 1)
     }
@@ -115,8 +125,8 @@ private struct SwatchButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 4) {
-                KeyLabel(text: "\(index + 1)").frame(width: 8)
+            HStack(spacing: ToolbarView.swatchSpacing) {
+                KeyLabel(text: "\(index + 1)").frame(width: ToolbarView.swatchKeyWidth)
                 ZStack {
                     Circle().strokeBorder(Color.primary, lineWidth: 1.5).opacity(isSelected ? 1 : 0)
                     Circle().fill(Palette.colors[index].swiftUIColor)
@@ -124,7 +134,7 @@ private struct SwatchButton: View {
                         .overlay(Circle().strokeBorder(.black.opacity(0.35), lineWidth: 0.5))
                         .frame(width: 18, height: 18)
                 }
-                .frame(width: 22, height: 22)
+                .frame(width: ToolbarView.swatchSize, height: ToolbarView.swatchSize)
             }
             .frame(height: ToolbarView.rowHeight)
             .contentShape(Rectangle())
@@ -132,95 +142,6 @@ private struct SwatchButton: View {
         .buttonStyle(.plain)
         .focusable(false)
         .help("Color \(index + 1)")
-    }
-}
-
-private struct ThicknessPreview: View {
-    let tool: Tool
-    let style: ToolStyle
-
-    var body: some View {
-        let size = ToolbarView.previewSize
-        Group {
-            switch tool {
-            case .text:
-                Text("Aa")
-                    .font(.system(size: style.thickness, weight: .bold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.05)
-                    .foregroundStyle(style.color.swiftUIColor)
-            case .pixelate:
-                Mosaic(block: min(style.thickness, size / 2))
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-            default:
-                let diameter = min(style.thickness, size)
-                Circle()
-                    .fill(style.color.swiftUIColor)
-                    .overlay(Circle().strokeBorder(.black.opacity(0.25), lineWidth: 0.5))
-                    .opacity(tool == .highlighter ? HighlighterStyle.opacity : 1)
-                    .frame(width: diameter, height: diameter)
-            }
-        }
-        .frame(width: size, height: size)
-    }
-}
-
-private struct Mosaic: View {
-    let block: CGFloat
-
-    var body: some View {
-        Canvas { context, size in
-            let shades: [Double] = [0.55, 0.75, 0.65, 0.85]
-            let columns = Int((size.width / block).rounded(.up))
-            let rows = Int((size.height / block).rounded(.up))
-            for row in 0..<rows {
-                for column in 0..<columns {
-                    let rect = CGRect(x: CGFloat(column) * block, y: CGFloat(row) * block, width: block, height: block)
-                    let shade = shades[(row * 3 + column * 2 + row * column) % shades.count]
-                    context.fill(Path(rect), with: .color(white: shade))
-                }
-            }
-        }
-    }
-}
-
-/// Vertical; the top is the minimum so it lines up with the `[` (thinner) label.
-private struct ThicknessSlider: NSViewRepresentable {
-    let thickness: CGFloat
-    let range: ClosedRange<CGFloat>
-    let onChange: (CGFloat) -> Void
-
-    func makeCoordinator() -> Coordinator { Coordinator() }
-
-    func makeNSView(context: Context) -> NSSlider {
-        let slider = NSSlider(value: 0, minValue: 0, maxValue: 1, target: context.coordinator,
-                              action: #selector(Coordinator.changed(_:)))
-        slider.isVertical = true
-        slider.isContinuous = true
-        slider.refusesFirstResponder = true
-        slider.controlSize = .small
-        // The fill grows from the bottom (the maximum), which would read inverted.
-        slider.trackFillColor = .clear
-        return slider
-    }
-
-    func updateNSView(_ slider: NSSlider, context: Context) {
-        context.coordinator.range = range
-        context.coordinator.onChange = onChange
-        // Leave the knob where the user dragged it when it already maps to the current value.
-        if ThicknessScale.value(at: 1 - slider.doubleValue, in: range) != thickness {
-            slider.doubleValue = 1 - ThicknessScale.position(of: thickness, in: range)
-        }
-    }
-
-    @MainActor
-    final class Coordinator: NSObject {
-        var range: ClosedRange<CGFloat> = Tool.strokeRange
-        var onChange: (CGFloat) -> Void = { _ in }
-
-        @objc func changed(_ sender: NSSlider) {
-            onChange(ThicknessScale.value(at: 1 - sender.doubleValue, in: range))
-        }
     }
 }
 

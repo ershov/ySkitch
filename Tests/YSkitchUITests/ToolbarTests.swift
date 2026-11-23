@@ -66,6 +66,52 @@ struct ToolbarTests {
         #expect(controller.scrollView.frame.minX == ToolbarView.width)
     }
 
+    @Test func toolbarWidthDrivesChrome() {
+        #expect(ToolbarView.width == 100)
+        #expect(DocumentWindowController.chromeSize.width == ToolbarView.width)
+    }
+
+    @Test func thicknessSliderUsesWedgeCell() throws {
+        let controller = DocumentWindowController(
+            document: Document(blankSize: CGSize(width: 800, height: 600), scale: 1), title: "Test",
+            toolSettings: ToolSettings(preferences: Preferences(store: store)))
+        defer { controller.close() }
+        let content = try #require(controller.window?.contentView as? DocumentContentView)
+        content.layoutSubtreeIfNeeded()
+
+        func sliders(in view: NSView) -> [NSSlider] {
+            (view as? NSSlider).map { [$0] } ?? view.subviews.flatMap(sliders(in:))
+        }
+        let slider = try #require(sliders(in: content.toolbarSlot).first)
+        #expect(slider.cell is WedgeSliderCell)
+        #expect(slider.frame.width == ToolbarView.swatchSize)
+    }
+
+    @Test func wedgeKnobGrowsWithThickness() throws {
+        let slider = NSSlider(frame: NSRect(x: 0, y: 0, width: 22, height: 100))
+        let cell = WedgeSliderCell()
+        slider.cell = cell
+        slider.minValue = 0
+        slider.maxValue = 1
+        slider.isVertical = true
+        cell.tool = .arrow
+        cell.range = Tool.strokeRange
+
+        slider.doubleValue = 1 - ThicknessScale.position(of: 2, in: Tool.strokeRange)
+        let small = cell.knobRect(flipped: true)
+        slider.doubleValue = 1 - ThicknessScale.position(of: 16, in: Tool.strokeRange)
+        let large = cell.knobRect(flipped: true)
+        #expect(cell.thickness == 16)
+        #expect(small.width == WedgeSliderCell.minKnob)
+        #expect(large.width == 16)
+        #expect(large.midY > small.midY)
+        #expect(large.midX == small.midX)
+
+        slider.doubleValue = 0
+        #expect(cell.knobRect(flipped: true).width == 22)
+        #expect(cell.knobRect(flipped: true).maxY <= 100)
+    }
+
     @Test func keyEventsDriveToolbar() throws {
         let controller = DocumentWindowController(
             document: Document(blankSize: CGSize(width: 800, height: 600), scale: 1), title: "Test",
