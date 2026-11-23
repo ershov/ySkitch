@@ -52,7 +52,7 @@ import Testing
         let style = AnnotationStyle(color: Self.pink, thickness: 8)
         let pen = Annotation(style: style, shape: .pen(points: points))
         let highlighter = Annotation(style: style, shape: .highlighter(points: points))
-        #expect(pen.shape.bounds == CGRect(x: 10, y: 20, width: 40, height: 20))
+        #expect(pen.bounds == CGRect(x: 10, y: 20, width: 40, height: 20))
         #expect(highlighter.renderBounds == CGRect(x: 6, y: 16, width: 48, height: 28))
         #expect(pen.renderBounds.contains(highlighter.renderBounds))
         #expect(pen.renderBounds.width > highlighter.renderBounds.width)

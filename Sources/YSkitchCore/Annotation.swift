@@ -20,16 +20,10 @@ public enum AnnotationShape: Codable, Equatable, Sendable {
     case arrow(tail: CGPoint, head: CGPoint)
     case pen(points: [CGPoint])
     case highlighter(points: [CGPoint])
+    /// Font size is the style's thickness.
+    case text(TextContent)
 
-    public var bounds: CGRect {
-        switch self {
-        case .rectangle(let rect), .roundedRectangle(let rect), .ellipse(let rect): rect
-        case .line(let a, let b), .arrow(let a, let b): Self.segmentBounds(a, b)
-        case .pen(let points), .highlighter(let points): Self.pointsBounds(points)
-        }
-    }
-
-    private static func pointsBounds(_ points: [CGPoint]) -> CGRect {
+    fileprivate static func pointsBounds(_ points: [CGPoint]) -> CGRect {
         guard let first = points.first else { return .null }
         let (minX, maxX, minY, maxY) = points.dropFirst().reduce(
             (first.x, first.x, first.y, first.y)
@@ -37,7 +31,7 @@ public enum AnnotationShape: Codable, Equatable, Sendable {
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
-    private static func segmentBounds(_ a: CGPoint, _ b: CGPoint) -> CGRect {
+    fileprivate static func segmentBounds(_ a: CGPoint, _ b: CGPoint) -> CGRect {
         CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(a.x - b.x), height: abs(a.y - b.y))
     }
 }
@@ -55,7 +49,20 @@ public struct Annotation: Identifiable, Codable, Equatable, Sendable {
 }
 
 extension Annotation {
-    /// Shape bounds plus stroke, white outline and halo.
+    /// Geometric extent, without stroke or outline.
+    public var bounds: CGRect {
+        switch shape {
+        case .rectangle(let rect), .roundedRectangle(let rect), .ellipse(let rect): rect
+        case .line(let a, let b), .arrow(let a, let b): AnnotationShape.segmentBounds(a, b)
+        case .pen(let points), .highlighter(let points): AnnotationShape.pointsBounds(points)
+        case .text(let content):
+            CGRect(
+                origin: content.origin,
+                size: TextLayout.layout(string: content.string, fontSize: style.thickness).size)
+        }
+    }
+
+    /// Bounds plus stroke, white outline and halo.
     public var renderBounds: CGRect {
         let outline = OutlineStyle.whiteWidth(forLineWidth: style.thickness)
         let extent = OutlineStyle.extent(outlineWidth: outline)
@@ -63,8 +70,12 @@ extension Annotation {
             let box = ArrowGeometry.path(tail: tail, head: head, thickness: style.thickness).boundingBoxOfPath
             return box.insetBy(dx: -extent, dy: -extent)
         }
+        if case .text = shape {
+            let textExtent = OutlineStyle.extent(outlineWidth: TextStyle.outlineWidth(fontSize: style.thickness))
+            return bounds.insetBy(dx: -textExtent, dy: -textExtent)
+        }
         var outset = style.thickness / 2
         if case .highlighter = shape {} else { outset += extent }
-        return shape.bounds.insetBy(dx: -outset, dy: -outset)
+        return bounds.insetBy(dx: -outset, dy: -outset)
     }
 }

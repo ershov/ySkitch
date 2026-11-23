@@ -19,6 +19,8 @@ final class DocumentModel {
 
     var isInGesture: Bool { gestureStart != nil }
 
+    var gestureHasChanges: Bool { gestureStart.map { $0 != document } ?? false }
+
     init(document: Document) {
         self.document = document
     }

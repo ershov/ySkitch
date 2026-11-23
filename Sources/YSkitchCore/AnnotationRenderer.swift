@@ -43,6 +43,9 @@ public enum AnnotationRenderer {
         case .highlighter(let points):
             drawHighlighter(StrokeSmoothing.path(points), style: style, in: context)
             return
+        case .text(let content):
+            drawText(content, style: style, in: context)
+            return
         }
         OutlinedDrawing.stroke(
             path,
@@ -52,6 +55,16 @@ public enum AnnotationRenderer {
             lineJoin: lineJoin,
             in: context
         )
+    }
+
+    private static func drawText(_ content: TextContent, style: AnnotationStyle, in context: CGContext) {
+        let glyphs = TextLayout.layout(string: content.string, fontSize: style.thickness).path
+        guard !glyphs.isEmpty else { return }
+        var transform = CGAffineTransform(translationX: content.origin.x, y: content.origin.y)
+        guard let path = glyphs.copy(using: &transform) else { return }
+        OutlinedDrawing.fill(
+            path, color: style.color.cgColor,
+            outlineWidth: TextStyle.outlineWidth(fontSize: style.thickness), in: context)
     }
 
     private static func drawHighlighter(_ path: CGPath, style: AnnotationStyle, in context: CGContext) {

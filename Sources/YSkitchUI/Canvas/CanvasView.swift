@@ -10,12 +10,14 @@ final class CanvasView: NSView {
     private var isPanMode = false
     private var panLastLocation: NSPoint?
     private var interaction: (tool: Tool, handler: any CanvasInteraction)?
+    private(set) lazy var textEditor = TextEditingController(canvas: self, model: model, toolbar: toolbar)
 
     init(model: DocumentModel, toolbar: ToolbarModel) {
         self.model = model
         self.toolbar = toolbar
         super.init(frame: NSRect(origin: .zero, size: model.document.canvasRect.size))
         observeActiveTool()
+        toolbar.onActiveToolChange = { [weak self] in self?.textEditor.commit() }
     }
 
     private func observeActiveTool() {
@@ -36,6 +38,15 @@ final class CanvasView: NSView {
     override var isFlipped: Bool { true }
     override var isOpaque: Bool { true }
     override var acceptsFirstResponder: Bool { true }
+
+    /// Starts in-place editing of a text annotation, caret at the end.
+    func beginTextEditing(annotationID: UUID) {
+        textEditor.beginEditing(annotationID: annotationID)
+    }
+
+    func commitTextEditing() {
+        textEditor.commit()
+    }
 
     func documentDidChange() {
         setFrameSize(model.document.canvasRect.size)
@@ -94,6 +105,7 @@ final class CanvasView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        if textEditor.isEditing { return textEditor.commit() }
         guard isPanMode else { return currentInteraction?.mouseDown(at: documentPoint(event), event: event) ?? () }
         panLastLocation = event.locationInWindow
         updatePanCursor()
@@ -135,6 +147,8 @@ final class CanvasView: NSView {
             ShapeDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
         case .line, .arrow:
             LineDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
+        case .text:
+            TextInteraction(model: model, editor: textEditor)
         case .pen, .highlighter:
             FreehandDrawingInteraction(
                 tool: tool, model: model, toolbar: toolbar,

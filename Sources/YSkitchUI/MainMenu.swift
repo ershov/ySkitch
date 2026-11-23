@@ -57,8 +57,8 @@ enum MainMenu {
 
     private static func editMenu() -> NSMenu {
         let menu = NSMenu(title: "Edit")
-        menu.addItem(item("Undo", Selector(("undo:")), "z"))
-        menu.addItem(item("Redo", Selector(("redo:")), "z", [.command, .shift]))
+        menu.addItem(item("Undo", #selector(UndoActions.undo(_:)), "z"))
+        menu.addItem(item("Redo", #selector(UndoActions.redo(_:)), "z", [.command, .shift]))
         menu.addItem(.separator())
         menu.addItem(item("Cut", #selector(NSText.cut(_:)), "x"))
         menu.addItem(item("Copy", #selector(NSText.copy(_:)), "c"))
@@ -96,4 +96,10 @@ enum MainMenu {
     private static func helpMenu() -> NSMenu {
         NSMenu(title: "Help")
     }
+}
+
+/// Standard undo actions; `NSWindow` implements them without declaring them to Swift.
+@MainActor @objc protocol UndoActions {
+    func undo(_ sender: Any?)
+    func redo(_ sender: Any?)
 }

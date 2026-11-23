@@ -79,6 +79,8 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
 
     func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? { model.undoManager }
 
+    func windowDidResignKey(_ notification: Notification) { canvasView.commitTextEditing() }
+
     @objc func zoomIn(_ sender: Any?) { scrollView.zoomIn() }
     @objc func zoomOut(_ sender: Any?) { scrollView.zoomOut() }
     @objc func zoomToActualSize(_ sender: Any?) { scrollView.zoomToActualSize() }

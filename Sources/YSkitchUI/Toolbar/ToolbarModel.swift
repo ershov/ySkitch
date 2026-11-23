@@ -8,8 +8,13 @@ final class ToolbarModel {
     @ObservationIgnored let settings: ToolSettings
 
     var activeTool: Tool {
-        didSet { settings.preferences.lastTool = activeTool }
+        didSet {
+            settings.preferences.lastTool = activeTool
+            onActiveToolChange?()
+        }
     }
+
+    @ObservationIgnored var onActiveToolChange: (() -> Void)?
 
     init(settings: ToolSettings = .shared) {
         self.settings = settings
