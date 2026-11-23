@@ -1,14 +1,38 @@
 import Foundation
 import YSkitchCore
 
+protocol PreferencesStore: AnyObject {
+    func string(forKey key: String) -> String?
+    func data(forKey key: String) -> Data?
+    func set(_ value: Any?, forKey key: String)
+    func removeObject(forKey key: String)
+}
+
+extension UserDefaults: PreferencesStore {}
+
+final class InMemoryPreferencesStore: PreferencesStore {
+    private var values: [String: Any] = [:]
+
+    func string(forKey key: String) -> String? { values[key] as? String }
+    func data(forKey key: String) -> Data? { values[key] as? Data }
+
+    func set(_ value: Any?, forKey key: String) {
+        values[key] = value
+    }
+
+    func removeObject(forKey key: String) {
+        values[key] = nil
+    }
+}
+
 @MainActor
 final class Preferences {
     static let shared = Preferences()
 
-    private let defaults: UserDefaults
+    private let defaults: PreferencesStore
 
-    init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
+    init(store: PreferencesStore = UserDefaults.standard) {
+        self.defaults = store
     }
 
     var lastSaveFolder: URL? {

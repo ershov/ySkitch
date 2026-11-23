@@ -4,42 +4,25 @@ import Testing
 import YSkitchCore
 @testable import YSkitchUI
 
-/// `UserDefaults` suite removed when the test finishes.
-@MainActor
-private final class TestDefaults {
-    let name = "ySkitch.tests.\(UUID().uuidString)"
-    let defaults: UserDefaults
-
-    init() {
-        defaults = UserDefaults(suiteName: name)!
-    }
-
-    deinit {
-        UserDefaults().removePersistentDomain(forName: name)
-    }
-
-    func preferences() -> Preferences { Preferences(defaults: defaults) }
-}
-
 @MainActor
 struct ToolbarTests {
-    private let store = TestDefaults()
+    private let store = InMemoryPreferencesStore()
 
     @Test func toolSettingsPersist() {
-        let settings = ToolSettings(preferences: store.preferences())
+        let settings = ToolSettings(preferences: Preferences(store: store))
         #expect(settings.style(for: .arrow) == ToolStyle.defaultStyle(for: .arrow))
         settings.setColor(Palette.colors[0], for: .arrow)
         settings.setThickness(12, for: .arrow)
         settings.setThickness(500, for: .text)
 
-        let reloaded = ToolSettings(preferences: store.preferences())
+        let reloaded = ToolSettings(preferences: Preferences(store: store))
         #expect(reloaded.style(for: .arrow) == ToolStyle(color: Palette.colors[0], thickness: 12))
         #expect(reloaded.style(for: .text).thickness == 120)
         #expect(reloaded.style(for: .line) == ToolStyle.defaultStyle(for: .line))
     }
 
     @Test func colorIsPerTool() {
-        let model = ToolbarModel(settings: ToolSettings(preferences: store.preferences()))
+        let model = ToolbarModel(settings: ToolSettings(preferences: Preferences(store: store)))
         model.activeTool = .arrow
         model.selectColor(index: 4)
         model.activeTool = .line
@@ -49,7 +32,7 @@ struct ToolbarTests {
     }
 
     @Test func colorAndThicknessIgnoredWhenUnsupported() {
-        let settings = ToolSettings(preferences: store.preferences())
+        let settings = ToolSettings(preferences: Preferences(store: store))
         let model = ToolbarModel(settings: settings)
         model.activeTool = .crop
         model.selectColor(index: 0)
@@ -58,11 +41,11 @@ struct ToolbarTests {
     }
 
     @Test func lastToolRemembered() {
-        let settings = ToolSettings(preferences: store.preferences())
+        let settings = ToolSettings(preferences: Preferences(store: store))
         #expect(ToolbarModel(settings: settings).activeTool == .arrow)
         ToolbarModel(settings: settings).activeTool = .ellipse
         #expect(ToolbarModel(settings: settings).activeTool == .ellipse)
-        #expect(store.preferences().lastTool == .ellipse)
+        #expect(Preferences(store: store).lastTool == .ellipse)
     }
 
     @Test func symbolsResolve() {
@@ -74,7 +57,7 @@ struct ToolbarTests {
     @Test func toolbarOccupiesSlot() throws {
         let controller = DocumentWindowController(
             document: Document(blankSize: CGSize(width: 800, height: 600), scale: 1), title: "Test",
-            toolSettings: ToolSettings(preferences: store.preferences()))
+            toolSettings: ToolSettings(preferences: Preferences(store: store)))
         defer { controller.close() }
         let content = try #require(controller.window?.contentView as? DocumentContentView)
         content.layoutSubtreeIfNeeded()
@@ -86,7 +69,7 @@ struct ToolbarTests {
     @Test func keyEventsDriveToolbar() throws {
         let controller = DocumentWindowController(
             document: Document(blankSize: CGSize(width: 800, height: 600), scale: 1), title: "Test",
-            toolSettings: ToolSettings(preferences: store.preferences()))
+            toolSettings: ToolSettings(preferences: Preferences(store: store)))
         defer { controller.close() }
         let window = try #require(controller.window)
         let toolbar = controller.toolbar

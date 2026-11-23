@@ -44,14 +44,12 @@ struct ExportTests {
     }
 
     @Test func preferencesRoundTripLastSaveFolder() {
-        let suite = "ySkitch.tests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let preferences = Preferences(defaults: defaults)
+        let store = InMemoryPreferencesStore()
+        let preferences = Preferences(store: store)
         #expect(preferences.lastSaveFolder == nil)
 
         let folder = URL(fileURLWithPath: "/tmp/ySkitch-folder", isDirectory: true)
         preferences.lastSaveFolder = folder
-        #expect(Preferences(defaults: defaults).lastSaveFolder?.path == folder.path)
+        #expect(Preferences(store: store).lastSaveFolder?.path == folder.path)
     }
 }
