@@ -74,6 +74,7 @@ final class ShapeDrawingInteraction: CanvasInteraction {
         switch tool {
         case .roundedRectangle: .roundedRectangle(rect)
         case .ellipse: .ellipse(rect)
+        case .pixelate: .pixelate(rect)
         default: .rectangle(rect)
         }
     }
@@ -82,6 +83,7 @@ final class ShapeDrawingInteraction: CanvasInteraction {
         switch tool {
         case .roundedRectangle: "Draw Rounded Rectangle"
         case .ellipse: "Draw Ellipse"
+        case .pixelate: "Pixelate"
         default: "Draw Rectangle"
         }
     }

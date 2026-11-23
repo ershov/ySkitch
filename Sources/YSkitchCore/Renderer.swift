@@ -3,6 +3,11 @@ import CoreGraphics
 public enum Renderer {
     /// `context` is already in document coordinates (origin top-left, y down).
     public static func draw(_ document: Document, in context: CGContext) {
+        draw(document, upTo: document.annotations.count, in: context)
+    }
+
+    /// Draws the background, base image and annotations `0..<count`.
+    static func draw(_ document: Document, upTo count: Int, in context: CGContext) {
         context.saveGState()
         context.setFillColor(CGColor(gray: 1, alpha: 1))
         context.fill(document.canvasRect)
@@ -17,8 +22,14 @@ public enum Renderer {
             context.restoreGState()
         }
 
-        for annotation in document.annotations {
-            AnnotationRenderer.draw(annotation, in: context)
+        for (index, annotation) in document.annotations.prefix(count).enumerated() {
+            if case .pixelate(let rect) = annotation.shape {
+                Pixelation.draw(
+                    rect: rect, blockSize: annotation.style.thickness, document: document, upTo: index,
+                    in: context)
+            } else {
+                AnnotationRenderer.draw(annotation, in: context)
+            }
         }
     }
 

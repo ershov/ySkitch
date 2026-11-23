@@ -46,6 +46,8 @@ public enum AnnotationRenderer {
         case .text(let content):
             drawText(content, style: style, in: context)
             return
+        case .pixelate:
+            return
         }
         OutlinedDrawing.stroke(
             path,

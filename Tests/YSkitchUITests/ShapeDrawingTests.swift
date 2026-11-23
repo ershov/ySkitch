@@ -50,6 +50,18 @@ struct ShapeDrawingTests {
         #expect(!model.undoManager.canUndo)
     }
 
+    @Test func pixelateDrag() {
+        let controller = makeController(tool: .pixelate)
+        defer { controller.close() }
+        drag(controller, from: CGPoint(x: 10, y: 20), to: CGPoint(x: 60, y: 50))
+        let model = controller.canvasView.model
+        #expect(model.document.annotations.count == 1)
+        let annotation = model.document.annotations[0]
+        #expect(annotation.shape == .pixelate(CGRect(x: 10, y: 20, width: 50, height: 30)))
+        #expect(annotation.style.thickness == controller.canvasView.toolbar.currentStyle.thickness)
+        #expect(model.undoManager.undoActionName == "Pixelate")
+    }
+
     @Test func shiftMakesSquare() {
         let controller = makeController(tool: .rectangle)
         defer { controller.close() }

@@ -22,6 +22,8 @@ public enum AnnotationShape: Codable, Equatable, Sendable {
     case highlighter(points: [CGPoint])
     /// Font size is the style's thickness.
     case text(TextContent)
+    /// Block size is the style's thickness.
+    case pixelate(CGRect)
 
     fileprivate static func pointsBounds(_ points: [CGPoint]) -> CGRect {
         guard let first = points.first else { return .null }
@@ -52,7 +54,7 @@ extension Annotation {
     /// Geometric extent, without stroke or outline.
     public var bounds: CGRect {
         switch shape {
-        case .rectangle(let rect), .roundedRectangle(let rect), .ellipse(let rect): rect
+        case .rectangle(let rect), .roundedRectangle(let rect), .ellipse(let rect), .pixelate(let rect): rect
         case .line(let a, let b), .arrow(let a, let b): AnnotationShape.segmentBounds(a, b)
         case .pen(let points), .highlighter(let points): AnnotationShape.pointsBounds(points)
         case .text(let content):
@@ -64,6 +66,7 @@ extension Annotation {
 
     /// Bounds plus stroke, white outline and halo.
     public var renderBounds: CGRect {
+        if case .pixelate(let rect) = shape { return rect }
         let outline = OutlineStyle.whiteWidth(forLineWidth: style.thickness)
         let extent = OutlineStyle.extent(outlineWidth: outline)
         if case .arrow(let tail, let head) = shape {

@@ -143,7 +143,7 @@ final class CanvasView: NSView {
         interaction?.handler.cancel()
         interaction = nil
         let handler: (any CanvasInteraction)? = switch tool {
-        case .rectangle, .roundedRectangle, .ellipse:
+        case .rectangle, .roundedRectangle, .ellipse, .pixelate:
             ShapeDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
         case .line, .arrow:
             LineDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
