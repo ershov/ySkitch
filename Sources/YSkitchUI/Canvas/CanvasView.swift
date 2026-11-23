@@ -1,4 +1,5 @@
 import AppKit
+import Observation
 import YSkitchCore
 
 /// Document view of `CanvasScrollView`; one unit is one document point.
@@ -8,11 +9,25 @@ final class CanvasView: NSView {
 
     private var isPanMode = false
     private var panLastLocation: NSPoint?
+    private var interaction: (tool: Tool, handler: any CanvasInteraction)?
 
     init(model: DocumentModel, toolbar: ToolbarModel) {
         self.model = model
         self.toolbar = toolbar
         super.init(frame: NSRect(origin: .zero, size: model.document.canvasRect.size))
+        observeActiveTool()
+    }
+
+    private func observeActiveTool() {
+        withObservationTracking {
+            _ = self.toolbar.activeTool
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                self.window?.invalidateCursorRects(for: self)
+                self.observeActiveTool()
+            }
+        }
     }
 
     @available(*, unavailable)
@@ -52,6 +67,10 @@ final class CanvasView: NSView {
     }
 
     override func keyDown(with event: NSEvent) {
+        if event.keyCode == Self.escapeKeyCode {
+            currentInteraction?.cancel()
+            return
+        }
         if event.keyCode == Self.spaceKeyCode {
             if !event.isARepeat { beginPanMode() }
             return
@@ -75,29 +94,55 @@ final class CanvasView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
-        guard isPanMode else { return super.mouseDown(with: event) }
+        guard isPanMode else { return currentInteraction?.mouseDown(at: documentPoint(event), event: event) ?? () }
         panLastLocation = event.locationInWindow
         updatePanCursor()
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard isPanMode else { return super.mouseDragged(with: event) }
+        guard isPanMode else { return currentInteraction?.mouseDragged(to: documentPoint(event), event: event) ?? () }
         panDrag(to: event.locationInWindow)
     }
 
     override func mouseUp(with event: NSEvent) {
-        guard isPanMode else { return super.mouseUp(with: event) }
+        guard isPanMode else { return currentInteraction?.mouseUp(at: documentPoint(event), event: event) ?? () }
         panLastLocation = nil
         updatePanCursor()
     }
 
+    override func flagsChanged(with event: NSEvent) {
+        guard !isPanMode, let interaction = currentInteraction else { return super.flagsChanged(with: event) }
+        interaction.flagsChanged(event)
+    }
+
     override func resetCursorRects() {
-        if let cursor = panCursor { addCursorRect(bounds, cursor: cursor) }
+        if let cursor = panCursor ?? currentInteraction?.cursor { addCursorRect(bounds, cursor: cursor) }
+    }
+
+    private func documentPoint(_ event: NSEvent) -> CGPoint {
+        let point = convert(event.locationInWindow, from: nil)
+        let origin = model.document.canvasRect.origin
+        return CGPoint(x: point.x + origin.x, y: point.y + origin.y)
+    }
+
+    private var currentInteraction: (any CanvasInteraction)? {
+        let tool = toolbar.activeTool
+        if let interaction, interaction.tool == tool { return interaction.handler }
+        interaction?.handler.cancel()
+        interaction = nil
+        let handler: (any CanvasInteraction)? = switch tool {
+        case .rectangle, .roundedRectangle, .ellipse:
+            ShapeDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
+        default: nil
+        }
+        interaction = handler.map { (tool, $0) }
+        return handler
     }
 
     // MARK: - Space+drag panning
 
     private static let spaceKeyCode: UInt16 = 49
+    private static let escapeKeyCode: UInt16 = 53
 
     private var panCursor: NSCursor? {
         guard isPanMode else { return nil }
@@ -119,7 +164,7 @@ final class CanvasView: NSView {
 
     private func updatePanCursor() {
         window?.invalidateCursorRects(for: self)
-        (panCursor ?? .arrow).set()
+        (panCursor ?? currentInteraction?.cursor ?? .arrow).set()
     }
 
     /// `location` is in window coordinates (y up); the clip view is flipped like this view.
