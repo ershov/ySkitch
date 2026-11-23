@@ -6,10 +6,14 @@ public enum AnnotationRenderer {
         defer { context.restoreGState() }
         switch annotation.shape {
         case .rectangle(let rect):
-            context.setStrokeColor(annotation.style.color.cgColor)
-            context.setLineWidth(annotation.style.thickness)
-            context.setLineJoin(.miter)
-            context.stroke(rect)
+            OutlinedDrawing.stroke(
+                CGPath(rect: rect, transform: nil),
+                lineWidth: annotation.style.thickness,
+                color: annotation.style.color.cgColor,
+                lineCap: .butt,
+                lineJoin: .miter,
+                in: context
+            )
         }
     }
 }
