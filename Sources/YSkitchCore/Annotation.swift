@@ -18,12 +18,23 @@ public enum AnnotationShape: Codable, Equatable, Sendable {
     case ellipse(CGRect)
     case line(start: CGPoint, end: CGPoint)
     case arrow(tail: CGPoint, head: CGPoint)
+    case pen(points: [CGPoint])
+    case highlighter(points: [CGPoint])
 
     public var bounds: CGRect {
         switch self {
         case .rectangle(let rect), .roundedRectangle(let rect), .ellipse(let rect): rect
         case .line(let a, let b), .arrow(let a, let b): Self.segmentBounds(a, b)
+        case .pen(let points), .highlighter(let points): Self.pointsBounds(points)
         }
+    }
+
+    private static func pointsBounds(_ points: [CGPoint]) -> CGRect {
+        guard let first = points.first else { return .null }
+        let (minX, maxX, minY, maxY) = points.dropFirst().reduce(
+            (first.x, first.x, first.y, first.y)
+        ) { acc, p in (min(acc.0, p.x), max(acc.1, p.x), min(acc.2, p.y), max(acc.3, p.y)) }
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
     private static func segmentBounds(_ a: CGPoint, _ b: CGPoint) -> CGRect {
@@ -52,7 +63,8 @@ extension Annotation {
             let box = ArrowGeometry.path(tail: tail, head: head, thickness: style.thickness).boundingBoxOfPath
             return box.insetBy(dx: -extent, dy: -extent)
         }
-        let outset = style.thickness / 2 + extent
+        var outset = style.thickness / 2
+        if case .highlighter = shape {} else { outset += extent }
         return shape.bounds.insetBy(dx: -outset, dy: -outset)
     }
 }

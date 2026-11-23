@@ -190,3 +190,69 @@ struct LineDrawingTests {
         #expect(!controller.canvasView.model.undoManager.canUndo)
     }
 }
+
+@MainActor
+struct FreehandDrawingTests {
+    private func makeController(tool: Tool) -> DocumentWindowController {
+        let settings = ToolSettings(preferences: Preferences(store: InMemoryPreferencesStore()))
+        let controller = DocumentWindowController(
+            document: Document(blankSize: CGSize(width: 400, height: 300), scale: 1),
+            title: "Test", toolSettings: settings)
+        controller.canvasView.toolbar.activeTool = tool
+        return controller
+    }
+
+    private func event(_ type: NSEvent.EventType, _ point: CGPoint, in view: NSView) -> NSEvent {
+        NSEvent.mouseEvent(
+            with: type, location: view.convert(point, to: nil), modifierFlags: [], timestamp: 0,
+            windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: 1,
+            pressure: 1)!
+    }
+
+    private func stroke(_ controller: DocumentWindowController, through points: [CGPoint]) {
+        let view = controller.canvasView
+        view.mouseDown(with: event(.leftMouseDown, points[0], in: view))
+        for point in points.dropFirst() { view.mouseDragged(with: event(.leftMouseDragged, point, in: view)) }
+        view.mouseUp(with: event(.leftMouseUp, points.last!, in: view))
+    }
+
+    @Test func penDragCreatesOneAnnotation() throws {
+        let controller = makeController(tool: .pen)
+        defer { controller.close() }
+        stroke(controller, through: [
+            CGPoint(x: 10, y: 10), CGPoint(x: 30, y: 25), CGPoint(x: 50, y: 20), CGPoint(x: 70, y: 60),
+        ])
+        let model = controller.canvasView.model
+        #expect(model.document.annotations.count == 1)
+        guard case .pen(let points) = model.document.annotations[0].shape else {
+            Issue.record("not a pen annotation")
+            return
+        }
+        #expect(points.count >= 3)
+        #expect(model.undoManager.undoActionName == "Draw")
+        model.undoManager.undo()
+        #expect(model.document.annotations.isEmpty)
+        #expect(!model.undoManager.canUndo)
+    }
+
+    @Test func highlighterDrag() {
+        let controller = makeController(tool: .highlighter)
+        defer { controller.close() }
+        stroke(controller, through: [CGPoint(x: 10, y: 10), CGPoint(x: 40, y: 30), CGPoint(x: 80, y: 30)])
+        let model = controller.canvasView.model
+        guard case .highlighter = model.document.annotations.first?.shape else {
+            Issue.record("not a highlighter annotation")
+            return
+        }
+        #expect(model.undoManager.undoActionName == "Highlight")
+    }
+
+    @Test func clickCreatesSinglePointDot() {
+        let controller = makeController(tool: .pen)
+        defer { controller.close() }
+        stroke(controller, through: [CGPoint(x: 30, y: 30)])
+        let model = controller.canvasView.model
+        #expect(model.document.annotations.count == 1)
+        #expect(model.document.annotations[0].shape == .pen(points: [CGPoint(x: 30, y: 30)]))
+    }
+}

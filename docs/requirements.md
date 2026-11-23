@@ -97,7 +97,7 @@ All annotations are vector objects, editable until export (flattened only on out
 | T-5 | Ellipse | Outline | U | 1 |
 | T-6 | Line | Straight segment | U | 1 |
 | T-7 | Freehand pen | Stroke smoothing | U | 1 |
-| T-8 | Highlighter | Semi-transparent multiply blend, flat tip; no darkening on self-overlap within one stroke | U | 1 |
+| T-8 | Highlighter | Semi-transparent multiply blend, round tip (as in Skitch); no darkening on self-overlap within one stroke | U | 1 |
 | T-9 | Crop | Handles; non-destructive (re-croppable); Enter applies, Esc cancels. Discards image pixels outside the crop rect. Existing annotations stay as objects; parts outside the crop are hidden until the annotation is edited, which extends the canvas per IMG-4 | U | 1 |
 | T-10 | Pixelate | Region; destructive in output; thickness slider sets block size | U | 1 |
 | T-11 | Blur | Alternative to pixelate; thickness slider sets radius | S | 2 |

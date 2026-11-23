@@ -157,6 +157,7 @@ private struct ThicknessPreview: View {
                 Circle()
                     .fill(style.color.swiftUIColor)
                     .overlay(Circle().strokeBorder(.black.opacity(0.25), lineWidth: 0.5))
+                    .opacity(tool == .highlighter ? HighlighterStyle.opacity : 1)
                     .frame(width: diameter, height: diameter)
             }
         }

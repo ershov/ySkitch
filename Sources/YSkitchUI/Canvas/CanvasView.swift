@@ -135,6 +135,10 @@ final class CanvasView: NSView {
             ShapeDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
         case .line, .arrow:
             LineDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
+        case .pen, .highlighter:
+            FreehandDrawingInteraction(
+                tool: tool, model: model, toolbar: toolbar,
+                magnification: { [weak self] in self?.enclosingScrollView?.magnification ?? 1 })
         default: nil
         }
         interaction = handler.map { (tool, $0) }

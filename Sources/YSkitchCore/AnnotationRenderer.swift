@@ -36,6 +36,13 @@ public enum AnnotationRenderer {
                 outlineWidth: OutlineStyle.whiteWidth(forLineWidth: style.thickness),
                 in: context)
             return
+        case .pen(let points):
+            path = StrokeSmoothing.path(points)
+            lineCap = .round
+            lineJoin = .round
+        case .highlighter(let points):
+            drawHighlighter(StrokeSmoothing.path(points), style: style, in: context)
+            return
         }
         OutlinedDrawing.stroke(
             path,
@@ -45,5 +52,18 @@ public enum AnnotationRenderer {
             lineJoin: lineJoin,
             in: context
         )
+    }
+
+    private static func drawHighlighter(_ path: CGPath, style: AnnotationStyle, in context: CGContext) {
+        context.setBlendMode(.multiply)
+        context.setAlpha(HighlighterStyle.opacity)
+        context.beginTransparencyLayer(auxiliaryInfo: nil)
+        context.setStrokeColor(style.color.cgColor)
+        context.setLineWidth(style.thickness)
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        context.addPath(path)
+        context.strokePath()
+        context.endTransparencyLayer()
     }
 }
