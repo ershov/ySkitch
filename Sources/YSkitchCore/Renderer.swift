@@ -9,9 +9,10 @@ public enum Renderer {
     /// Draws the background, base image and annotations `0..<count`.
     static func draw(_ document: Document, upTo count: Int, in context: CGContext) {
         context.saveGState()
+        defer { context.restoreGState() }
         context.setFillColor(CGColor(gray: 1, alpha: 1))
         context.fill(document.canvasRect)
-        context.restoreGState()
+        context.clip(to: document.canvasRect)
 
         if let base = document.base {
             let rect = document.imageRect
@@ -35,8 +36,9 @@ public enum Renderer {
 
     public static func flatten(_ document: Document) -> CGImage {
         let canvas = document.canvasRect
-        let width = max(1, Int(ceil(canvas.width * document.scale)))
-        let height = max(1, Int(ceil(canvas.height * document.scale)))
+        let tolerance = Document.pixelTolerance
+        let width = max(1, Int((canvas.width * document.scale - tolerance).rounded(.up)))
+        let height = max(1, Int((canvas.height * document.scale - tolerance).rounded(.up)))
         let context = CGContext(
             data: nil,
             width: width,

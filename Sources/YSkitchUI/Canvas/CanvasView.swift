@@ -10,12 +10,15 @@ final class CanvasView: NSView {
     private var isPanMode = false
     private var panLastLocation: NSPoint?
     private var interaction: (tool: Tool, handler: any CanvasInteraction)?
+    private var canvasOrigin: CGPoint
     private(set) lazy var textEditor = TextEditingController(canvas: self, model: model, toolbar: toolbar)
 
     init(model: DocumentModel, toolbar: ToolbarModel) {
         self.model = model
         self.toolbar = toolbar
+        canvasOrigin = model.document.canvasRect.origin
         super.init(frame: NSRect(origin: .zero, size: model.document.canvasRect.size))
+        clipsToBounds = true
         observeActiveTool()
         toolbar.onActiveToolChange = { [weak self] in self?.textEditor.commit() }
     }
@@ -49,8 +52,26 @@ final class CanvasView: NSView {
     }
 
     func documentDidChange() {
-        setFrameSize(model.document.canvasRect.size)
+        let canvas = model.document.canvasRect
+        let shift = CGPoint(x: canvasOrigin.x - canvas.minX, y: canvasOrigin.y - canvas.minY)
+        canvasOrigin = canvas.origin
+        setFrameSize(canvas.size)
+        if shift != .zero {
+            keepContentInPlace(shift: shift)
+            textEditor.canvasOriginDidChange()
+        }
         needsDisplay = true
+    }
+
+    /// Scrolls by `shift` so content stays put on screen when the canvas origin moves.
+    private func keepContentInPlace(shift: CGPoint) {
+        guard let scrollView = enclosingScrollView else { return }
+        let clipView = scrollView.contentView
+        var bounds = clipView.bounds
+        bounds.origin.x += shift.x
+        bounds.origin.y += shift.y
+        clipView.scroll(to: clipView.constrainBoundsRect(bounds).origin)
+        scrollView.reflectScrolledClipView(clipView)
     }
 
     /// Crisp pixels once an image pixel covers at least 2×2 device pixels.

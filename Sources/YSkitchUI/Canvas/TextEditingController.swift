@@ -54,6 +54,10 @@ final class TextEditingController: NSObject, NSTextViewDelegate {
         start(annotationID: annotationID, isNew: false, caretAt: point)
     }
 
+    func canvasOriginDidChange() {
+        layoutTextView()
+    }
+
     func commit() {
         guard let session else { return }
         self.session = nil

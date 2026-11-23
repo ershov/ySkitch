@@ -12,6 +12,8 @@ enum Pixelation {
             let offscreen = makeContext(width: widthPx, height: heightPx)
         else { return }
 
+        offscreen.setFillColor(CGColor(gray: 1, alpha: 1))
+        offscreen.fill(CGRect(x: 0, y: 0, width: widthPx, height: heightPx))
         offscreen.interpolationQuality = .high
         offscreen.translateBy(x: 0, y: CGFloat(heightPx))
         offscreen.scaleBy(x: scale, y: -scale)

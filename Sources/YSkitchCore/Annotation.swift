@@ -42,11 +42,22 @@ public struct Annotation: Identifiable, Codable, Equatable, Sendable {
     public var id: UUID
     public var style: AnnotationStyle
     public var shape: AnnotationShape
+    /// Whether the canvas grows to include the render bounds.
+    public var extendsCanvas: Bool
 
-    public init(id: UUID = UUID(), style: AnnotationStyle, shape: AnnotationShape) {
+    public init(id: UUID = UUID(), style: AnnotationStyle, shape: AnnotationShape, extendsCanvas: Bool = true) {
         self.id = id
         self.style = style
         self.shape = shape
+        self.extendsCanvas = extendsCanvas
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        style = try container.decode(AnnotationStyle.self, forKey: .style)
+        shape = try container.decode(AnnotationShape.self, forKey: .shape)
+        extendsCanvas = try container.decodeIfPresent(Bool.self, forKey: .extendsCanvas) ?? true
     }
 }
 

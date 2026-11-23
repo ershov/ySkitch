@@ -28,6 +28,7 @@ final class DocumentModel {
     func perform(_ actionName: String, _ change: (inout Document) -> Void) {
         var updated = document
         change(&updated)
+        updated.updateCanvas(allowShrink: true)
         guard updated != document else { return }
         registerUndo(previous: document, actionName: actionName)
         document = updated
@@ -40,19 +41,27 @@ final class DocumentModel {
 
     func updateGesture(_ change: (inout Document) -> Void) {
         precondition(gestureStart != nil, "No gesture in progress")
-        change(&document)
+        var updated = document
+        change(&updated)
+        updated.updateCanvas(allowShrink: false)
+        if updated != document { document = updated }
     }
 
     func endGesture(_ actionName: String) {
         guard let start = gestureStart else { preconditionFailure("No gesture in progress") }
         gestureStart = nil
+        var fitted = document
+        fitted.updateCanvas(allowShrink: true)
+        if fitted != document { document = fitted }
         if start != document { registerUndo(previous: start, actionName: actionName) }
     }
 
     func cancelGesture() {
         guard let start = gestureStart else { return }
         gestureStart = nil
-        document = start
+        var restored = start
+        restored.updateCanvas(allowShrink: true)
+        document = restored
     }
 
     private func registerUndo(previous: Document, actionName: String) {
