@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.1 · 2026-11-24
+Status: final v1.2 · 2026-11-24
 
 ## 1. Purpose
 
@@ -28,7 +28,7 @@ Out of scope (for now): screen capture, global hotkeys, menu-bar/background proc
 | IMG-1 | Retina-aware: a document has pixel size + scale factor (1×, 2×, …). Scale is taken from the source (clipboard `NSImage` rep size vs pixel size, PNG `pHYs`/DPI; macOS screenshots carry 144 DPI = 2×). Falls back to 1× when unknown | U | 1 |
 | IMG-2 | Annotation geometry, thickness and font sizes are in points; rendered at the document's scale so a 2× screenshot gets crisp 2× strokes | U | 1 |
 | IMG-3 | Always opaque, white background. Transparent/semi-transparent source pixels are composited onto white on import. Output never contains transparent pixels | U | 1 |
-| IMG-4 | Canvas = image rect (or crop rect) ∪ bounds of all annotations (incl. outline). Extends in any direction while drawing/dragging; new area is white. Shrinks only on mouse-up, never smaller than the image/crop rect | U | 1 |
+| IMG-4 | Canvas = image rect (or crop rect) ∪ bounds (incl. outline) of annotations that extend the canvas. An annotation extends the canvas once it is drawn or edited (moved, resized, restyled); cropping resets this for all existing annotations. Extends in any direction while drawing/dragging; area without image pixels is white. Shrinks only on mouse-up, never smaller than the image/crop rect. Annotation parts outside the canvas are not rendered | U | 1 |
 | IMG-5 | Export and clipboard output preserve scale: pixel data at native resolution, point size set so pasted images appear at the correct size in other apps | U | 1 |
 
 ## 5. Functional requirements
@@ -97,7 +97,7 @@ All annotations are vector objects, editable until export (flattened only on out
 | T-6 | Line | Straight segment | U | 1 |
 | T-7 | Freehand pen | Stroke smoothing | U | 1 |
 | T-8 | Highlighter | Semi-transparent multiply blend, flat tip; no darkening on self-overlap within one stroke | U | 1 |
-| T-9 | Crop | Handles; non-destructive (re-croppable); Enter applies, Esc cancels. Cuts off image pixels only; annotations stay editable and are never clipped — any annotation beyond the crop rect extends the canvas (white) per IMG-4 | U | 1 |
+| T-9 | Crop | Handles; non-destructive (re-croppable); Enter applies, Esc cancels. Discards image pixels outside the crop rect. Existing annotations stay as objects; parts outside the crop are hidden until the annotation is edited, which extends the canvas per IMG-4 | U | 1 |
 | T-10 | Pixelate | Region; destructive in output; thickness slider sets block size | U | 1 |
 | T-11 | Blur | Alternative to pixelate; thickness slider sets radius | S | 2 |
 | T-12 | Redact box | Solid opaque fill | S | 2 |
