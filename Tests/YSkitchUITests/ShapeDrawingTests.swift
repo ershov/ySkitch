@@ -104,3 +104,89 @@ struct ShapeDrawingTests {
         #expect(ellipse.canvasView.model.undoManager.undoActionName == "Draw Ellipse")
     }
 }
+
+@MainActor
+struct LineDrawingTests {
+    private func makeController(tool: Tool) -> DocumentWindowController {
+        let settings = ToolSettings(preferences: Preferences(store: InMemoryPreferencesStore()))
+        let controller = DocumentWindowController(
+            document: Document(blankSize: CGSize(width: 400, height: 300), scale: 1),
+            title: "Test", toolSettings: settings)
+        controller.canvasView.toolbar.activeTool = tool
+        return controller
+    }
+
+    private func event(
+        _ type: NSEvent.EventType, _ point: CGPoint, in view: NSView, flags: NSEvent.ModifierFlags = []
+    ) -> NSEvent {
+        NSEvent.mouseEvent(
+            with: type, location: view.convert(point, to: nil), modifierFlags: flags, timestamp: 0,
+            windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: 1,
+            pressure: 1)!
+    }
+
+    private func drag(
+        _ controller: DocumentWindowController, from a: CGPoint, to b: CGPoint,
+        flags: NSEvent.ModifierFlags = []
+    ) {
+        let view = controller.canvasView
+        view.mouseDown(with: event(.leftMouseDown, a, in: view, flags: flags))
+        view.mouseDragged(with: event(.leftMouseDragged, b, in: view, flags: flags))
+        view.mouseUp(with: event(.leftMouseUp, b, in: view, flags: flags))
+    }
+
+    private func shapes(_ controller: DocumentWindowController) -> [AnnotationShape] {
+        controller.canvasView.model.document.annotations.map(\.shape)
+    }
+
+    @Test func arrowDrag() {
+        let controller = makeController(tool: .arrow)
+        defer { controller.close() }
+        let a = CGPoint(x: 10, y: 20), b = CGPoint(x: 90, y: 60)
+        drag(controller, from: a, to: b)
+        #expect(shapes(controller) == [.arrow(tail: a, head: b)])
+        let model = controller.canvasView.model
+        #expect(model.undoManager.undoActionName == "Draw Arrow")
+        model.undoManager.undo()
+        #expect(model.document.annotations.isEmpty)
+        #expect(!model.undoManager.canUndo)
+    }
+
+    @Test func optionReversesArrow() {
+        let controller = makeController(tool: .arrow)
+        defer { controller.close() }
+        let a = CGPoint(x: 10, y: 20), b = CGPoint(x: 90, y: 60)
+        drag(controller, from: a, to: b, flags: .option)
+        #expect(shapes(controller) == [.arrow(tail: b, head: a)])
+    }
+
+    @Test func shiftSnapsHorizontal() {
+        let controller = makeController(tool: .line)
+        defer { controller.close() }
+        drag(controller, from: CGPoint(x: 10, y: 20), to: CGPoint(x: 100, y: 25), flags: .shift)
+        guard case .line(let start, let end) = shapes(controller).first else {
+            Issue.record("no line")
+            return
+        }
+        #expect(start == CGPoint(x: 10, y: 20))
+        #expect(end.y == 20)
+        #expect(end.x > 90)
+    }
+
+    @Test func lineDrag() {
+        let controller = makeController(tool: .line)
+        defer { controller.close() }
+        let a = CGPoint(x: 10, y: 20), b = CGPoint(x: 90, y: 60)
+        drag(controller, from: a, to: b)
+        #expect(shapes(controller) == [.line(start: a, end: b)])
+        #expect(controller.canvasView.model.undoManager.undoActionName == "Draw Line")
+    }
+
+    @Test func tinyDragCreatesNothing() {
+        let controller = makeController(tool: .arrow)
+        defer { controller.close() }
+        drag(controller, from: CGPoint(x: 10, y: 10), to: CGPoint(x: 11, y: 10))
+        #expect(shapes(controller).isEmpty)
+        #expect(!controller.canvasView.model.undoManager.canUndo)
+    }
+}

@@ -133,6 +133,8 @@ final class CanvasView: NSView {
         let handler: (any CanvasInteraction)? = switch tool {
         case .rectangle, .roundedRectangle, .ellipse:
             ShapeDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
+        case .line, .arrow:
+            LineDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
         default: nil
         }
         interaction = handler.map { (tool, $0) }
