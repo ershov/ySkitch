@@ -1,0 +1,9 @@
+.PLAN.md.bak
+.worktrees
+.claude/worktrees
+.tmp
+.scratch
+tmp
+.claude/scheduled_tasks.lock
+.PLAN.md.reject
+.claude/settings.local.json
