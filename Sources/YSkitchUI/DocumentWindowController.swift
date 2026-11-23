@@ -3,10 +3,10 @@ import UniformTypeIdentifiers
 import YSkitchCore
 
 @MainActor
-final class DocumentWindowController: NSWindowController, NSWindowDelegate {
+final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMenuItemValidation {
     static let chromeSize = CGSize(width: ToolbarView.width, height: StatusBarView.height)
 
-    let defaultFileName: String
+    private(set) var defaultFileName: String
     let model: DocumentModel
     let toolbar: ToolbarModel
     let scrollView: CanvasScrollView
@@ -96,6 +96,27 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate {
 
     @objc func copyImage(_ sender: Any?) { copyImage(to: .general) }
     @objc func copy(_ sender: Any?) { copyImage(sender) }
+
+    @discardableResult
+    func paste(from pasteboard: NSPasteboard) -> Bool {
+        guard let image = PasteboardImageReader.read(from: pasteboard) else { return false }
+        let sourceURL = PasteboardImageReader.imageFileURLs(in: pasteboard).first
+        model.perform("Paste Image") { $0 = Document(image: image) }
+        defaultFileName = DocumentNaming.title(sourceURL: sourceURL, date: .now)
+        window?.title = defaultFileName
+        savedURL = nil
+        scrollView.zoomToFit()
+        return true
+    }
+
+    @objc func paste(_ sender: Any?) {
+        if !paste(from: .general) { NSSound.beep() }
+    }
+
+    func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        if item.action == #selector(paste(_:)) { return PasteboardImageReader.containsImage(.general) }
+        return true
+    }
 
     func write(to url: URL) throws {
         try ImageExporter.pngData(model.document).write(to: url, options: .atomic)
