@@ -48,6 +48,9 @@ enum MainMenu {
         menu.addItem(item("New Blank", #selector(AppDelegate.newBlankDocument(_:)), "n", [.command, .shift]))
         menu.addItem(item("Open…", #selector(AppDelegate.openDocument(_:)), "o"))
         menu.addItem(.separator())
+        menu.addItem(item("Save", #selector(DocumentWindowController.saveDocument(_:)), "s"))
+        menu.addItem(item("Save As…", #selector(DocumentWindowController.saveDocumentAs(_:)), "s", [.command, .shift]))
+        menu.addItem(.separator())
         menu.addItem(item("Close", #selector(NSWindow.performClose(_:)), "w"))
         return menu
     }
@@ -59,6 +62,7 @@ enum MainMenu {
         menu.addItem(.separator())
         menu.addItem(item("Cut", #selector(NSText.cut(_:)), "x"))
         menu.addItem(item("Copy", #selector(NSText.copy(_:)), "c"))
+        menu.addItem(item("Copy Image", #selector(DocumentWindowController.copyImage(_:)), "c", [.command, .shift]))
         menu.addItem(item("Paste", #selector(NSText.paste(_:)), "v"))
         menu.addItem(item("Delete", #selector(NSText.delete(_:))))
         menu.addItem(item("Select All", #selector(NSText.selectAll(_:)), "a"))

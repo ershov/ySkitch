@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 import YSkitchCore
 
 @MainActor
@@ -9,6 +10,7 @@ final class DocumentWindowController: NSWindowController {
     let model: DocumentModel
     let scrollView: CanvasScrollView
     let canvasView: CanvasView
+    private(set) var savedURL: URL?
 
     init(document: Document, title: String) {
         defaultFileName = title
@@ -44,4 +46,53 @@ final class DocumentWindowController: NSWindowController {
     @objc func zoomOut(_ sender: Any?) { scrollView.zoomOut() }
     @objc func zoomToActualSize(_ sender: Any?) { scrollView.zoomToActualSize() }
     @objc func zoomToFit(_ sender: Any?) { scrollView.zoomToFit() }
+
+    func copyImage(to pasteboard: NSPasteboard) {
+        let document = model.document
+        let flattened = Renderer.flatten(document)
+        let bitmap = NSBitmapImageRep(cgImage: flattened)
+        bitmap.size = document.canvasRect.size
+        pasteboard.clearContents()
+        pasteboard.setData(ImageExporter.pngData(document), forType: .png)
+        if let tiff = bitmap.tiffRepresentation { pasteboard.setData(tiff, forType: .tiff) }
+    }
+
+    @objc func copyImage(_ sender: Any?) { copyImage(to: .general) }
+    @objc func copy(_ sender: Any?) { copyImage(sender) }
+
+    func write(to url: URL) throws {
+        try ImageExporter.pngData(model.document).write(to: url, options: .atomic)
+    }
+
+    @objc func saveDocument(_ sender: Any?) {
+        guard let savedURL else { return saveDocumentAs(sender) }
+        do { try write(to: savedURL) } catch { present(error) }
+    }
+
+    @objc func saveDocumentAs(_ sender: Any?) {
+        guard let window else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.nameFieldStringValue = defaultFileName
+        panel.directoryURL = Preferences.shared.lastSaveFolder
+            ?? FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
+        panel.beginSheetModal(for: window) { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                do {
+                    try self.write(to: url)
+                    self.savedURL = url
+                    Preferences.shared.lastSaveFolder = url.deletingLastPathComponent()
+                } catch {
+                    self.present(error)
+                }
+            }
+        }
+    }
+
+    private func present(_ error: Error) {
+        guard let window else { return }
+        NSAlert(error: error).beginSheetModal(for: window)
+    }
 }
