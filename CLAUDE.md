@@ -1,3 +1,55 @@
+## Project
+
+ySkitch — a macOS image annotation app in the spirit of Skitch: clipboard/file in → annotate → clipboard/PNG out.
+
+- Requirements (source of truth): `docs/requirements.md`. Update it when requirements change; reference requirement IDs (e.g. `T-1`, `KEY-3`) in tickets and commit messages, not in code.
+- Stack: Swift 6 (strict concurrency, modern dialect: `@MainActor`, `async`/`await`, `Observation`, value types), AppKit for app/windows/canvas, SwiftUI allowed for toolbar and settings. Minimum macOS 26.
+- Toolchain: Command Line Tools only — no Xcode, no `.xcodeproj`. Build with Swift Package Manager. Tests use Swift Testing (`import Testing`); XCTest is not available.
+
+### Layout
+
+- `Package.swift` — SwiftPM manifest.
+- `Sources/YSkitchCore/` — UI-independent logic (document model, geometry, rendering, import/export). Put everything testable here.
+- `Sources/YSkitch/` — app executable: AppKit app delegate, windows, views, menus.
+- `Tests/YSkitchCoreTests/` — Swift Testing tests for `YSkitchCore`.
+- `Resources/Info.plist` — app bundle plist, copied by `build.sh` (version fields filled in at build time).
+- `VERSION` — semantic version, single line (e.g. `0.1.0`).
+- `build/` — build output (`build/ySkitch.app`), git-ignored.
+
+### Commands
+
+- `./build.sh` — release build, assembles and ad-hoc signs `build/ySkitch.app`.
+- `./test.sh` — runs all tests; extra args go to `swift test` (e.g. `./test.sh --filter GeometryTests`).
+- Run the app: `open build/ySkitch.app`.
+- `./version.sh [version|build|tag|full|json]` — version from `VERSION`, build number = commit count.
+
+### Versioning
+
+- Version lives only in `VERSION`; build number is derived (`git rev-list --count HEAD`), never stored.
+- Release: bump `VERSION`, commit, then `git tag -a "$(./version.sh tag)" -m "Release $(./version.sh version)"`.
+- Tags are `vMAJOR.MINOR.PATCH`. Only commit, tag or bump the version when the user asks.
+
+### Rules
+
+- Do not download or install anything (packages, tools, SDKs, fonts, assets). If absolutely required, ask the user first.
+- No third-party dependencies. Only Apple frameworks.
+- No asset catalogs (need Xcode's `actool`). Icons: SF Symbols or drawn in code.
+- Run `./test.sh` and `./build.sh` before declaring work done; both must pass without errors.
+- UI: before implementing or changing any UI, get the user's confirmation of the sketch (see `docs/requirements.md` §6.1).
+- No Settings UI. Use sensible defaults and remember last-used values (`docs/requirements.md` §7).
+- New logic in `YSkitchCore` comes with tests.
+- Follow the writing style below.
+- Temporary files go in `./.tmp/`.
+- Never post anything to external services (GitHub, Jira, etc.).
+
+### Writing style
+
+Applies to all text: code comments, doc comments, commit messages, PR descriptions, docs.
+
+- Concise, straight to the point, structured (lists, short sections).
+- No narrative, no restating what the code does, no editing history ("changed X to Y", "now uses…").
+- Code comments only where the code isn't self-explanatory; explain why, not what.
+- Code comments never reference ticket or requirement numbers. Commit messages and PR descriptions may.
 
 ## Task tracking
 
@@ -10,7 +62,7 @@ Load skills:
 
 ### When to apply
 
-Apply the skill whevener any planning or task tracking is needed.
+Apply the skill whenever any planning or task tracking is needed.
 
 Don't create plan tickets while still brainstorming/discussing — wait until actual design or implementation work begins.
 If unsure whether the user is past brainstorming, ask before creating tickets.
