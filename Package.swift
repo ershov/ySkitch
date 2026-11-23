@@ -9,8 +9,10 @@ let package = Package(
     ],
     targets: [
         .target(name: "YSkitchCore"),
-        .executableTarget(name: "YSkitch", dependencies: ["YSkitchCore"]),
+        .target(name: "YSkitchUI", dependencies: ["YSkitchCore"]),
+        .executableTarget(name: "YSkitch", dependencies: ["YSkitchUI"]),
         .testTarget(name: "YSkitchCoreTests", dependencies: ["YSkitchCore"]),
+        .testTarget(name: "YSkitchUITests", dependencies: ["YSkitchUI"]),
     ],
     swiftLanguageModes: [.v6]
 )

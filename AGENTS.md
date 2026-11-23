@@ -10,8 +10,10 @@ ySkitch — a macOS image annotation app in the spirit of Skitch: clipboard/file
 
 - `Package.swift` — SwiftPM manifest.
 - `Sources/YSkitchCore/` — UI-independent logic (document model, geometry, rendering, import/export). Put everything testable here.
-- `Sources/YSkitch/` — app executable: AppKit app delegate, windows, views, menus.
+- `Sources/YSkitchUI/` — app/UI code (AppKit): app delegate, windows, views, menus. Depends on `YSkitchCore`.
+- `Sources/YSkitch/` — thin executable entry point (`YSkitchApp.run()`).
 - `Tests/YSkitchCoreTests/` — Swift Testing tests for `YSkitchCore`.
+- `Tests/YSkitchUITests/` — Swift Testing tests for `YSkitchUI`.
 - `Resources/Info.plist` — app bundle plist, copied by `build.sh` (version fields filled in at build time).
 - `VERSION` — semantic version, single line (e.g. `0.1.0`).
 - `build/` — build output (`build/ySkitch.app`), git-ignored.
