@@ -82,3 +82,76 @@ struct CanvasTests {
         #expect(CanvasView.interpolation(magnification: 2, backingScale: 2, documentScale: 2) == .none)
     }
 }
+
+@MainActor
+struct SpacePanTests {
+    private func makeController() -> DocumentWindowController {
+        let settings = ToolSettings(preferences: Preferences(store: InMemoryPreferencesStore()))
+        let controller = DocumentWindowController(
+            document: Document(blankSize: CGSize(width: 4000, height: 3000), scale: 1),
+            title: "Test", toolSettings: settings)
+        controller.zoomToActualSize(nil)
+        controller.canvasView.toolbar.activeTool = .rectangle
+        return controller
+    }
+
+    private func mouse(_ type: NSEvent.EventType, _ point: CGPoint, in view: NSView) -> NSEvent {
+        NSEvent.mouseEvent(
+            with: type, location: point, modifierFlags: [], timestamp: 0,
+            windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: 1,
+            pressure: 1)!
+    }
+
+    private func space(_ type: NSEvent.EventType, in view: NSView) -> NSEvent {
+        NSEvent.keyEvent(
+            with: type, location: .zero, modifierFlags: [], timestamp: 0,
+            windowNumber: view.window?.windowNumber ?? 0, context: nil, characters: " ",
+            charactersIgnoringModifiers: " ", isARepeat: false, keyCode: 49)!
+    }
+
+    @Test func spaceMovesPanWithoutClick() {
+        let controller = makeController()
+        defer { controller.close() }
+        let view = controller.canvasView
+        let clip = controller.scrollView.contentView
+        view.keyDown(with: space(.keyDown, in: view))
+        // The first move may set the baseline when the window has no usable pointer location.
+        view.mouseMoved(with: mouse(.mouseMoved, CGPoint(x: 100, y: 100), in: view))
+        let start = clip.bounds.origin
+        view.mouseMoved(with: mouse(.mouseMoved, CGPoint(x: 90, y: 130), in: view))
+        let magnification = controller.scrollView.magnification
+        #expect(clip.bounds.origin.x == start.x + 10 / magnification)
+        #expect(clip.bounds.origin.y == start.y + 30 / magnification)
+
+        view.keyUp(with: space(.keyUp, in: view))
+        let end = clip.bounds.origin
+        view.mouseMoved(with: mouse(.mouseMoved, CGPoint(x: 10, y: 10), in: view))
+        #expect(clip.bounds.origin == end)
+    }
+
+    @Test func mouseEventsDuringPanDoNotDraw() {
+        let controller = makeController()
+        defer { controller.close() }
+        let view = controller.canvasView
+        view.keyDown(with: space(.keyDown, in: view))
+        view.mouseDown(with: mouse(.leftMouseDown, CGPoint(x: 100, y: 100), in: view))
+        view.mouseDragged(with: mouse(.leftMouseDragged, CGPoint(x: 160, y: 140), in: view))
+        view.mouseUp(with: mouse(.leftMouseUp, CGPoint(x: 160, y: 140), in: view))
+        #expect(view.model.document.annotations.isEmpty)
+    }
+
+    @Test func spaceDuringDrawingIsIgnored() {
+        let controller = makeController()
+        defer { controller.close() }
+        let view = controller.canvasView
+        let clip = controller.scrollView.contentView
+        view.mouseDown(with: mouse(.leftMouseDown, CGPoint(x: 100, y: 100), in: view))
+        view.keyDown(with: space(.keyDown, in: view))
+        let start = clip.bounds.origin
+        view.mouseMoved(with: mouse(.mouseMoved, CGPoint(x: 120, y: 120), in: view))
+        #expect(clip.bounds.origin == start)
+        view.mouseDragged(with: mouse(.leftMouseDragged, CGPoint(x: 160, y: 140), in: view))
+        view.mouseUp(with: mouse(.leftMouseUp, CGPoint(x: 160, y: 140), in: view))
+        #expect(view.model.document.annotations.count == 1)
+    }
+}

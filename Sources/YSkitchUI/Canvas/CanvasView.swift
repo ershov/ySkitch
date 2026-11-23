@@ -9,6 +9,7 @@ final class CanvasView: NSView {
 
     private var isPanMode = false
     private var panLastLocation: NSPoint?
+    private var previousAcceptsMouseMoved = false
     private var interaction: (tool: Tool, handler: any CanvasInteraction)?
     private var canvasOrigin: CGPoint
     private(set) lazy var textEditor = TextEditingController(canvas: self, model: model, toolbar: toolbar)
@@ -104,7 +105,9 @@ final class CanvasView: NSView {
             return
         }
         if event.keyCode == Self.spaceKeyCode {
-            if !event.isARepeat { beginPanMode() }
+            if !event.isARepeat, event.modifierFlags.isDisjoint(with: [.command, .control, .option]) {
+                beginPanMode()
+            }
             return
         }
         if event.modifierFlags.isDisjoint(with: [.command, .control, .option]),
@@ -125,11 +128,22 @@ final class CanvasView: NSView {
         return super.resignFirstResponder()
     }
 
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        NotificationCenter.default.removeObserver(self, name: NSWindow.didResignKeyNotification, object: nil)
+        guard let window else { return }
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(windowDidResignKey), name: NSWindow.didResignKeyNotification, object: window)
+    }
+
+    @objc private func windowDidResignKey(_ notification: Notification) {
+        endPanMode()
+    }
+
     override func mouseDown(with event: NSEvent) {
+        if isPanMode { return }
         if textEditor.isEditing { return textEditor.commit() }
-        guard isPanMode else { return currentInteraction?.mouseDown(at: documentPoint(event), event: event) ?? () }
-        panLastLocation = event.locationInWindow
-        updatePanCursor()
+        currentInteraction?.mouseDown(at: documentPoint(event), event: event)
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -137,10 +151,14 @@ final class CanvasView: NSView {
         panDrag(to: event.locationInWindow)
     }
 
+    override func mouseMoved(with event: NSEvent) {
+        guard isPanMode else { return super.mouseMoved(with: event) }
+        panDrag(to: event.locationInWindow)
+    }
+
     override func mouseUp(with event: NSEvent) {
-        guard isPanMode else { return currentInteraction?.mouseUp(at: documentPoint(event), event: event) ?? () }
-        panLastLocation = nil
-        updatePanCursor()
+        if isPanMode { return }
+        currentInteraction?.mouseUp(at: documentPoint(event), event: event)
     }
 
     override func flagsChanged(with event: NSEvent) {
@@ -187,19 +205,19 @@ final class CanvasView: NSView {
         return handler
     }
 
-    // MARK: - Space+drag panning
+    // MARK: - Space panning
 
     private static let spaceKeyCode: UInt16 = 49
     private static let escapeKeyCode: UInt16 = 53
 
-    private var panCursor: NSCursor? {
-        guard isPanMode else { return nil }
-        return panLastLocation == nil ? .openHand : .closedHand
-    }
+    private var panCursor: NSCursor? { isPanMode ? .closedHand : nil }
 
     private func beginPanMode() {
-        guard !isPanMode else { return }
+        guard !isPanMode, !model.isInGesture else { return }
         isPanMode = true
+        panLastLocation = window?.mouseLocationOutsideOfEventStream
+        previousAcceptsMouseMoved = window?.acceptsMouseMovedEvents ?? false
+        window?.acceptsMouseMovedEvents = true
         updatePanCursor()
     }
 
@@ -207,6 +225,7 @@ final class CanvasView: NSView {
         guard isPanMode else { return }
         isPanMode = false
         panLastLocation = nil
+        window?.acceptsMouseMovedEvents = previousAcceptsMouseMoved
         updatePanCursor()
     }
 
@@ -217,7 +236,9 @@ final class CanvasView: NSView {
 
     /// `location` is in window coordinates (y up); the clip view is flipped like this view.
     private func panDrag(to location: NSPoint) {
-        guard let last = panLastLocation, let clipView = enclosingScrollView?.contentView else { return }
+        NSCursor.closedHand.set()
+        guard let last = panLastLocation else { panLastLocation = location; return }
+        guard let clipView = enclosingScrollView?.contentView else { return }
         panLastLocation = location
         let magnification = enclosingScrollView?.magnification ?? 1
         var bounds = clipView.bounds
