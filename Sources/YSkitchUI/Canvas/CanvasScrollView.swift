@@ -16,6 +16,7 @@ final class CanvasScrollView: NSScrollView {
         hasVerticalScroller = true
         hasHorizontalScroller = true
         autohidesScrollers = true
+        usesPredominantAxisScrolling = false
         backgroundColor = CanvasStyle.surroundColor
         drawsBackground = true
         registerForDraggedTypes([.fileURL, .png, .tiff])
@@ -45,8 +46,19 @@ final class CanvasScrollView: NSScrollView {
         return NSPoint(x: bounds.midX, y: bounds.midY)
     }
 
+    private var fitViewportSize: NSSize {
+        NSScrollView.contentSize(
+            forFrameSize: frame.size,
+            horizontalScrollerClass: nil,
+            verticalScrollerClass: nil,
+            borderType: borderType,
+            controlSize: .regular,
+            scrollerStyle: scrollerStyle
+        )
+    }
+
     private var fitMagnification: CGFloat {
-        Zoom.fit(content: documentView?.frame.size ?? .zero, viewport: contentView.frame.size)
+        Zoom.fit(content: documentView?.frame.size ?? .zero, viewport: fitViewportSize)
     }
 
     override func smartMagnify(with event: NSEvent) {
@@ -78,6 +90,7 @@ final class CanvasScrollView: NSScrollView {
 
     func zoomToFit() {
         magnification = fitMagnification
+        tile()
         guard let documentFrame = documentView?.frame else { return }
         var bounds = contentView.bounds
         bounds.origin = NSPoint(

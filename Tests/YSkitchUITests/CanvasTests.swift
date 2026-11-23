@@ -52,6 +52,24 @@ struct CanvasTests {
         #expect(reported.last == 0.75)
     }
 
+    @Test func scrollingIsNotRestrictedToPredominantAxis() {
+        #expect(CanvasScrollView(frame: .zero).usesPredominantAxisScrolling == false)
+    }
+
+    @Test func zoomToFitWithLegacyScrollers() {
+        let scrollView = CanvasScrollView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+        scrollView.scrollerStyle = .legacy
+        scrollView.documentView = NSView(frame: NSRect(x: 0, y: 0, width: 2000, height: 1000))
+        scrollView.zoomToFit()
+
+        let expected = min(scrollView.frame.width / 2000, scrollView.frame.height / 1000)
+        #expect(abs(scrollView.magnification - expected) < 0.001)
+
+        let clipBounds = scrollView.contentView.bounds
+        #expect(abs(clipBounds.midX - 1000) < 1)
+        #expect(abs(clipBounds.midY - 500) < 1)
+    }
+
     @Test func interpolation() {
         #expect(CanvasView.interpolation(magnification: 1, backingScale: 2, documentScale: 1) == .none)
         #expect(CanvasView.interpolation(magnification: 1, backingScale: 2, documentScale: 2) == .high)
