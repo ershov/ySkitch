@@ -60,10 +60,11 @@ enum MainMenu {
         menu.addItem(item("Undo", #selector(UndoActions.undo(_:)), "z"))
         menu.addItem(item("Redo", #selector(UndoActions.redo(_:)), "z", [.command, .shift]))
         menu.addItem(.separator())
-        menu.addItem(item("Cut", #selector(NSText.cut(_:)), "x"))
+        menu.addItem(item("Cut", #selector(DocumentWindowController.cut(_:)), "x"))
         menu.addItem(item("Copy", #selector(NSText.copy(_:)), "c"))
         menu.addItem(item("Copy Image", #selector(DocumentWindowController.copyImage(_:)), "c", [.command, .shift]))
         menu.addItem(item("Paste", #selector(NSText.paste(_:)), "v"))
+        menu.addItem(item("Duplicate", #selector(DocumentWindowController.duplicate(_:)), "d"))
         menu.addItem(item("Delete", #selector(NSText.delete(_:))))
         menu.addItem(item("Select All", #selector(NSText.selectAll(_:)), "a"))
         return menu

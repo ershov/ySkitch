@@ -2,6 +2,19 @@ import AppKit
 import UniformTypeIdentifiers
 import YSkitchCore
 
+extension NSPasteboard.PasteboardType {
+    static let annotations = NSPasteboard.PasteboardType("dev.yskitch.annotations")
+}
+
+extension Annotation {
+    fileprivate func withNewID() -> Annotation {
+        var copy = self
+        copy.id = UUID()
+        copy.extendsCanvas = true
+        return copy
+    }
+}
+
 @MainActor
 final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMenuItemValidation {
     static let chromeSize = CGSize(width: ToolbarView.width, height: StatusBarView.height)
@@ -102,10 +115,58 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     }
 
     @objc func copyImage(_ sender: Any?) { copyImage(to: .general) }
-    @objc func copy(_ sender: Any?) { copyImage(sender) }
+
+    func copy(to pasteboard: NSPasteboard) {
+        let selected = selection.selectedAnnotations
+        let ids = Set(selected.map(\.id))
+        let ordered = model.document.annotations.filter { ids.contains($0.id) }
+        guard !ordered.isEmpty, let data = try? JSONEncoder().encode(ordered) else {
+            return copyImage(to: pasteboard)
+        }
+        pasteboard.clearContents()
+        pasteboard.setData(data, forType: .annotations)
+    }
+
+    @objc func copy(_ sender: Any?) { copy(to: .general) }
+
+    func cut(to pasteboard: NSPasteboard) {
+        guard !selection.isEmpty else { return }
+        copy(to: pasteboard)
+        selection.deleteSelected(actionName: "Cut")
+    }
+
+    @objc func cut(_ sender: Any?) { cut(to: .general) }
+
+    @objc func duplicate(_ sender: Any?) {
+        let copies = selection.selectedAnnotations.map { $0.translated(by: Self.pasteOffset).withNewID() }
+        insert(copies, actionName: "Duplicate")
+    }
+
+    private static let pasteOffset = CGVector(dx: 10, dy: 10)
+
+    private func insert(_ annotations: [Annotation], actionName: String) {
+        guard !annotations.isEmpty else { return }
+        model.perform(actionName) { $0.annotations.append(contentsOf: annotations) }
+        toolbar.activeTool = .select
+        selection.select(annotations.map(\.id))
+    }
+
+    private func pasteAnnotations(_ data: Data) -> Bool {
+        guard var pasted = try? JSONDecoder().decode([Annotation].self, from: data), !pasted.isEmpty else {
+            return false
+        }
+        pasted = pasted.map { $0.withNewID() }
+        let existing = model.document.annotations.map(\.shape)
+        while pasted.contains(where: { existing.contains($0.shape) }) {
+            pasted = pasted.map { $0.translated(by: Self.pasteOffset) }
+        }
+        insert(pasted, actionName: "Paste")
+        return true
+    }
 
     @discardableResult
     func paste(from pasteboard: NSPasteboard) -> Bool {
+        if let data = pasteboard.data(forType: .annotations), pasteAnnotations(data) { return true }
         guard let image = PasteboardImageReader.read(from: pasteboard) else { return false }
         let sourceURL = PasteboardImageReader.imageFileURLs(in: pasteboard).first
         model.perform("Paste Image") { $0 = Document(image: image) }
@@ -130,8 +191,11 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
 
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
-        case #selector(paste(_:)): PasteboardImageReader.containsImage(.general)
-        case #selector(delete(_:)): !selection.isEmpty && !model.isInGesture
+        case #selector(paste(_:)):
+            NSPasteboard.general.availableType(from: [.annotations]) != nil
+                || PasteboardImageReader.containsImage(.general)
+        case #selector(cut(_:)), #selector(duplicate(_:)), #selector(delete(_:)):
+            !selection.isEmpty && !model.isInGesture
         case #selector(selectAll(_:)): !model.document.annotations.isEmpty && !model.isInGesture
         default: true
         }

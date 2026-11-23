@@ -62,10 +62,10 @@ final class SelectionModel {
 
     // MARK: - Editing
 
-    func deleteSelected() {
+    func deleteSelected(actionName: String = "Delete") {
         let ids = Set(selectedIDs)
         guard !ids.isEmpty else { return }
-        model.perform("Delete") { $0.annotations.removeAll { ids.contains($0.id) } }
+        model.perform(actionName) { $0.annotations.removeAll { ids.contains($0.id) } }
     }
 
     func setColor(_ color: RGBAColor) {
