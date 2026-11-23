@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.0 · 2026-11-24
+Status: final v1.1 · 2026-11-24
 
 ## 1. Purpose
 
@@ -28,7 +28,7 @@ Out of scope (for now): screen capture, global hotkeys, menu-bar/background proc
 | IMG-1 | Retina-aware: a document has pixel size + scale factor (1×, 2×, …). Scale is taken from the source (clipboard `NSImage` rep size vs pixel size, PNG `pHYs`/DPI; macOS screenshots carry 144 DPI = 2×). Falls back to 1× when unknown | U | 1 |
 | IMG-2 | Annotation geometry, thickness and font sizes are in points; rendered at the document's scale so a 2× screenshot gets crisp 2× strokes | U | 1 |
 | IMG-3 | Always opaque, white background. Transparent/semi-transparent source pixels are composited onto white on import. Output never contains transparent pixels | U | 1 |
-| IMG-4 | Canvas auto-extends in any direction (left/top/right/bottom) when an object goes beyond the current bounds; new area is white. Shrinks back when objects move inside again (never smaller than the image/crop) | U | 1 |
+| IMG-4 | Canvas = image rect (or crop rect) ∪ bounds of all annotations (incl. outline). Extends in any direction while drawing/dragging; new area is white. Shrinks only on mouse-up, never smaller than the image/crop rect | U | 1 |
 | IMG-5 | Export and clipboard output preserve scale: pixel data at native resolution, point size set so pasted images appear at the correct size in other apps | U | 1 |
 
 ## 5. Functional requirements
@@ -90,13 +90,14 @@ All annotations are vector objects, editable until export (flattened only on out
 |---|---|---|---|---|
 | T-1 | Arrow | Skitch-style tapered arrow; head scales with thickness | U | 1 |
 | T-2 | Text | Multiline; editable after creation; thickness slider sets font size | U | 1 |
-| T-3 | Rectangle | Outline; optional fill | U | 1 |
+| T-3 | Rectangle | Outline | U | 1 |
+| T-3a | Fill for rectangle, rounded rectangle, ellipse (needs sketch update) | S | 2 |
 | T-4 | Rounded rectangle | Radius scales with thickness | U | 1 |
-| T-5 | Ellipse | Outline; optional fill | U | 1 |
+| T-5 | Ellipse | Outline | U | 1 |
 | T-6 | Line | Straight segment | U | 1 |
 | T-7 | Freehand pen | Stroke smoothing | U | 1 |
 | T-8 | Highlighter | Semi-transparent multiply blend, flat tip; no darkening on self-overlap within one stroke | U | 1 |
-| T-9 | Crop | Handles; non-destructive (re-croppable); Enter applies, Esc cancels | U | 1 |
+| T-9 | Crop | Handles; non-destructive (re-croppable); Enter applies, Esc cancels. Cuts off image pixels only; annotations stay editable and are never clipped — any annotation beyond the crop rect extends the canvas (white) per IMG-4 | U | 1 |
 | T-10 | Pixelate | Region; destructive in output; thickness slider sets block size | U | 1 |
 | T-11 | Blur | Alternative to pixelate; thickness slider sets radius | S | 2 |
 | T-12 | Redact box | Solid opaque fill | S | 2 |
@@ -111,7 +112,7 @@ All annotations are vector objects, editable until export (flattened only on out
 
 | ID | Req | Src | Stage |
 |---|---|---|---|
-| ST-1 | **Double outline (key feature):** every drawn object (arrows, shapes, lines, pen, text, markers, stamps, callouts) is rendered with an inner white outline and an outer soft dark-grey/black shadow-like outline, so it is visible on any background. Not applied to highlighter, pixelate, blur, redact, crop | U | 1 |
+| ST-1 | **Double outline (key feature):** every drawn object (arrows, shapes, lines, pen, text, markers, stamps, callouts) is rendered with an inner white outline and an outer soft dark halo (omnidirectional shadow: zero offset, ~2 pt blur, ~50% black), so it is visible on any background. Not applied to highlighter, pixelate, blur, redact, crop | U | 1 |
 | ST-2 | Fixed Skitch palette (§6.3), always visible, one click | U | 1 |
 | ST-3 | Custom color picker (system color panel) | S | 2 |
 | ST-3a | Remember recent custom colors | U | 3 |
