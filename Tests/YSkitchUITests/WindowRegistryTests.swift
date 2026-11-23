@@ -8,7 +8,7 @@ import YSkitchCore
 @MainActor
 struct WindowRegistryTests {
     @Test func registersAndUnregistersWindows() throws {
-        let registry = WindowRegistry()
+        let registry = WindowRegistry(toolSettings: .inMemory())
         let first = registry.openBlank()
         let second = registry.openBlank()
         #expect(registry.controllers.count == 2)
@@ -19,6 +19,20 @@ struct WindowRegistryTests {
 
         try #require(second.window).close()
         #expect(registry.controllers.isEmpty)
+    }
+
+    @Test func windowsUseInjectedToolSettings() throws {
+        let settings = ToolSettings.inMemory()
+        let registry = WindowRegistry(toolSettings: settings)
+        let controller = registry.openBlank()
+        #expect(controller.toolbar.settings === settings)
+        controller.toolbar.activeTool = .ellipse
+        #expect(settings.preferences.lastTool == .ellipse)
+
+        try #require(controller.window).close()
+        let reopened = try #require(registry.reopenLastClosed())
+        defer { reopened.close() }
+        #expect(reopened.toolbar.settings === settings)
     }
 
     private func pngData(dpi: Double) -> Data {
@@ -47,7 +61,7 @@ struct WindowRegistryTests {
     }
 
     @Test func openFromPasteboardWithImage() throws {
-        let registry = WindowRegistry()
+        let registry = WindowRegistry(toolSettings: .inMemory())
         let pasteboard = makePasteboard()
         defer { pasteboard.releaseGlobally() }
         pasteboard.clearContents()
@@ -62,7 +76,7 @@ struct WindowRegistryTests {
     }
 
     @Test func openFromEmptyPasteboardIsBlank() throws {
-        let registry = WindowRegistry()
+        let registry = WindowRegistry(toolSettings: .inMemory())
         let pasteboard = makePasteboard()
         defer { pasteboard.releaseGlobally() }
         pasteboard.clearContents()
@@ -80,7 +94,7 @@ struct WindowRegistryTests {
         let url = directory.appending(path: "My Shot.png")
         try pngData(dpi: 72).write(to: url)
 
-        let registry = WindowRegistry()
+        let registry = WindowRegistry(toolSettings: .inMemory())
         let controller = try registry.open(url: url)
         defer { controller.close() }
         #expect(controller.window?.title == "My Shot")
@@ -92,7 +106,7 @@ struct WindowRegistryTests {
         let url = directory.appending(path: "notes.txt")
         try Data("hello".utf8).write(to: url)
 
-        let registry = WindowRegistry()
+        let registry = WindowRegistry(toolSettings: .inMemory())
         #expect(throws: (any Error).self) { try registry.open(url: url) }
         #expect(registry.controllers.isEmpty)
     }

@@ -198,4 +198,29 @@ struct CropToolTests {
         controller.toolbar.activeTool = .crop
         #expect(settings.preferences.lastTool == .arrow)
     }
+
+    @Test func dragHandleDisabledWhileCropping() throws {
+        let controller = makeController(scale: 2)
+        defer { controller.close() }
+        let handle = controller.statusBar.dragHandle
+        #expect(handle.isEnabled)
+        #expect(handle.imageProvider?() != nil)
+
+        controller.toolbar.activeTool = .crop
+        #expect(!handle.isEnabled)
+        #expect(handle.imageProvider?() == nil)
+        drag(controller, from: CGPoint(x: 10, y: 20), to: CGPoint(x: 110, y: 80))
+        try pressReturn(controller)
+
+        #expect(handle.isEnabled)
+        let payload = try #require(handle.imageProvider?())
+        let image = try ImageImporter.load(data: payload.png)
+        #expect(image.cgImage.width == 200)
+        #expect(image.cgImage.height == 120)
+
+        controller.toolbar.activeTool = .crop
+        #expect(!handle.isEnabled)
+        try key(controller, "\u{1b}", keyCode: 53)
+        #expect(handle.isEnabled)
+    }
 }

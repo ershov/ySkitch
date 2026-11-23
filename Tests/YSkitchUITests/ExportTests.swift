@@ -8,7 +8,8 @@ import YSkitchCore
 struct ExportTests {
     private func makeController(scale: CGFloat) -> DocumentWindowController {
         DocumentWindowController(
-            document: Document(blankSize: CGSize(width: 50, height: 30), scale: scale), title: "Test")
+            document: Document(blankSize: CGSize(width: 50, height: 30), scale: scale), title: "Test",
+            toolSettings: .inMemory())
     }
 
     @Test func copyImageWritesPNGAndTIFF() throws {

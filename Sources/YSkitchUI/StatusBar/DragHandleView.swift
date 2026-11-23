@@ -7,7 +7,14 @@ final class DragHandleView: NSView, NSDraggingSource {
     static let size = NSSize(width: 80, height: 20)
     private static let maxThumbnailSide: CGFloat = 128
 
-    var imageProvider: (() -> Payload)?
+    /// Returns nil when there is nothing to drag.
+    var imageProvider: (() -> Payload?)?
+
+    var isEnabled = true {
+        didSet { alphaValue = isEnabled ? 1 : Self.disabledAlpha }
+    }
+
+    private static let disabledAlpha: CGFloat = 0.4
 
     private var mouseDownPoint: NSPoint?
     private var didDrag = false
@@ -58,7 +65,7 @@ final class DragHandleView: NSView, NSDraggingSource {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard !didDrag, mouseDownPoint != nil, let payload = imageProvider?() else { return }
+        guard isEnabled, !didDrag, mouseDownPoint != nil, let payload = imageProvider?() else { return }
         didDrag = true
         guard let item = try? Self.makePasteboardItem(png: payload.png, fileName: payload.fileName) else { return }
 

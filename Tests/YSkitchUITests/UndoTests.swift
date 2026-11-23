@@ -93,7 +93,8 @@ struct UndoTests {
 
     @Test func windowReturnsModelUndoManager() throws {
         let controller = DocumentWindowController(
-            document: Document(blankSize: CGSize(width: 10, height: 10), scale: 1), title: "t")
+            document: Document(blankSize: CGSize(width: 10, height: 10), scale: 1), title: "t",
+            toolSettings: .inMemory())
         let window = try #require(controller.window)
         #expect(window.undoManager === controller.model.undoManager)
         window.close()

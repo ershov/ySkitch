@@ -28,11 +28,11 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     let statusBar = StatusBarView()
     private(set) var savedURL: URL?
 
-    convenience init(document: Document, title: String, toolSettings: ToolSettings = .shared) {
+    convenience init(document: Document, title: String, toolSettings: ToolSettings) {
         self.init(model: DocumentModel(document: document), title: title, savedURL: nil, toolSettings: toolSettings)
     }
 
-    init(model: DocumentModel, title: String, savedURL: URL?, toolSettings: ToolSettings = .shared) {
+    init(model: DocumentModel, title: String, savedURL: URL?, toolSettings: ToolSettings) {
         defaultFileName = title
         self.savedURL = savedURL
         self.model = model
@@ -75,10 +75,8 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         statusBar.onZoomOut = { [weak scrollView] in scrollView?.zoomOut() }
         statusBar.onZoomIn = { [weak scrollView] in scrollView?.zoomIn() }
         scrollView.onMagnificationChange = { [weak statusBar] in statusBar?.update(magnification: $0) }
-        statusBar.dragHandle.imageProvider = { [weak self] in
-            guard let self else { return (Data(), "image", NSImage()) }
-            return dragPayload()
-        }
+        statusBar.dragHandle.imageProvider = { [weak self] in self?.dragPayload() }
+        canvasView.onCropSessionChange = { [weak statusBar] in statusBar?.dragHandle.isEnabled = !$0 }
         updateStatusSize()
         scrollView.zoomToFit()
         statusBar.update(magnification: scrollView.magnification)
@@ -88,13 +86,16 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         statusBar.update(canvasSize: model.document.canvasRect.size, scale: model.document.scale)
     }
 
-    private func dragPayload() -> DragHandleView.Payload {
+    /// Nil during a crop session: the document is uncropped until the session ends.
+    private func dragPayload() -> DragHandleView.Payload? {
+        guard !canvasView.isCropping else { return nil }
         let document = model.document
-        let bitmap = NSBitmapImageRep(cgImage: Renderer.flatten(document))
+        let flattened = Renderer.flatten(document)
+        let bitmap = NSBitmapImageRep(cgImage: flattened)
+        bitmap.size = document.canvasRect.size
         let thumbnail = NSImage(size: document.canvasRect.size)
         thumbnail.addRepresentation(bitmap)
-        bitmap.size = document.canvasRect.size
-        return (ImageExporter.pngData(document), defaultFileName, thumbnail)
+        return (ImageExporter.pngData(flattened, scale: document.scale), defaultFileName, thumbnail)
     }
 
     @available(*, unavailable)
@@ -115,7 +116,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         let bitmap = NSBitmapImageRep(cgImage: flattened)
         bitmap.size = document.canvasRect.size
         pasteboard.clearContents()
-        pasteboard.setData(ImageExporter.pngData(document), forType: .png)
+        pasteboard.setData(ImageExporter.pngData(flattened, scale: document.scale), forType: .png)
         if let tiff = bitmap.tiffRepresentation { pasteboard.setData(tiff, forType: .tiff) }
     }
 
@@ -230,7 +231,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
         panel.nameFieldStringValue = defaultFileName
-        panel.directoryURL = Preferences.shared.lastSaveFolder
+        panel.directoryURL = preferences.lastSaveFolder
             ?? FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
         panel.beginSheetModal(for: window) { [weak self] response in
             guard response == .OK, let url = panel.url else { return }
@@ -239,13 +240,15 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
                 do {
                     try self.write(to: url)
                     self.savedURL = url
-                    Preferences.shared.lastSaveFolder = url.deletingLastPathComponent()
+                    self.preferences.lastSaveFolder = url.deletingLastPathComponent()
                 } catch {
                     self.present(error)
                 }
             }
         }
     }
+
+    private var preferences: Preferences { toolbar.settings.preferences }
 
     private func present(_ error: Error) {
         guard let window else { return }

@@ -3,12 +3,17 @@ import YSkitchCore
 
 @MainActor
 final class WindowRegistry {
-    static let shared = WindowRegistry()
+    static let shared = WindowRegistry(toolSettings: .shared)
 
+    let toolSettings: ToolSettings
     let closedWindows = ClosedWindowHistory()
     private(set) var controllers: [DocumentWindowController] = []
     private var cascadePoint = NSPoint.zero
     private var closeObservers: [ObjectIdentifier: any NSObjectProtocol] = [:]
+
+    init(toolSettings: ToolSettings) {
+        self.toolSettings = toolSettings
+    }
 
     @discardableResult
     func openFromPasteboard(_ pasteboard: NSPasteboard) -> DocumentWindowController {
@@ -50,7 +55,7 @@ final class WindowRegistry {
 
     @discardableResult
     private func show(_ document: Document, title: String) -> DocumentWindowController {
-        let controller = DocumentWindowController(document: document, title: title)
+        let controller = DocumentWindowController(document: document, title: title, toolSettings: toolSettings)
         guard let window = controller.window else { return controller }
         if controllers.isEmpty {
             window.center()
@@ -90,7 +95,7 @@ final class WindowRegistry {
     func reopenLastClosed() -> DocumentWindowController? {
         guard let entry = closedWindows.popLast() else { return nil }
         let controller = DocumentWindowController(
-            model: entry.model, title: entry.title, savedURL: entry.savedURL)
+            model: entry.model, title: entry.title, savedURL: entry.savedURL, toolSettings: toolSettings)
         guard let window = controller.window else { return controller }
         window.setFrame(entry.frame, display: false)
         window.contentView?.layoutSubtreeIfNeeded()

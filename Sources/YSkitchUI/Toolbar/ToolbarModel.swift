@@ -24,7 +24,7 @@ final class ToolbarModel {
     /// The tool that was active before the current one.
     @ObservationIgnored private(set) var previousTool: Tool = .select
 
-    init(settings: ToolSettings = .shared) {
+    init(settings: ToolSettings) {
         self.settings = settings
         activeTool = settings.preferences.lastTool
     }

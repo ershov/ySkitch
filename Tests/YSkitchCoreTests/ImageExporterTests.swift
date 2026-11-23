@@ -43,6 +43,14 @@ import Testing
         #expect(properties[kCGImagePropertyHasAlpha] as? Bool != true)
     }
 
+    @Test func flattenedImageOverloadMatchesDocument() throws {
+        let document = Document(blankSize: CGSize(width: 50, height: 30), scale: 2)
+        let data = ImageExporter.pngData(Renderer.flatten(document), scale: document.scale)
+        #expect(data == ImageExporter.pngData(document))
+        let (_, properties) = try decode(data)
+        #expect(properties[kCGImagePropertyDPIWidth] as? Double == 144)
+    }
+
     @Test func topLeftPixelMatchesRender() throws {
         let document = Document(blankSize: CGSize(width: 10, height: 10), scale: 1)
         let (image, _) = try decode(ImageExporter.pngData(document))

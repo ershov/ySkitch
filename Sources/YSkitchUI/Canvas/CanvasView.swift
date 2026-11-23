@@ -116,6 +116,18 @@ final class CanvasView: NSView, NSMenuItemValidation {
 
     var isCropping: Bool { crop?.isActive ?? false }
 
+    /// Called with the new state when a crop session starts or ends.
+    var onCropSessionChange: ((Bool) -> Void)?
+    private var reportedCropping = false
+
+    private func cropOverlayDidChange() {
+        needsDisplay = true
+        invalidateCursors()
+        guard isCropping != reportedCropping else { return }
+        reportedCropping = isCropping
+        onCropSessionChange?(reportedCropping)
+    }
+
     private func drawHandle(at position: CGPoint, pixel: CGFloat, in context: CGContext) {
         let side = SelectInteraction.handleSize * pixel
         let rect = CGRect(x: position.x - side / 2, y: position.y - side / 2, width: side, height: side)
@@ -328,10 +340,7 @@ final class CanvasView: NSView, NSMenuItemValidation {
             CropInteraction(
                 model: model, toolbar: toolbar,
                 magnification: { [weak self] in self?.enclosingScrollView?.magnification ?? 1 },
-                overlayDidChange: { [weak self] in
-                    self?.needsDisplay = true
-                    self?.invalidateCursors()
-                })
+                overlayDidChange: { [weak self] in self?.cropOverlayDidChange() })
         }
         interaction = (tool, handler)
         handler.activate()

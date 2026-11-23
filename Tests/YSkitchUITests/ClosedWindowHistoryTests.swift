@@ -16,7 +16,7 @@ struct ClosedWindowHistoryTests {
     }
 
     @Test func closeThenReopenRestoresWindow() throws {
-        let registry = WindowRegistry()
+        let registry = WindowRegistry(toolSettings: .inMemory())
         let original = registry.openBlank()
         original.model.perform("Add") { $0.annotations.append(rectangle()) }
         original.scrollView.magnification = 2
@@ -43,7 +43,7 @@ struct ClosedWindowHistoryTests {
     }
 
     @Test func reopenIsLastInFirstOut() throws {
-        let registry = WindowRegistry()
+        let registry = WindowRegistry(toolSettings: .inMemory())
         let a = registry.openBlank()
         let b = registry.openBlank()
         let modelA = a.model
@@ -60,7 +60,7 @@ struct ClosedWindowHistoryTests {
     }
 
     @Test func keepsOnlyTwentyEntries() throws {
-        let registry = WindowRegistry()
+        let registry = WindowRegistry(toolSettings: .inMemory())
         var models: [DocumentModel] = []
         for _ in 0..<(ClosedWindowHistory.capacity + 1) {
             let controller = registry.openBlank()
@@ -73,7 +73,7 @@ struct ClosedWindowHistoryTests {
     }
 
     @Test func closingWhileEditingTextCommits() throws {
-        let registry = WindowRegistry()
+        let registry = WindowRegistry(toolSettings: .inMemory())
         let controller = registry.openBlank()
         controller.toolbar.activeTool = .text
         let view = controller.canvasView
@@ -103,7 +103,7 @@ struct ClosedWindowHistoryTests {
         #expect(item.keyEquivalent == "t")
         #expect(item.keyEquivalentModifierMask == [.command, .shift])
 
-        let registry = WindowRegistry()
+        let registry = WindowRegistry(toolSettings: .inMemory())
         let delegate = AppDelegate(registry: registry)
         #expect(!delegate.validateMenuItem(item))
         try #require(registry.openBlank().window).close()

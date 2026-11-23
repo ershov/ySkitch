@@ -8,7 +8,8 @@ import YSkitchCore
 struct StatusBarTests {
     private func makeController() -> DocumentWindowController {
         DocumentWindowController(
-            document: Document(blankSize: CGSize(width: 1440, height: 900), scale: 2), title: "Test")
+            document: Document(blankSize: CGSize(width: 1440, height: 900), scale: 2), title: "Test",
+            toolSettings: .inMemory())
     }
 
     @Test func showsSizeText() {
