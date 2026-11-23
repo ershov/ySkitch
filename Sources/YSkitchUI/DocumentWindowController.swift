@@ -4,19 +4,21 @@ import YSkitchCore
 
 @MainActor
 final class DocumentWindowController: NSWindowController, NSWindowDelegate {
-    static let chromeSize = CGSize(width: 0, height: StatusBarView.height)
+    static let chromeSize = CGSize(width: ToolbarView.width, height: StatusBarView.height)
 
     let defaultFileName: String
     let model: DocumentModel
+    let toolbar: ToolbarModel
     let scrollView: CanvasScrollView
     let canvasView: CanvasView
     let statusBar = StatusBarView()
     private(set) var savedURL: URL?
 
-    init(document: Document, title: String) {
+    init(document: Document, title: String, toolSettings: ToolSettings = .shared) {
         defaultFileName = title
         model = DocumentModel(document: document)
-        canvasView = CanvasView(model: model)
+        toolbar = ToolbarModel(settings: toolSettings)
+        canvasView = CanvasView(model: model, toolbar: toolbar)
 
         let visible = NSScreen.main?.visibleFrame.size ?? CGSize(width: 1440, height: 900)
         let contentSize = WindowSizing.contentSize(
@@ -32,7 +34,10 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate {
         )
         window.title = title
         window.isReleasedWhenClosed = false
-        window.contentView = DocumentContentView(scrollView: scrollView, statusBar: statusBar)
+        let toolbarView = ToolbarHostingView(rootView: ToolbarView(model: toolbar))
+        toolbarView.sizingOptions = []
+        window.contentView = DocumentContentView(
+            scrollView: scrollView, statusBar: statusBar, toolbar: toolbarView, toolbarWidth: ToolbarView.width)
         window.initialFirstResponder = canvasView
         super.init(window: window)
         window.delegate = self

@@ -4,12 +4,14 @@ import YSkitchCore
 /// Document view of `CanvasScrollView`; one unit is one document point.
 final class CanvasView: NSView {
     let model: DocumentModel
+    let toolbar: ToolbarModel
 
     private var isPanMode = false
     private var panLastLocation: NSPoint?
 
-    init(model: DocumentModel) {
+    init(model: DocumentModel, toolbar: ToolbarModel) {
         self.model = model
+        self.toolbar = toolbar
         super.init(frame: NSRect(origin: .zero, size: model.document.canvasRect.size))
     }
 
@@ -50,8 +52,16 @@ final class CanvasView: NSView {
     }
 
     override func keyDown(with event: NSEvent) {
-        guard event.keyCode == Self.spaceKeyCode else { return super.keyDown(with: event) }
-        if !event.isARepeat { beginPanMode() }
+        if event.keyCode == Self.spaceKeyCode {
+            if !event.isARepeat { beginPanMode() }
+            return
+        }
+        if event.modifierFlags.isDisjoint(with: [.command, .control, .option]),
+           let action = event.charactersIgnoringModifiers.flatMap(ToolShortcut.action(for:)) {
+            toolbar.perform(action)
+            return
+        }
+        super.keyDown(with: event)
     }
 
     override func keyUp(with event: NSEvent) {

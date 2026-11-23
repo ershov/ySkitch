@@ -1,4 +1,5 @@
 import Foundation
+import YSkitchCore
 
 @MainActor
 final class Preferences {
@@ -17,5 +18,20 @@ final class Preferences {
         set {
             defaults.set(newValue?.path, forKey: "lastSaveFolder")
         }
+    }
+
+    var toolStyles: ToolStyles {
+        get {
+            defaults.data(forKey: "toolStyles").flatMap { try? JSONDecoder().decode(ToolStyles.self, from: $0) }
+                ?? ToolStyles()
+        }
+        set {
+            defaults.set(try? JSONEncoder().encode(newValue), forKey: "toolStyles")
+        }
+    }
+
+    var lastTool: Tool {
+        get { defaults.string(forKey: "lastTool").flatMap(Tool.init(rawValue:)) ?? .arrow }
+        set { defaults.set(newValue.rawValue, forKey: "lastTool") }
     }
 }
