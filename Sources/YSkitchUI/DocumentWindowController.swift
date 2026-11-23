@@ -3,29 +3,31 @@ import YSkitchCore
 
 @MainActor
 final class DocumentWindowController: NSWindowController {
-    static let defaultContentSize = NSSize(width: 900, height: 600)
+    static let chromeSize = CGSize.zero
 
-    static func blankDocument() -> Document {
-        Document(blankSize: CGSize(width: 1024, height: 768), scale: NSScreen.main?.backingScaleFactor ?? 2)
-    }
-
+    let defaultFileName: String
     let model: DocumentModel
     let scrollView: CanvasScrollView
     let canvasView: CanvasView
 
-    init(document: Document) {
+    init(document: Document, title: String) {
+        defaultFileName = title
         model = DocumentModel(document: document)
         canvasView = CanvasView(model: model)
-        scrollView = CanvasScrollView(frame: NSRect(origin: .zero, size: Self.defaultContentSize))
+
+        let visible = NSScreen.main?.visibleFrame.size ?? CGSize(width: 1440, height: 900)
+        let contentSize = WindowSizing.contentSize(
+            documentSize: document.canvasRect.size, chrome: Self.chromeSize, visibleFrame: visible)
+        scrollView = CanvasScrollView(frame: NSRect(origin: .zero, size: contentSize))
         scrollView.documentView = canvasView
 
         let window = NSWindow(
-            contentRect: NSRect(origin: .zero, size: Self.defaultContentSize),
+            contentRect: NSRect(origin: .zero, size: contentSize),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
-        window.title = "Untitled"
+        window.title = title
         window.isReleasedWhenClosed = false
         window.contentView = scrollView
         window.initialFirstResponder = canvasView

@@ -10,14 +10,53 @@ final class WindowRegistry {
     private var closeObservers: [ObjectIdentifier: any NSObjectProtocol] = [:]
 
     @discardableResult
-    func openNewDocument(_ document: Document? = nil) -> DocumentWindowController {
-        let controller = DocumentWindowController(document: document ?? DocumentWindowController.blankDocument())
+    func openFromPasteboard(_ pasteboard: NSPasteboard) -> DocumentWindowController {
+        let fileURL = (pasteboard.readObjects(
+            forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL])?.first
+        let title = DocumentNaming.title(sourceURL: fileURL, date: .now)
+        if let image = PasteboardImageReader.read(from: pasteboard) {
+            return show(Document(image: image), title: title)
+        }
+        return show(Self.blankDocument(), title: title)
+    }
+
+    @discardableResult
+    func openBlank() -> DocumentWindowController {
+        show(Self.blankDocument(), title: DocumentNaming.title(sourceURL: nil, date: .now))
+    }
+
+    @discardableResult
+    func open(url: URL) throws -> DocumentWindowController {
+        let image = try ImageImporter.load(url: url)
+        return show(Document(image: image), title: DocumentNaming.title(sourceURL: url, date: .now))
+    }
+
+    @discardableResult
+    func openDropped(_ pasteboard: NSPasteboard) -> Bool {
+        let urls = PasteboardImageReader.imageFileURLs(in: pasteboard)
+        if !urls.isEmpty {
+            return urls.reduce(false) { opened, url in ((try? open(url: url)) != nil) || opened }
+        }
+        guard let image = PasteboardImageReader.read(from: pasteboard) else { return false }
+        show(Document(image: image), title: DocumentNaming.title(sourceURL: nil, date: .now))
+        return true
+    }
+
+    private static func blankDocument() -> Document {
+        Document(blankSize: CGSize(width: 1024, height: 768), scale: NSScreen.main?.backingScaleFactor ?? 2)
+    }
+
+    @discardableResult
+    private func show(_ document: Document, title: String) -> DocumentWindowController {
+        let controller = DocumentWindowController(document: document, title: title)
         guard let window = controller.window else { return controller }
         if controllers.isEmpty {
             window.center()
             cascadePoint = .zero
         }
         cascadePoint = window.cascadeTopLeft(from: cascadePoint)
+        controller.scrollView.onDrop = { [weak self] in self?.openDropped($0) ?? false }
         register(controller, window: window)
         controller.showWindow(nil)
         return controller

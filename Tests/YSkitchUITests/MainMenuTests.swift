@@ -18,6 +18,8 @@ struct MainMenuTests {
     @Test func shortcuts() throws {
         let cases: [(String, String, String, NSEvent.ModifierFlags, Selector)] = [
             ("File", "New", "n", .command, #selector(AppDelegate.newDocument(_:))),
+            ("File", "New Blank", "n", [.command, .shift], #selector(AppDelegate.newBlankDocument(_:))),
+            ("File", "Open…", "o", .command, #selector(AppDelegate.openDocument(_:))),
             ("File", "Close", "w", .command, #selector(NSWindow.performClose(_:))),
             ("ySkitch", "Quit ySkitch", "q", .command, #selector(NSApplication.terminate(_:))),
             ("Edit", "Undo", "z", .command, Selector(("undo:"))),

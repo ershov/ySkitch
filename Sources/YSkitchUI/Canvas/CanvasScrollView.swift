@@ -3,6 +3,7 @@ import YSkitchCore
 
 final class CanvasScrollView: NSScrollView {
     var onMagnificationChange: ((CGFloat) -> Void)?
+    var onDrop: ((NSPasteboard) -> Bool)?
 
     private var magnificationObservation: NSKeyValueObservation?
 
@@ -17,6 +18,7 @@ final class CanvasScrollView: NSScrollView {
         autohidesScrollers = true
         backgroundColor = CanvasStyle.surroundColor
         drawsBackground = true
+        registerForDraggedTypes([.fileURL, .png, .tiff])
         magnificationObservation = observe(\.magnification) { scrollView, _ in
             MainActor.assumeIsolated { scrollView.magnificationDidChange() }
         }
@@ -24,6 +26,14 @@ final class CanvasScrollView: NSScrollView {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
+        PasteboardImageReader.containsImage(sender.draggingPasteboard) ? .copy : []
+    }
+
+    override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        onDrop?(sender.draggingPasteboard) ?? false
+    }
 
     private func magnificationDidChange() {
         documentView?.needsDisplay = true

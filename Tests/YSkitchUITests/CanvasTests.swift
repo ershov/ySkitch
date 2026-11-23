@@ -25,7 +25,7 @@ struct CanvasTests {
 
     @Test func windowControllerSizesCanvasToDocument() {
         let controller = DocumentWindowController(
-            document: Document(blankSize: CGSize(width: 2000, height: 1000), scale: 1)
+            document: Document(blankSize: CGSize(width: 2000, height: 1000), scale: 1), title: "Test"
         )
         defer { controller.close() }
         #expect(controller.canvasView.frame.size == NSSize(width: 2000, height: 1000))
@@ -37,7 +37,7 @@ struct CanvasTests {
 
     @Test func zoomStepsAndCallback() {
         let controller = DocumentWindowController(
-            document: Document(blankSize: CGSize(width: 2000, height: 1000), scale: 1)
+            document: Document(blankSize: CGSize(width: 2000, height: 1000), scale: 1), title: "Test"
         )
         defer { controller.close() }
         var reported: [CGFloat] = []
