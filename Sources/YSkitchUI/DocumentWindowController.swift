@@ -4,12 +4,13 @@ import YSkitchCore
 
 @MainActor
 final class DocumentWindowController: NSWindowController {
-    static let chromeSize = CGSize.zero
+    static let chromeSize = CGSize(width: 0, height: StatusBarView.height)
 
     let defaultFileName: String
     let model: DocumentModel
     let scrollView: CanvasScrollView
     let canvasView: CanvasView
+    let statusBar = StatusBarView()
     private(set) var savedURL: URL?
 
     init(document: Document, title: String) {
@@ -31,12 +32,40 @@ final class DocumentWindowController: NSWindowController {
         )
         window.title = title
         window.isReleasedWhenClosed = false
-        window.contentView = scrollView
+        window.contentView = DocumentContentView(scrollView: scrollView, statusBar: statusBar)
         window.initialFirstResponder = canvasView
         super.init(window: window)
 
-        model.onChange = { [weak canvasView] in canvasView?.documentDidChange() }
+        model.onChange = { [weak self] in
+            guard let self else { return }
+            canvasView.documentDidChange()
+            updateStatusSize()
+        }
+        statusBar.onActualSize = { [weak scrollView] in scrollView?.zoomToActualSize() }
+        statusBar.onFit = { [weak scrollView] in scrollView?.zoomToFit() }
+        statusBar.onZoomOut = { [weak scrollView] in scrollView?.zoomOut() }
+        statusBar.onZoomIn = { [weak scrollView] in scrollView?.zoomIn() }
+        scrollView.onMagnificationChange = { [weak statusBar] in statusBar?.update(magnification: $0) }
+        statusBar.dragHandle.imageProvider = { [weak self] in
+            guard let self else { return (Data(), "image", NSImage()) }
+            return dragPayload()
+        }
+        updateStatusSize()
         scrollView.zoomToFit()
+        statusBar.update(magnification: scrollView.magnification)
+    }
+
+    private func updateStatusSize() {
+        statusBar.update(canvasSize: model.document.canvasRect.size, scale: model.document.scale)
+    }
+
+    private func dragPayload() -> DragHandleView.Payload {
+        let document = model.document
+        let bitmap = NSBitmapImageRep(cgImage: Renderer.flatten(document))
+        let thumbnail = NSImage(size: document.canvasRect.size)
+        thumbnail.addRepresentation(bitmap)
+        bitmap.size = document.canvasRect.size
+        return (ImageExporter.pngData(document), defaultFileName, thumbnail)
     }
 
     @available(*, unavailable)
