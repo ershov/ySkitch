@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 import YSkitchCore
 
 @MainActor
-final class DocumentWindowController: NSWindowController {
+final class DocumentWindowController: NSWindowController, NSWindowDelegate {
     static let chromeSize = CGSize(width: 0, height: StatusBarView.height)
 
     let defaultFileName: String
@@ -35,6 +35,7 @@ final class DocumentWindowController: NSWindowController {
         window.contentView = DocumentContentView(scrollView: scrollView, statusBar: statusBar)
         window.initialFirstResponder = canvasView
         super.init(window: window)
+        window.delegate = self
 
         model.onChange = { [weak self] in
             guard let self else { return }
@@ -70,6 +71,8 @@ final class DocumentWindowController: NSWindowController {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? { model.undoManager }
 
     @objc func zoomIn(_ sender: Any?) { scrollView.zoomIn() }
     @objc func zoomOut(_ sender: Any?) { scrollView.zoomOut() }
