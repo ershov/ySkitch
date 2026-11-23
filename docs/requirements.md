@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.2 · 2026-11-24
+Status: final v1.3 · 2026-11-24
 
 ## 1. Purpose
 
@@ -44,6 +44,7 @@ Out of scope (for now): screen capture, global hotkeys, menu-bar/background proc
 | IN-5 | Open via "Open With…" and CLI (`open -a ySkitch file.png`) | S | 2 |
 | IN-6 | Paste an image into an existing document as a movable image object | S | 2 |
 | IN-7 | Recent files menu | S | 2 |
+| IN-8 | `⌘V` with an image on the clipboard replaces the window's content: the image becomes the new base image and all annotations are cleared; undoable. When the clipboard holds copied ySkitch annotations, `⌘V` pastes those instead (ED-3) | U | 1 |
 
 ### 5.2 Output
 
