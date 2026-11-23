@@ -11,13 +11,18 @@ final class ToolbarModel {
 
     var activeTool: Tool {
         didSet {
-            settings.preferences.lastTool = activeTool
+            if oldValue != activeTool { previousTool = oldValue }
+            // Crop is a transient mode; a new window never starts in it.
+            if activeTool != .crop { settings.preferences.lastTool = activeTool }
             if activeTool != .select { selection?.clear() }
             onActiveToolChange?()
         }
     }
 
     @ObservationIgnored var onActiveToolChange: (() -> Void)?
+
+    /// The tool that was active before the current one.
+    @ObservationIgnored private(set) var previousTool: Tool = .select
 
     init(settings: ToolSettings = .shared) {
         self.settings = settings

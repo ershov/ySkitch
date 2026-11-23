@@ -108,7 +108,7 @@ struct ObjectClipboardTests {
             bitmapDataPlanes: nil, pixelsWide: 8, pixelsHigh: 8, bitsPerSample: 8,
             samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
             bytesPerRow: 0, bitsPerPixel: 0))
-        pasteboard.setData(try #require(bitmap.representation(using: .png, properties: [:])), forType: .png)
+        pasteboard.setData(bitmap.representation(using: .png, properties: [:]), forType: .png)
         let base = target.model.document.base
 
         #expect(target.paste(from: pasteboard))

@@ -3,7 +3,7 @@ import Observation
 import YSkitchCore
 
 /// Document view of `CanvasScrollView`; one unit is one document point.
-final class CanvasView: NSView {
+final class CanvasView: NSView, NSMenuItemValidation {
     let model: DocumentModel
     let toolbar: ToolbarModel
     let selection: SelectionModel
@@ -23,7 +23,11 @@ final class CanvasView: NSView {
         super.init(frame: NSRect(origin: .zero, size: model.document.canvasRect.size))
         clipsToBounds = true
         observeActiveTool()
-        toolbar.onActiveToolChange = { [weak self] in self?.textEditor.commit() }
+        toolbar.onActiveToolChange = { [weak self] in
+            guard let self else { return }
+            textEditor.commit()
+            _ = currentInteraction
+        }
     }
 
     private func observeActiveTool() {
@@ -96,6 +100,21 @@ final class CanvasView: NSView {
         context.translateBy(x: -origin.x, y: -origin.y)
         Renderer.draw(model.document, in: context)
         drawSelectionOverlay(in: context)
+        drawCropOverlay(in: context)
+    }
+
+    private var crop: CropInteraction? { interaction?.handler as? CropInteraction }
+
+    /// The crop session's proposed rect, in document coordinates.
+    var proposedCropRect: CGRect? { crop?.rect }
+
+    var isCropping: Bool { crop?.isActive ?? false }
+
+    private func drawHandle(at position: CGPoint, pixel: CGFloat, in context: CGContext) {
+        let side = SelectInteraction.handleSize * pixel
+        let rect = CGRect(x: position.x - side / 2, y: position.y - side / 2, width: side, height: side)
+        context.fill(rect)
+        context.stroke(rect.insetBy(dx: pixel / 2, dy: pixel / 2))
     }
 
     private func drawSelectionOverlay(in context: CGContext) {
@@ -112,13 +131,9 @@ final class CanvasView: NSView {
             context.stroke(annotation.bounds.insetBy(dx: -pixel / 2, dy: -pixel / 2))
         }
         if selected.count == 1, let annotation = selected.first {
-            let side = SelectInteraction.handleSize * pixel
             context.setFillColor(CGColor(gray: 1, alpha: 1))
             for handle in Handles.handles(for: annotation) {
-                let rect = CGRect(
-                    x: handle.position.x - side / 2, y: handle.position.y - side / 2, width: side, height: side)
-                context.fill(rect)
-                context.stroke(rect.insetBy(dx: pixel / 2, dy: pixel / 2))
+                drawHandle(at: handle.position, pixel: pixel, in: context)
             }
         }
         if let marquee {
@@ -128,12 +143,53 @@ final class CanvasView: NSView {
         }
     }
 
+    private func drawCropOverlay(in context: CGContext) {
+        guard let rect = proposedCropRect else { return }
+        let pixel = 1 / (enclosingScrollView?.magnification ?? 1)
+        context.saveGState()
+        defer { context.restoreGState() }
+        context.addRect(model.document.canvasRect)
+        context.addRect(rect)
+        context.setFillColor(CGColor(gray: 0, alpha: 0.5))
+        context.fillPath(using: .evenOdd)
+        context.setLineWidth(pixel)
+        context.setStrokeColor(CGColor(gray: 0, alpha: 0.6))
+        context.stroke(rect.insetBy(dx: -pixel * 1.5, dy: -pixel * 1.5))
+        context.setStrokeColor(CGColor(gray: 1, alpha: 1))
+        context.stroke(rect.insetBy(dx: -pixel / 2, dy: -pixel / 2))
+        context.setFillColor(CGColor(gray: 1, alpha: 1))
+        context.setStrokeColor(NSColor.controlAccentColor.cgColor)
+        for handle in BoundsHandle.allCases {
+            drawHandle(at: handle.position(in: rect), pixel: pixel, in: context)
+        }
+    }
+
+    // Undo and redo would replace the document under the open crop session.
+    @objc func undo(_ sender: Any?) { if !isCropping { undoManager?.undo() } }
+
+    @objc func redo(_ sender: Any?) { if !isCropping { undoManager?.redo() } }
+
+    func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        guard let undoManager else { return false }
+        switch item.action {
+        case #selector(undo(_:)):
+            item.title = undoManager.undoMenuItemTitle
+            return !isCropping && undoManager.canUndo
+        case #selector(redo(_:)):
+            item.title = undoManager.redoMenuItemTitle
+            return !isCropping && undoManager.canRedo
+        default:
+            return true
+        }
+    }
+
     override func viewDidChangeBackingProperties() {
         super.viewDidChangeBackingProperties()
         needsDisplay = true
     }
 
     override func keyDown(with event: NSEvent) {
+        if currentInteraction?.handleKey(event) == true { return }
         if event.keyCode == Self.escapeKeyCode {
             if let select = currentInteraction as? SelectInteraction, !select.isDragging {
                 selection.clear()
@@ -210,7 +266,21 @@ final class CanvasView: NSView {
     }
 
     override func resetCursorRects() {
-        if let cursor = activeCursor { addCursorRect(bounds, cursor: cursor) }
+        guard let cursor = activeCursor else { return }
+        guard panCursor == nil, let crop = proposedCropRect, crop != model.document.canvasRect else {
+            return addCursorRect(bounds, cursor: cursor)
+        }
+        let origin = model.document.canvasRect.origin
+        let inside = crop.offsetBy(dx: -origin.x, dy: -origin.y).intersection(bounds)
+        // Non-overlapping: AppKit does not restore an outer cursor rect when leaving a nested one.
+        let outside = [
+            CGRect(x: bounds.minX, y: bounds.minY, width: bounds.width, height: inside.minY - bounds.minY),
+            CGRect(x: bounds.minX, y: inside.maxY, width: bounds.width, height: bounds.maxY - inside.maxY),
+            CGRect(x: bounds.minX, y: inside.minY, width: inside.minX - bounds.minX, height: inside.height),
+            CGRect(x: inside.maxX, y: inside.minY, width: bounds.maxX - inside.maxX, height: inside.height),
+        ]
+        for rect in outside where !rect.isEmpty { addCursorRect(rect, cursor: cursor) }
+        addCursorRect(inside, cursor: .openHand)
     }
 
     var activeCursor: NSCursor? { panCursor ?? currentInteraction?.cursor }
@@ -231,7 +301,7 @@ final class CanvasView: NSView {
         if let interaction, interaction.tool == tool { return interaction.handler }
         interaction?.handler.cancel()
         interaction = nil
-        let handler: (any CanvasInteraction)? = switch tool {
+        let handler: any CanvasInteraction = switch tool {
         case .rectangle, .roundedRectangle, .ellipse, .pixelate:
             ShapeDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
         case .line, .arrow:
@@ -248,9 +318,17 @@ final class CanvasView: NSView {
             FreehandDrawingInteraction(
                 tool: tool, model: model, toolbar: toolbar,
                 magnification: { [weak self] in self?.enclosingScrollView?.magnification ?? 1 })
-        default: nil
+        case .crop:
+            CropInteraction(
+                model: model, toolbar: toolbar,
+                magnification: { [weak self] in self?.enclosingScrollView?.magnification ?? 1 },
+                overlayDidChange: { [weak self] in
+                    self?.needsDisplay = true
+                    self?.invalidateCursors()
+                })
         }
-        interaction = handler.map { (tool, $0) }
+        interaction = (tool, handler)
+        handler.activate()
         return handler
     }
 
@@ -262,8 +340,15 @@ final class CanvasView: NSView {
 
     private var panCursor: NSCursor? { isPanMode ? .closedHand : nil }
 
+    /// An idle crop session is a gesture that still allows panning.
+    private var blocksPanning: Bool {
+        guard model.isInGesture else { return false }
+        guard let crop, crop.isActive else { return true }
+        return crop.isDragging
+    }
+
     private func beginPanMode() {
-        guard !isPanMode, !model.isInGesture else { return }
+        guard !isPanMode, !blocksPanning else { return }
         isPanMode = true
         panLastLocation = window?.mouseLocationOutsideOfEventStream
         previousAcceptsMouseMoved = window?.acceptsMouseMovedEvents ?? false

@@ -189,8 +189,18 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         selection.selectAll()
     }
 
+    /// Actions that read or replace the document; it is uncropped while a crop session is open.
+    private static let blockedWhileCropping: Set<Selector> = [
+        #selector(paste(_:)), #selector(cut(_:)), #selector(copy(_:)), #selector(copyImage(_:)),
+        #selector(duplicate(_:)), #selector(delete(_:)), #selector(selectAll(_:)),
+        #selector(saveDocument(_:)), #selector(saveDocumentAs(_:)),
+    ]
+
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
-        switch item.action {
+        if canvasView.isCropping, let action = item.action, Self.blockedWhileCropping.contains(action) {
+            return false
+        }
+        return switch item.action {
         case #selector(paste(_:)):
             NSPasteboard.general.availableType(from: [.annotations]) != nil
                 || PasteboardImageReader.containsImage(.general)

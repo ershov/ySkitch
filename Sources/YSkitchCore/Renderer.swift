@@ -17,6 +17,7 @@ public enum Renderer {
         if let base = document.base {
             let rect = document.imageRect
             context.saveGState()
+            context.clip(to: document.baseRect)
             context.translateBy(x: rect.minX, y: rect.maxY)
             context.scaleBy(x: 1, y: -1)
             context.draw(base.cgImage, in: CGRect(origin: .zero, size: rect.size))

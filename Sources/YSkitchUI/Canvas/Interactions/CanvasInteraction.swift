@@ -9,4 +9,13 @@ protocol CanvasInteraction: AnyObject {
     func flagsChanged(_ event: NSEvent)
     func cancel()
     var cursor: NSCursor { get }
+    /// Called when the tool becomes active.
+    func activate()
+    /// Offered key-down events first; returns true when handled.
+    func handleKey(_ event: NSEvent) -> Bool
+}
+
+extension CanvasInteraction {
+    func activate() {}
+    func handleKey(_ event: NSEvent) -> Bool { false }
 }
