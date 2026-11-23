@@ -175,4 +175,29 @@ struct CanvasAutoExtendTests {
         #expect(changes == 4)
         #expect(model.document.canvasRect.minX == 0)
     }
+
+    @Test func dragStartingOnSurroundGrowsCanvasLeft() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        let scrollView = controller.scrollView
+        let clipView = scrollView.contentView
+        scrollView.setFrameSize(NSSize(width: 800, height: 600))
+        scrollView.tile()
+        let canvas = controller.canvasView
+        try #require(clipView.bounds.width > canvas.frame.width)
+
+        let start = canvas.convert(CGPoint(x: -50, y: 100), to: nil)
+        let surroundPoint = try #require(scrollView.superview).convert(start, from: nil)
+        #expect(scrollView.hitTest(surroundPoint) === canvas)
+
+        let target = try #require(scrollView.hitTest(surroundPoint))
+        target.mouseDown(with: event(.leftMouseDown, atWindow: start, in: canvas))
+        let end = canvas.convert(CGPoint(x: 100, y: 200), to: nil)
+        target.mouseDragged(with: event(.leftMouseDragged, atWindow: end, in: canvas))
+        target.mouseUp(with: event(.leftMouseUp, atWindow: end, in: canvas))
+
+        let model = controller.model
+        #expect(model.document.annotations.count == 1)
+        #expect(model.document.canvasRect.minX < 0)
+    }
 }

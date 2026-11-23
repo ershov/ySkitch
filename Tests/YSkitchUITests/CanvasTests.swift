@@ -17,6 +17,12 @@ struct CanvasTests {
         #expect(rect.origin == NSPoint(x: -100, y: -100))
     }
 
+    @Test func clipViewHitTestReturnsDocumentOnSurround() {
+        let clip = clipView(documentSize: NSSize(width: 200, height: 100))
+        clip.scroll(to: clip.constrainBoundsRect(clip.bounds).origin)
+        #expect(clip.hitTest(NSPoint(x: 5, y: 5)) === clip.documentView)
+    }
+
     @Test func clipViewDoesNotCenterLargeDocument() {
         let clip = clipView(documentSize: NSSize(width: 1000, height: 1000))
         let rect = clip.constrainBoundsRect(NSRect(x: 50, y: 60, width: 400, height: 300))

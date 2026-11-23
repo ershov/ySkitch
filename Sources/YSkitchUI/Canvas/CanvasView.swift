@@ -29,7 +29,7 @@ final class CanvasView: NSView {
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
-                self.window?.invalidateCursorRects(for: self)
+                self.invalidateCursors()
                 self.observeActiveTool()
             }
         }
@@ -149,7 +149,14 @@ final class CanvasView: NSView {
     }
 
     override func resetCursorRects() {
-        if let cursor = panCursor ?? currentInteraction?.cursor { addCursorRect(bounds, cursor: cursor) }
+        if let cursor = activeCursor { addCursorRect(bounds, cursor: cursor) }
+    }
+
+    var activeCursor: NSCursor? { panCursor ?? currentInteraction?.cursor }
+
+    private func invalidateCursors() {
+        window?.invalidateCursorRects(for: self)
+        if let clip = superview { window?.invalidateCursorRects(for: clip) }
     }
 
     private func documentPoint(_ event: NSEvent) -> CGPoint {
@@ -204,7 +211,7 @@ final class CanvasView: NSView {
     }
 
     private func updatePanCursor() {
-        window?.invalidateCursorRects(for: self)
+        invalidateCursors()
         (panCursor ?? currentInteraction?.cursor ?? .arrow).set()
     }
 
