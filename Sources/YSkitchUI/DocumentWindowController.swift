@@ -28,9 +28,14 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     let statusBar = StatusBarView()
     private(set) var savedURL: URL?
 
-    init(document: Document, title: String, toolSettings: ToolSettings = .shared) {
+    convenience init(document: Document, title: String, toolSettings: ToolSettings = .shared) {
+        self.init(model: DocumentModel(document: document), title: title, savedURL: nil, toolSettings: toolSettings)
+    }
+
+    init(model: DocumentModel, title: String, savedURL: URL?, toolSettings: ToolSettings = .shared) {
         defaultFileName = title
-        model = DocumentModel(document: document)
+        self.savedURL = savedURL
+        self.model = model
         toolbar = ToolbarModel(settings: toolSettings)
         selection = SelectionModel(model: model)
         toolbar.selection = selection
@@ -38,7 +43,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
 
         let visible = NSScreen.main?.visibleFrame.size ?? CGSize(width: 1440, height: 900)
         let contentSize = WindowSizing.contentSize(
-            documentSize: document.canvasRect.size, chrome: Self.chromeSize, visibleFrame: visible)
+            documentSize: model.document.canvasRect.size, chrome: Self.chromeSize, visibleFrame: visible)
         scrollView = CanvasScrollView(frame: NSRect(origin: .zero, size: contentSize))
         scrollView.documentView = canvasView
 

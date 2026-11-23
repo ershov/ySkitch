@@ -58,6 +58,12 @@ final class CanvasView: NSView, NSMenuItemValidation {
         textEditor.commit()
     }
 
+    /// Commits an open text edit and cancels any other gesture in progress, e.g. a crop session.
+    func cancelActiveGesture() {
+        commitTextEditing()
+        interaction?.handler.cancel()
+    }
+
     func documentDidChange() {
         let canvas = model.document.canvasRect
         let shift = CGPoint(x: canvasOrigin.x - canvas.minX, y: canvasOrigin.y - canvas.minY)

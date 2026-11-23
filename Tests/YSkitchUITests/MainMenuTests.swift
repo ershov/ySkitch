@@ -20,6 +20,7 @@ struct MainMenuTests {
             ("File", "New", "n", .command, #selector(AppDelegate.newDocument(_:))),
             ("File", "New Blank", "n", [.command, .shift], #selector(AppDelegate.newBlankDocument(_:))),
             ("File", "Open…", "o", .command, #selector(AppDelegate.openDocument(_:))),
+            ("File", "Reopen Closed Window", "t", [.command, .shift], #selector(AppDelegate.reopenClosedWindow(_:))),
             ("File", "Save", "s", .command, #selector(DocumentWindowController.saveDocument(_:))),
             ("File", "Save As…", "s", [.command, .shift], #selector(DocumentWindowController.saveDocumentAs(_:))),
             ("Edit", "Copy Image", "c", [.command, .shift], #selector(DocumentWindowController.copyImage(_:))),

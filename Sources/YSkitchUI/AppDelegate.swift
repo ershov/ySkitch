@@ -2,8 +2,13 @@ import AppKit
 import UniformTypeIdentifiers
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let registry = WindowRegistry.shared
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
+    private let registry: WindowRegistry
+
+    init(registry: WindowRegistry = .shared) {
+        self.registry = registry
+        super.init()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         MainMenu.install()
@@ -39,6 +44,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.canChooseDirectories = false
         guard panel.runModal() == .OK else { return }
         open(panel.urls)
+    }
+
+    @objc func reopenClosedWindow(_ sender: Any?) {
+        registry.reopenLastClosed()
+    }
+
+    func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        item.action == #selector(reopenClosedWindow(_:)) ? !registry.closedWindows.isEmpty : true
     }
 
     private func open(_ urls: [URL]) {

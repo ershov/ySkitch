@@ -5,6 +5,7 @@ import YSkitchCore
 final class WindowRegistry {
     static let shared = WindowRegistry()
 
+    let closedWindows = ClosedWindowHistory()
     private(set) var controllers: [DocumentWindowController] = []
     private var cascadePoint = NSPoint.zero
     private var closeObservers: [ObjectIdentifier: any NSObjectProtocol] = [:]
@@ -81,5 +82,26 @@ final class WindowRegistry {
             NotificationCenter.default.removeObserver(observer)
         }
         controllers.removeAll { $0 === controller }
+        controller.canvasView.cancelActiveGesture()
+        closedWindows.push(ClosedWindowHistory.Entry(controller))
+    }
+
+    @discardableResult
+    func reopenLastClosed() -> DocumentWindowController? {
+        guard let entry = closedWindows.popLast() else { return nil }
+        let controller = DocumentWindowController(
+            model: entry.model, title: entry.title, savedURL: entry.savedURL)
+        guard let window = controller.window else { return controller }
+        window.setFrame(entry.frame, display: false)
+        window.contentView?.layoutSubtreeIfNeeded()
+        let scrollView = controller.scrollView
+        scrollView.magnification = entry.magnification
+        scrollView.contentView.scroll(to: entry.scrollOrigin)
+        scrollView.reflectScrolledClipView(scrollView.contentView)
+        if controller.toolbar.activeTool != entry.tool { controller.toolbar.activeTool = entry.tool }
+        scrollView.onDrop = { [weak self] in self?.openDropped($0) ?? false }
+        register(controller, window: window)
+        controller.showWindow(nil)
+        return controller
     }
 }

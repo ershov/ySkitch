@@ -47,6 +47,7 @@ enum MainMenu {
         menu.addItem(item("New", #selector(AppDelegate.newDocument(_:)), "n"))
         menu.addItem(item("New Blank", #selector(AppDelegate.newBlankDocument(_:)), "n", [.command, .shift]))
         menu.addItem(item("Open…", #selector(AppDelegate.openDocument(_:)), "o"))
+        menu.addItem(item("Reopen Closed Window", #selector(AppDelegate.reopenClosedWindow(_:)), "t", [.command, .shift]))
         menu.addItem(.separator())
         menu.addItem(item("Save", #selector(DocumentWindowController.saveDocument(_:)), "s"))
         menu.addItem(item("Save As…", #selector(DocumentWindowController.saveDocumentAs(_:)), "s", [.command, .shift]))
