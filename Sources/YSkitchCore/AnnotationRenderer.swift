@@ -5,65 +5,34 @@ public enum AnnotationRenderer {
         context.saveGState()
         defer { context.restoreGState() }
         let style = annotation.style
-        let path: CGPath
-        let lineCap: CGLineCap
-        let lineJoin: CGLineJoin
         switch annotation.shape {
-        case .rectangle(let rect):
-            path = CGPath(rect: rect, transform: nil)
-            lineCap = .butt
-            lineJoin = .miter
-        case .roundedRectangle(let rect):
-            let radius = ShapeGeometry.cornerRadius(thickness: style.thickness, rect: rect)
-            path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
-            lineCap = .butt
-            lineJoin = .round
-        case .ellipse(let rect):
-            path = CGPath(ellipseIn: rect, transform: nil)
-            lineCap = .butt
-            lineJoin = .round
-        case .line(let start, let end):
-            let line = CGMutablePath()
-            line.move(to: start)
-            line.addLine(to: end)
-            path = line
-            lineCap = .round
-            lineJoin = .round
         case .arrow(let tail, let head):
             OutlinedDrawing.fill(
                 ArrowGeometry.path(tail: tail, head: head, thickness: style.thickness),
                 color: style.color.cgColor,
                 outlineWidth: OutlineStyle.whiteWidth(forLineWidth: style.thickness),
                 in: context)
-            return
-        case .pen(let points):
-            path = StrokeSmoothing.path(points)
-            lineCap = .round
-            lineJoin = .round
-        case .highlighter(let points):
-            drawHighlighter(StrokeSmoothing.path(points), style: style, in: context)
-            return
+        case .highlighter:
+            if let stroke = annotation.stroke { drawHighlighter(stroke.path, style: style, in: context) }
         case .text(let content):
             drawText(content, style: style, in: context)
-            return
         case .pixelate:
             return
+        case .rectangle, .roundedRectangle, .ellipse, .line, .pen:
+            guard let stroke = annotation.stroke else { return }
+            OutlinedDrawing.stroke(
+                stroke.path,
+                lineWidth: style.thickness,
+                color: style.color.cgColor,
+                lineCap: stroke.cap,
+                lineJoin: stroke.join,
+                in: context
+            )
         }
-        OutlinedDrawing.stroke(
-            path,
-            lineWidth: style.thickness,
-            color: style.color.cgColor,
-            lineCap: lineCap,
-            lineJoin: lineJoin,
-            in: context
-        )
     }
 
     private static func drawText(_ content: TextContent, style: AnnotationStyle, in context: CGContext) {
-        let glyphs = TextLayout.layout(string: content.string, fontSize: style.thickness).path
-        guard !glyphs.isEmpty else { return }
-        var transform = CGAffineTransform(translationX: content.origin.x, y: content.origin.y)
-        guard let path = glyphs.copy(using: &transform) else { return }
+        guard let path = TextLayout.path(of: content, fontSize: style.thickness) else { return }
         OutlinedDrawing.fill(
             path, color: style.color.cgColor,
             outlineWidth: TextStyle.outlineWidth(fontSize: style.thickness), in: context)
@@ -80,5 +49,29 @@ public enum AnnotationRenderer {
         context.addPath(path)
         context.strokePath()
         context.endTransparencyLayer()
+    }
+}
+
+extension Annotation {
+    /// Centerline path of shapes drawn as a stroke of the style's thickness.
+    var stroke: (path: CGPath, cap: CGLineCap, join: CGLineJoin)? {
+        switch shape {
+        case .rectangle(let rect):
+            return (CGPath(rect: rect, transform: nil), .butt, .miter)
+        case .roundedRectangle(let rect):
+            let radius = ShapeGeometry.cornerRadius(thickness: style.thickness, rect: rect)
+            return (CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil), .butt, .round)
+        case .ellipse(let rect):
+            return (CGPath(ellipseIn: rect, transform: nil), .butt, .round)
+        case .line(let start, let end):
+            let line = CGMutablePath()
+            line.move(to: start)
+            line.addLine(to: end)
+            return (line, .round, .round)
+        case .pen(let points), .highlighter(let points):
+            return (StrokeSmoothing.path(points), .round, .round)
+        case .arrow, .text, .pixelate:
+            return nil
+        }
     }
 }

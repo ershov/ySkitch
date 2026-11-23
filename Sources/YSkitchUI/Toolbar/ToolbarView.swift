@@ -52,8 +52,8 @@ struct ToolbarView: View {
     }
 
     private var swatches: some View {
-        let tool = model.activeTool
-        let current = model.currentStyle.color
+        let tool = model.styleTool
+        let current = model.displayedStyle.color
         return VStack(spacing: 0) {
             ForEach(Palette.colors.indices, id: \.self) { index in
                 SwatchButton(index: index, isSelected: tool.usesColor && Palette.colors[index] == current) {
@@ -66,11 +66,14 @@ struct ToolbarView: View {
     }
 
     private var thicknessControl: some View {
-        let tool = model.activeTool
+        let tool = model.styleTool
         let range = tool.thicknessRange ?? Tool.strokeRange
         return VStack(spacing: 2) {
             KeyLabel(text: "[")
-            ThicknessSlider(tool: tool, style: model.currentStyle, range: range) { model.setThickness($0) }
+            ThicknessSlider(
+                tool: tool, style: model.displayedStyle, range: range,
+                onDragBegin: { model.beginThicknessDrag() }, onDragEnd: { model.endThicknessDrag() }
+            ) { model.setThickness($0) }
                 .frame(maxHeight: .infinity)
                 .help("Size")
             KeyLabel(text: "]")

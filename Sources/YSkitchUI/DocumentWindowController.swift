@@ -9,6 +9,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     private(set) var defaultFileName: String
     let model: DocumentModel
     let toolbar: ToolbarModel
+    let selection: SelectionModel
     let scrollView: CanvasScrollView
     let canvasView: CanvasView
     let statusBar = StatusBarView()
@@ -18,7 +19,9 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         defaultFileName = title
         model = DocumentModel(document: document)
         toolbar = ToolbarModel(settings: toolSettings)
-        canvasView = CanvasView(model: model, toolbar: toolbar)
+        selection = SelectionModel(model: model)
+        toolbar.selection = selection
+        canvasView = CanvasView(model: model, toolbar: toolbar, selection: selection)
 
         let visible = NSScreen.main?.visibleFrame.size ?? CGSize(width: 1440, height: 900)
         let contentSize = WindowSizing.contentSize(
@@ -44,9 +47,11 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
 
         model.onChange = { [weak self] in
             guard let self else { return }
+            selection.documentDidChange()
             canvasView.documentDidChange()
             updateStatusSize()
         }
+        selection.onChange = { [weak canvasView] in canvasView?.needsDisplay = true }
         statusBar.onActualSize = { [weak scrollView] in scrollView?.zoomToActualSize() }
         statusBar.onFit = { [weak scrollView] in scrollView?.zoomToFit() }
         statusBar.onZoomOut = { [weak scrollView] in scrollView?.zoomOut() }
@@ -115,9 +120,21 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         if !paste(from: .general) { NSSound.beep() }
     }
 
+    @objc func delete(_ sender: Any?) { selection.deleteSelected() }
+
+    /// Switches to the Select tool so the selection stays visible and editable.
+    override func selectAll(_ sender: Any?) {
+        toolbar.activeTool = .select
+        selection.selectAll()
+    }
+
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
-        if item.action == #selector(paste(_:)) { return PasteboardImageReader.containsImage(.general) }
-        return true
+        switch item.action {
+        case #selector(paste(_:)): PasteboardImageReader.containsImage(.general)
+        case #selector(delete(_:)): !selection.isEmpty && !model.isInGesture
+        case #selector(selectAll(_:)): !model.document.annotations.isEmpty && !model.isInGesture
+        default: true
+        }
     }
 
     func write(to url: URL) throws {

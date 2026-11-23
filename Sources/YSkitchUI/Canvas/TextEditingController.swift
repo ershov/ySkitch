@@ -15,6 +15,7 @@ final class TextEditingController: NSObject, NSTextViewDelegate {
         let isNew: Bool
         let textView: EditingTextView
         var toolbarStyle: ToolStyle
+        var appliedStyle: AnnotationStyle
     }
 
     private var session: Session?
@@ -58,6 +59,16 @@ final class TextEditingController: NSObject, NSTextViewDelegate {
         layoutTextView()
     }
 
+    /// Follows style edits made to the annotation outside the text view, e.g. through a selection.
+    func documentDidChange() {
+        guard var session, let annotation = annotation(session.annotationID),
+              annotation.style != session.appliedStyle else { return }
+        session.appliedStyle = annotation.style
+        self.session = session
+        apply(annotation.style, to: session.textView)
+        layoutTextView()
+    }
+
     func commit() {
         guard let session else { return }
         self.session = nil
@@ -89,7 +100,7 @@ final class TextEditingController: NSObject, NSTextViewDelegate {
         configure(textView)
         session = Session(
             annotationID: annotationID, isNew: isNew, textView: textView,
-            toolbarStyle: toolbar.settings.style(for: .text))
+            toolbarStyle: toolbar.settings.style(for: .text), appliedStyle: annotation.style)
         textView.string = text(of: annotation)
         apply(annotation.style, to: textView)
         layoutTextView()

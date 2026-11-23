@@ -7,13 +7,18 @@ struct ThicknessSlider: NSViewRepresentable {
     let tool: Tool
     let style: ToolStyle
     let range: ClosedRange<CGFloat>
+    var onDragBegin: () -> Void = {}
+    var onDragEnd: () -> Void = {}
     let onChange: (CGFloat) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> NSSlider {
         let slider = NSSlider()
-        slider.cell = WedgeSliderCell()
+        let cell = WedgeSliderCell()
+        cell.onTrackingBegin = { [weak coordinator = context.coordinator] in coordinator?.onDragBegin() }
+        cell.onTrackingEnd = { [weak coordinator = context.coordinator] in coordinator?.onDragEnd() }
+        slider.cell = cell
         slider.minValue = 0
         slider.maxValue = 1
         slider.isVertical = true
@@ -31,6 +36,8 @@ struct ThicknessSlider: NSViewRepresentable {
     func updateNSView(_ slider: NSSlider, context: Context) {
         context.coordinator.range = range
         context.coordinator.onChange = onChange
+        context.coordinator.onDragBegin = onDragBegin
+        context.coordinator.onDragEnd = onDragEnd
         if let cell = slider.cell as? WedgeSliderCell {
             cell.tool = tool
             cell.color = style.color
@@ -47,6 +54,8 @@ struct ThicknessSlider: NSViewRepresentable {
     final class Coordinator: NSObject {
         var range: ClosedRange<CGFloat> = Tool.strokeRange
         var onChange: (CGFloat) -> Void = { _ in }
+        var onDragBegin: () -> Void = {}
+        var onDragEnd: () -> Void = {}
 
         @objc func changed(_ sender: NSSlider) {
             onChange(ThicknessScale.value(at: 1 - sender.doubleValue, in: range))
@@ -65,6 +74,8 @@ final class WedgeSliderCell: NSSliderCell {
     var tool: Tool = .arrow
     var color: RGBAColor = Palette.defaultColor
     var range: ClosedRange<CGFloat> = Tool.strokeRange
+    var onTrackingBegin: (() -> Void)?
+    var onTrackingEnd: (() -> Void)?
     private var dragOffset: CGFloat = 0
 
     /// 0 at the top (minimum), 1 at the bottom (maximum).
@@ -196,8 +207,14 @@ final class WedgeSliderCell: NSSliderCell {
     override func startTracking(at startPoint: NSPoint, in controlView: NSView) -> Bool {
         let knob = knobRect(flipped: controlView.isFlipped)
         dragOffset = knob.contains(startPoint) ? startPoint.y - knob.midY : 0
+        onTrackingBegin?()
         track(to: startPoint, in: controlView)
         return true
+    }
+
+    override func stopTracking(last lastPoint: NSPoint, current stopPoint: NSPoint, in controlView: NSView, mouseIsUp flag: Bool) {
+        super.stopTracking(last: lastPoint, current: stopPoint, in: controlView, mouseIsUp: flag)
+        onTrackingEnd?()
     }
 
     override func continueTracking(last lastPoint: NSPoint, current currentPoint: NSPoint, in controlView: NSView) -> Bool {

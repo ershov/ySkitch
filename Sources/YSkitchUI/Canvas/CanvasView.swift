@@ -6,6 +6,7 @@ import YSkitchCore
 final class CanvasView: NSView {
     let model: DocumentModel
     let toolbar: ToolbarModel
+    let selection: SelectionModel
 
     private var isPanMode = false
     private var panLastLocation: NSPoint?
@@ -14,9 +15,10 @@ final class CanvasView: NSView {
     private var canvasOrigin: CGPoint
     private(set) lazy var textEditor = TextEditingController(canvas: self, model: model, toolbar: toolbar)
 
-    init(model: DocumentModel, toolbar: ToolbarModel) {
+    init(model: DocumentModel, toolbar: ToolbarModel, selection: SelectionModel) {
         self.model = model
         self.toolbar = toolbar
+        self.selection = selection
         canvasOrigin = model.document.canvasRect.origin
         super.init(frame: NSRect(origin: .zero, size: model.document.canvasRect.size))
         clipsToBounds = true
@@ -61,6 +63,7 @@ final class CanvasView: NSView {
             keepContentInPlace(shift: shift)
             textEditor.canvasOriginDidChange()
         }
+        textEditor.documentDidChange()
         needsDisplay = true
     }
 
@@ -92,6 +95,37 @@ final class CanvasView: NSView {
         let origin = model.document.canvasRect.origin
         context.translateBy(x: -origin.x, y: -origin.y)
         Renderer.draw(model.document, in: context)
+        drawSelectionOverlay(in: context)
+    }
+
+    private func drawSelectionOverlay(in context: CGContext) {
+        let selected = selection.selectedAnnotations
+        let marquee = (interaction?.handler as? SelectInteraction)?.marquee
+        guard !selected.isEmpty || marquee != nil else { return }
+        let pixel = 1 / (enclosingScrollView?.magnification ?? 1)
+        let accent = NSColor.controlAccentColor.cgColor
+        context.saveGState()
+        defer { context.restoreGState() }
+        context.setLineWidth(pixel)
+        context.setStrokeColor(accent)
+        for annotation in selected {
+            context.stroke(annotation.bounds.insetBy(dx: -pixel / 2, dy: -pixel / 2))
+        }
+        if selected.count == 1, let annotation = selected.first {
+            let side = SelectInteraction.handleSize * pixel
+            context.setFillColor(CGColor(gray: 1, alpha: 1))
+            for handle in Handles.handles(for: annotation) {
+                let rect = CGRect(
+                    x: handle.position.x - side / 2, y: handle.position.y - side / 2, width: side, height: side)
+                context.fill(rect)
+                context.stroke(rect.insetBy(dx: pixel / 2, dy: pixel / 2))
+            }
+        }
+        if let marquee {
+            context.setFillColor(accent.copy(alpha: 0.15) ?? accent)
+            context.fill(marquee)
+            context.stroke(marquee.insetBy(dx: pixel / 2, dy: pixel / 2))
+        }
     }
 
     override func viewDidChangeBackingProperties() {
@@ -101,7 +135,16 @@ final class CanvasView: NSView {
 
     override func keyDown(with event: NSEvent) {
         if event.keyCode == Self.escapeKeyCode {
-            currentInteraction?.cancel()
+            if let select = currentInteraction as? SelectInteraction, !select.isDragging {
+                selection.clear()
+            } else {
+                currentInteraction?.cancel()
+            }
+            return
+        }
+        if Self.deleteKeyCodes.contains(event.keyCode), !selection.isEmpty, !model.isInGesture,
+           event.modifierFlags.isDisjoint(with: [.command, .control, .option]) {
+            selection.deleteSelected()
             return
         }
         if event.keyCode == Self.spaceKeyCode {
@@ -193,6 +236,12 @@ final class CanvasView: NSView {
             ShapeDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
         case .line, .arrow:
             LineDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
+        case .select:
+            SelectInteraction(
+                model: model, selection: selection,
+                magnification: { [weak self] in self?.enclosingScrollView?.magnification ?? 1 },
+                beginTextEditing: { [weak self] in self?.beginTextEditing(annotationID: $0) },
+                overlayDidChange: { [weak self] in self?.needsDisplay = true })
         case .text:
             TextInteraction(model: model, editor: textEditor)
         case .pen, .highlighter:
@@ -209,6 +258,7 @@ final class CanvasView: NSView {
 
     private static let spaceKeyCode: UInt16 = 49
     private static let escapeKeyCode: UInt16 = 53
+    private static let deleteKeyCodes: Set<UInt16> = [51, 117]
 
     private var panCursor: NSCursor? { isPanMode ? .closedHand : nil }
 

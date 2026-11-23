@@ -42,3 +42,13 @@ public enum TextLayout {
         }
     }
 }
+
+extension TextLayout {
+    /// Glyph outlines in document coordinates; nil when there are no glyphs.
+    public static func path(of content: TextContent, fontSize: CGFloat) -> CGPath? {
+        let glyphs = layout(string: content.string, fontSize: fontSize).path
+        guard !glyphs.isEmpty else { return nil }
+        var transform = CGAffineTransform(translationX: content.origin.x, y: content.origin.y)
+        return glyphs.copy(using: &transform)
+    }
+}

@@ -1,0 +1,93 @@
+import CoreGraphics
+
+/// A corner or edge midpoint of a bounding rect.
+public enum BoundsHandle: CaseIterable, Equatable, Sendable {
+    case topLeft, top, topRight, right, bottomRight, bottom, bottomLeft, left
+
+    /// -1, 0 or 1 per axis: which side of the rect the handle sits on (y down).
+    var side: (x: Int, y: Int) {
+        switch self {
+        case .topLeft: (-1, -1)
+        case .top: (0, -1)
+        case .topRight: (1, -1)
+        case .right: (1, 0)
+        case .bottomRight: (1, 1)
+        case .bottom: (0, 1)
+        case .bottomLeft: (-1, 1)
+        case .left: (-1, 0)
+        }
+    }
+
+    public func position(in rect: CGRect) -> CGPoint {
+        func coordinate(_ side: Int, _ min: CGFloat, _ mid: CGFloat, _ max: CGFloat) -> CGFloat {
+            side < 0 ? min : side > 0 ? max : mid
+        }
+        let (sx, sy) = side
+        return CGPoint(
+            x: coordinate(sx, rect.minX, rect.midX, rect.maxX), y: coordinate(sy, rect.minY, rect.midY, rect.maxY))
+    }
+}
+
+public struct Handle: Equatable, Sendable {
+    public enum Kind: Equatable, Sendable {
+        case bounds(BoundsHandle)
+        case endpoint(Endpoint)
+    }
+
+    public var kind: Kind
+    /// Document coordinates.
+    public var position: CGPoint
+
+    public init(kind: Kind, position: CGPoint) {
+        self.kind = kind
+        self.position = position
+    }
+}
+
+public enum Handles {
+    /// Endpoint handles for lines and arrows, none for text, bounds handles otherwise.
+    public static func handles(for annotation: Annotation) -> [Handle] {
+        switch annotation.shape {
+        case .line(let start, let end), .arrow(let start, let end):
+            return [Handle(kind: .endpoint(.start), position: start), Handle(kind: .endpoint(.end), position: end)]
+        case .text:
+            return []
+        case .rectangle, .roundedRectangle, .ellipse, .pen, .highlighter, .pixelate:
+            let rect = annotation.bounds
+            return BoundsHandle.allCases.map { Handle(kind: .bounds($0), position: $0.position(in: rect)) }
+        }
+    }
+
+    /// The handle whose square of half-side `radius` contains `point`, nearest first.
+    public static func handle(for annotation: Annotation, at point: CGPoint, radius: CGFloat) -> Handle? {
+        handles(for: annotation)
+            .filter { abs($0.position.x - point.x) <= radius && abs($0.position.y - point.y) <= radius }
+            .min { distance($0.position, point) < distance($1.position, point) }
+    }
+
+    private static func distance(_ a: CGPoint, _ b: CGPoint) -> CGFloat { hypot(a.x - b.x, a.y - b.y) }
+}
+
+public enum ResizeMath {
+    /// Points.
+    public static let minimumSize: CGFloat = 1
+
+    /// Moves the dragged corner or edge to `point`, keeping the opposite one fixed; normalized when flipped.
+    public static func bounds(original: CGRect, dragging handle: BoundsHandle, to point: CGPoint) -> CGRect {
+        let (sx, sy) = handle.side
+        let (minX, maxX) = span(sx, original.minX, original.maxX, point.x)
+        let (minY, maxY) = span(sy, original.minY, original.maxY, point.y)
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+
+    private static func span(_ side: Int, _ low: CGFloat, _ high: CGFloat, _ moving: CGFloat) -> (CGFloat, CGFloat) {
+        guard side != 0 else { return (low, high) }
+        let fixed = side < 0 ? high : low
+        var lo = min(fixed, moving), hi = max(fixed, moving)
+        if hi - lo < minimumSize {
+            let towardHigh = moving == fixed ? side > 0 : moving > fixed
+            (lo, hi) = towardHigh ? (fixed, fixed + minimumSize) : (fixed - minimumSize, fixed)
+        }
+        return (lo, hi)
+    }
+}
