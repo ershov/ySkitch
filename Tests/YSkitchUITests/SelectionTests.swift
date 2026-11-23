@@ -297,6 +297,19 @@ struct SelectionTests {
         #expect(!controller.model.isInGesture)
     }
 
+    @Test func doubleClickBetweenLettersStartsEditing() {
+        let text = Annotation(
+            style: AnnotationStyle(color: Self.style.color, thickness: 40),
+            shape: .text(TextContent(origin: CGPoint(x: 20, y: 20), string: "I I")))
+        let controller = makeController([text])
+        defer { controller.close() }
+        let point = CGPoint(x: text.bounds.midX, y: text.bounds.midY)
+        click(controller, point, clickCount: 2)
+        #expect(controller.canvasView.textEditor.isEditing)
+        #expect(controller.selection.selectedIDs == [text.id])
+        controller.canvasView.commitTextEditing()
+    }
+
     @Test func undoOfCreationDropsSelection() {
         let controller = makeController([])
         defer { controller.close() }

@@ -10,9 +10,8 @@ public enum AnnotationHitTest {
             return rect.contains(point)
         case .arrow(let tail, let head):
             return filled(ArrowGeometry.path(tail: tail, head: head, thickness: thickness), point, tolerance)
-        case .text(let content):
-            guard let path = TextLayout.path(of: content, fontSize: thickness) else { return false }
-            return filled(path, point, tolerance)
+        case .text:
+            return annotation.bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case .rectangle, .roundedRectangle, .ellipse, .line, .pen, .highlighter:
             guard let stroke = annotation.stroke else { return false }
             return stroke.path

@@ -53,14 +53,16 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
         #expect(!hit(arrow, 50, 20, tolerance: 4))
     }
 
-    @Test func textHitOnGlyphs() throws {
-        let content = TextContent(origin: CGPoint(x: 10, y: 10), string: "I")
+    @Test func textHitAnywhereInBounds() throws {
+        let content = TextContent(origin: CGPoint(x: 10, y: 10), string: "I I")
         let text = annotation(.text(content), thickness: 40)
-        let glyphs = try #require(TextLayout.path(of: content, fontSize: 40)).boundingBoxOfPath
-        #expect(hit(text, glyphs.midX, glyphs.midY, tolerance: 0))
-        #expect(!hit(text, glyphs.minX - 1.5, glyphs.midY, tolerance: 0))
-        #expect(hit(text, glyphs.minX - 1.5, glyphs.midY, tolerance: 2))
-        #expect(!hit(annotation(.text(TextContent(origin: .zero, string: ""))), 0, 0, tolerance: 4))
+        let bounds = text.bounds
+        #expect(hit(text, bounds.midX, bounds.midY, tolerance: 0))
+        #expect(hit(text, bounds.minX + 0.5, bounds.minY + 0.5, tolerance: 0))
+        #expect(!hit(text, bounds.minX - 1.5, bounds.midY, tolerance: 0))
+        #expect(hit(text, bounds.minX - 1.5, bounds.midY, tolerance: 2))
+        #expect(!hit(text, bounds.maxX + 3, bounds.midY, tolerance: 2))
+        #expect(!hit(annotation(.text(TextContent(origin: .zero, string: ""))), 50, 50, tolerance: 4))
     }
 
     @Test func pixelateHitInsideRect() {
