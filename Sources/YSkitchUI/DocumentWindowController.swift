@@ -185,13 +185,13 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     func paste(from pasteboard: NSPasteboard) -> Bool {
         guard !model.isInGesture else { return false }
         if let data = pasteboard.data(forType: .annotations), pasteAnnotations(data) { return true }
-        guard let image = PasteboardImageReader.read(from: pasteboard) else { return false }
-        let sourceURL = PasteboardImageReader.imageFileURLs(in: pasteboard).first
+        guard let pasted = PasteboardImageReader.read(from: pasteboard) else { return false }
         let undoManager = model.undoManager
         undoManager.beginUndoGrouping()
-        model.perform("Paste Image") { $0 = Document(image: image) }
+        model.perform("Paste Image") { $0 = Document(image: pasted.image) }
         setIdentity(
-            fileName: DocumentNaming.title(sourceURL: sourceURL, date: .now), savedURL: nil, actionName: "Paste Image")
+            fileName: DocumentNaming.title(sourceURL: pasted.sourceURL, date: .now), savedURL: nil,
+            actionName: "Paste Image")
         undoManager.setActionName("Paste Image")
         undoManager.endUndoGrouping()
         scrollView.zoomToFit()

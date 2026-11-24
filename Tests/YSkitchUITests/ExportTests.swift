@@ -22,7 +22,7 @@ struct ExportTests {
 
         #expect(pasteboard.data(forType: .png) != nil)
         #expect(pasteboard.data(forType: .tiff) != nil)
-        let image = try #require(PasteboardImageReader.read(from: pasteboard))
+        let image = try #require(PasteboardImageReader.read(from: pasteboard)).image
         #expect(image.cgImage.width == 100)
         #expect(image.cgImage.height == 60)
         #expect(image.scale == 2)

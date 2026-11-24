@@ -83,6 +83,41 @@ struct WindowRegistryTests {
         return directory
     }
 
+    @Test func openFromPasteboardIgnoresNonImageFileForTitle() throws {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let text = dir.appending(path: "notes.txt")
+        try Data("x".utf8).write(to: text)
+        let registry = WindowRegistry(toolSettings: .inMemory())
+        let pasteboard = makePasteboard()
+        defer { pasteboard.releaseGlobally() }
+        pasteboard.clearContents()
+        pasteboard.writeObjects([text as NSURL])
+        pasteboard.setData(pngData(dpi: 72), forType: .png)
+
+        let controller = registry.openFromPasteboard(pasteboard)
+        defer { controller.close() }
+        #expect(controller.window?.title.hasPrefix("ySkitch ") == true)
+    }
+
+    @Test func openFromPasteboardTitlesFromLoadedFile() throws {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let broken = dir.appending(path: "Broken.png")
+        let good = dir.appending(path: "Good.png")
+        try Data("not a png".utf8).write(to: broken)
+        try pngData(dpi: 72).write(to: good)
+        let registry = WindowRegistry(toolSettings: .inMemory())
+        let pasteboard = makePasteboard()
+        defer { pasteboard.releaseGlobally() }
+        pasteboard.clearContents()
+        pasteboard.writeObjects([broken as NSURL, good as NSURL])
+
+        let controller = registry.openFromPasteboard(pasteboard)
+        defer { controller.close() }
+        #expect(controller.window?.title == "Good")
+    }
+
     @Test func openFromPasteboardWithImage() throws {
         let registry = WindowRegistry(toolSettings: .inMemory())
         let pasteboard = makePasteboard()

@@ -17,14 +17,12 @@ final class WindowRegistry {
 
     @discardableResult
     func openFromPasteboard(_ pasteboard: NSPasteboard) -> DocumentWindowController {
-        let fileURL = (pasteboard.readObjects(
-            forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]
-        ) as? [URL])?.first
-        let title = DocumentNaming.title(sourceURL: fileURL, date: .now)
-        if let image = PasteboardImageReader.read(from: pasteboard) {
-            return show(Document(image: image), title: title)
+        if let pasted = PasteboardImageReader.read(from: pasteboard) {
+            return show(
+                Document(image: pasted.image),
+                title: DocumentNaming.title(sourceURL: pasted.sourceURL, date: .now))
         }
-        return show(Self.blankDocument(), title: title)
+        return show(Self.blankDocument(), title: DocumentNaming.title(sourceURL: nil, date: .now))
     }
 
     @discardableResult
@@ -44,8 +42,8 @@ final class WindowRegistry {
         if !urls.isEmpty {
             return urls.reduce(false) { opened, url in ((try? open(url: url)) != nil) || opened }
         }
-        guard let image = PasteboardImageReader.read(from: pasteboard) else { return false }
-        show(Document(image: image), title: DocumentNaming.title(sourceURL: nil, date: .now))
+        guard let pasted = PasteboardImageReader.read(from: pasteboard) else { return false }
+        show(Document(image: pasted.image), title: DocumentNaming.title(sourceURL: pasted.sourceURL, date: .now))
         return true
     }
 

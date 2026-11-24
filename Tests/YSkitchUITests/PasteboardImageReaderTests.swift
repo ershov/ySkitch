@@ -34,9 +34,11 @@ struct PasteboardImageReaderTests {
         defer { pasteboard.releaseGlobally() }
         pasteboard.clearContents()
         pasteboard.setData(pngData(dpi: 144), forType: .png)
-        let image = try #require(PasteboardImageReader.read(from: pasteboard))
+        let pasted = try #require(PasteboardImageReader.read(from: pasteboard))
+        let image = pasted.image
         #expect(image.scale == 2)
         #expect(image.cgImage.width == 4)
+        #expect(pasted.sourceURL == nil)
     }
 
     @Test func fileURLLoads() throws {
@@ -50,9 +52,29 @@ struct PasteboardImageReaderTests {
         defer { pasteboard.releaseGlobally() }
         pasteboard.clearContents()
         pasteboard.writeObjects([url as NSURL])
-        let image = try #require(PasteboardImageReader.read(from: pasteboard))
+        let pasted = try #require(PasteboardImageReader.read(from: pasteboard))
+        let image = pasted.image
         #expect(image.scale == 1)
         #expect(image.cgImage.height == 2)
+        #expect(pasted.sourceURL == url)
+    }
+
+    @Test func skipsUndecodableAndNonImageFiles() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let text = dir.appendingPathComponent("a.txt")
+        let broken = dir.appendingPathComponent("b.png")
+        let good = dir.appendingPathComponent("c.png")
+        try Data("x".utf8).write(to: text)
+        try Data("not a png".utf8).write(to: broken)
+        try pngData(dpi: nil).write(to: good)
+
+        let pasteboard = makePasteboard()
+        defer { pasteboard.releaseGlobally() }
+        pasteboard.clearContents()
+        pasteboard.writeObjects([text as NSURL, broken as NSURL, good as NSURL])
+        #expect(PasteboardImageReader.read(from: pasteboard)?.sourceURL == good)
     }
 
     @Test func plainStringIsNotAnImage() {
