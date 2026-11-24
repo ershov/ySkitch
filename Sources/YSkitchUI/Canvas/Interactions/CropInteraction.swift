@@ -18,14 +18,19 @@ final class CropInteraction: CanvasInteraction {
     private let magnification: () -> CGFloat
     private let overlayDidChange: () -> Void
 
-    /// The session's canvas; the proposed rect stays inside it.
-    private var limits: CGRect = .zero
+    /// The canvas before the session, i.e. the current image; a double-click proposes it.
+    private var initialRect: CGRect = .zero
     private var drag: Drag?
     private var start: CGPoint = .zero
 
-    /// Proposed crop in document coordinates; nil outside a session.
+    /// Proposed crop in document coordinates; nil outside a session. May extend beyond the canvas,
+    /// which then grows to show it.
     private(set) var rect: CGRect? {
-        didSet { if rect != oldValue { overlayDidChange() } }
+        didSet {
+            guard rect != oldValue else { return }
+            if let rect, model.isInGesture { model.updateGesture { $0.extendCanvas(toInclude: rect) } }
+            overlayDidChange()
+        }
     }
 
     init(
@@ -40,6 +45,9 @@ final class CropInteraction: CanvasInteraction {
 
     var isActive: Bool { rect != nil }
 
+    /// Top-left of the canvas before the session; nil outside a session.
+    var currentImageOrigin: CGPoint? { rect == nil ? nil : initialRect.origin }
+
     var isDragging: Bool { drag != nil }
 
     var statusGeometry: StatusGeometry? {
@@ -50,11 +58,10 @@ final class CropInteraction: CanvasInteraction {
 
     func activate() {
         guard rect == nil, !model.isInGesture else { return }
-        let proposed = model.document.canvasRect
+        initialRect = model.document.canvasRect
         model.beginGesture()
         model.updateGesture { $0.cropRect = nil }
-        limits = model.document.canvasRect
-        rect = proposed
+        rect = initialRect
     }
 
     func handleKey(_ event: NSEvent) -> Bool {
@@ -96,12 +103,17 @@ final class CropInteraction: CanvasInteraction {
     func mouseDown(at point: CGPoint, event: NSEvent) {
         if rect == nil { activate() }
         guard let rect else { return }
-        start = clamped(point)
+        start = point
+        if event.clickCount == 2 {
+            drag = nil
+            self.rect = initialRect
+            return
+        }
         let radius = (SelectInteraction.handleSize / 2 + SelectInteraction.handleSlop) / magnification()
         if let handle = Self.handle(in: rect, at: point, radius: radius) {
             drag = .resize(original: rect, handle: handle)
-        } else if rect.contains(point), rect != limits {
-            // A rect filling the whole canvas cannot move, so dragging inside it draws a new one.
+        } else if rect.contains(point), rect != model.document.canvasRect {
+            // Dragging inside a rect that fills the whole canvas draws a new one.
             drag = .move(original: rect)
         } else {
             drag = .new
@@ -110,19 +122,17 @@ final class CropInteraction: CanvasInteraction {
 
     func mouseDragged(to point: CGPoint, event: NSEvent) {
         guard let drag else { return }
-        let point = clamped(point)
         switch drag {
         case .resize(let original, let handle):
-            let resized = ResizeMath.bounds(original: original, dragging: handle, to: point).intersection(limits)
-            if !resized.isEmpty { rect = resized }
+            rect = ResizeMath.bounds(original: original, dragging: handle, to: point)
         case .move(let original):
-            rect = shiftedInside(original.offsetBy(dx: point.x - start.x, dy: point.y - start.y))
+            rect = original.offsetBy(dx: point.x - start.x, dy: point.y - start.y)
         case .new:
             guard ShapeGeometry.isDrag(from: start, to: point) else { return }
             var new = ShapeGeometry.rect(from: start, to: point, square: false)
             new.size.width = max(new.width, ResizeMath.minimumSize)
             new.size.height = max(new.height, ResizeMath.minimumSize)
-            rect = shiftedInside(new)
+            rect = new
         }
     }
 
@@ -131,20 +141,6 @@ final class CropInteraction: CanvasInteraction {
     }
 
     func flagsChanged(_ event: NSEvent) {}
-
-    private func clamped(_ point: CGPoint) -> CGPoint {
-        CGPoint(
-            x: min(max(point.x, limits.minX), limits.maxX), y: min(max(point.y, limits.minY), limits.maxY))
-    }
-
-    private func shiftedInside(_ rect: CGRect) -> CGRect {
-        var result = rect
-        result.size.width = min(result.width, limits.width)
-        result.size.height = min(result.height, limits.height)
-        result.origin.x = min(max(result.minX, limits.minX), limits.maxX - result.width)
-        result.origin.y = min(max(result.minY, limits.minY), limits.maxY - result.height)
-        return result
-    }
 
     /// The handle whose square of half-side `radius` contains `point`, nearest first.
     static func handle(in rect: CGRect, at point: CGPoint, radius: CGFloat) -> BoundsHandle? {

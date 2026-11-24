@@ -135,6 +135,12 @@ final class CanvasView: NSView, NSMenuItemValidation {
 
     var isCropping: Bool { crop?.isActive ?? false }
 
+    /// Status bar coordinates are relative to the current image's top-left. During a crop session that is
+    /// the canvas before the session, so padding shows as negative or beyond-size values.
+    var statusOrigin: CGPoint {
+        crop?.currentImageOrigin ?? model.document.canvasRect.origin
+    }
+
     func applyCrop() { crop?.apply() }
 
     func cancelCrop() { crop?.dismiss() }

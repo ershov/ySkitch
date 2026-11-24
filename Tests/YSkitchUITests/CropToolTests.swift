@@ -17,13 +17,24 @@ struct CropToolTests {
     }
 
     /// `point` is in document coordinates.
-    private func event(_ type: NSEvent.EventType, _ point: CGPoint, in controller: DocumentWindowController) -> NSEvent {
+    private func event(
+        _ type: NSEvent.EventType, _ point: CGPoint, in controller: DocumentWindowController, clickCount: Int = 1
+    ) -> NSEvent {
         let view = controller.canvasView
         let origin = controller.model.document.canvasRect.origin
         let local = CGPoint(x: point.x - origin.x, y: point.y - origin.y)
         return NSEvent.mouseEvent(
             with: type, location: view.convert(local, to: nil), modifierFlags: [], timestamp: 0,
-            windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!
+            windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: clickCount,
+            pressure: 1)!
+    }
+
+    private func doubleClick(_ controller: DocumentWindowController, at point: CGPoint) {
+        let view = controller.canvasView
+        for clickCount in 1...2 {
+            view.mouseDown(with: event(.leftMouseDown, point, in: controller, clickCount: clickCount))
+            view.mouseUp(with: event(.leftMouseUp, point, in: controller, clickCount: clickCount))
+        }
     }
 
     private func drag(_ controller: DocumentWindowController, from a: CGPoint, to b: CGPoint) {
@@ -139,32 +150,136 @@ struct CropToolTests {
         #expect(controller.canvasView.proposedCropRect == nil)
     }
 
-    @Test func recropEnlargesToWholeImage() throws {
+    @Test func recropBeyondImageGrowsCanvasAndPads() throws {
         let controller = makeController()
         defer { controller.close() }
         let model = controller.model
+        let view = controller.canvasView
         crop(controller, to: CGRect(x: 50, y: 40, width: 100, height: 80))
 
         controller.toolbar.activeTool = .crop
         #expect(model.document.canvasRect == Self.imageRect)
-        drag(controller, from: CGPoint(x: 50, y: 40), to: CGPoint(x: -100, y: -100))
-        #expect(controller.canvasView.proposedCropRect == CGRect(x: 0, y: 0, width: 150, height: 120))
-        drag(controller, from: CGPoint(x: 150, y: 120), to: CGPoint(x: 900, y: 900))
-        #expect(controller.canvasView.proposedCropRect == Self.imageRect)
+        drag(controller, from: CGPoint(x: 50, y: 40), to: CGPoint(x: -100, y: -50))
+        #expect(view.proposedCropRect == CGRect(x: -100, y: -50, width: 250, height: 170))
+        #expect(model.document.canvasRect == CGRect(x: -100, y: -50, width: 500, height: 350))
+        #expect(view.frame.size == model.document.canvasRect.size)
+        drag(controller, from: CGPoint(x: 150, y: 120), to: CGPoint(x: 450, y: 320))
+        let padded = CGRect(x: -100, y: -50, width: 550, height: 370)
+        #expect(view.proposedCropRect == padded)
+        #expect(model.document.canvasRect == padded)
+        #expect(view.frame.size == padded.size)
         try pressReturn(controller)
 
-        #expect(model.document.cropRect == Self.imageRect)
-        #expect(model.document.canvasRect == Self.imageRect)
+        #expect(model.document.cropRect == padded)
+        #expect(model.document.canvasRect == padded)
+        #expect(view.frame.size == padded.size)
         #expect(model.undoManager.undoActionName == "Crop")
     }
 
-    @Test func dragInsideMovesWithinCanvas() {
+    @Test func escapeRestoresCanvasGrownBySession() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        let model = controller.model
+        controller.toolbar.activeTool = .crop
+        drag(controller, from: CGPoint(x: 400, y: 300), to: CGPoint(x: 500, y: 350))
+        #expect(model.document.canvasRect == CGRect(x: 0, y: 0, width: 500, height: 350))
+        try key(controller, "\u{1b}", keyCode: 53)
+        #expect(model.document.canvasRect == Self.imageRect)
+        #expect(controller.canvasView.frame.size == Self.imageRect.size)
+        #expect(!model.undoManager.canUndo)
+    }
+
+    @Test func dragInsideMovesBeyondCanvas() {
         let controller = makeController()
         defer { controller.close() }
         controller.toolbar.activeTool = .crop
         drag(controller, from: CGPoint(x: 10, y: 10), to: CGPoint(x: 110, y: 60))
         drag(controller, from: CGPoint(x: 50, y: 30), to: CGPoint(x: 1000, y: 30))
-        #expect(controller.canvasView.proposedCropRect == CGRect(x: 300, y: 10, width: 100, height: 50))
+        #expect(controller.canvasView.proposedCropRect == CGRect(x: 960, y: 10, width: 100, height: 50))
+        #expect(controller.model.document.canvasRect == CGRect(x: 0, y: 0, width: 1060, height: 300))
+    }
+
+    @Test func doubleClickProposesCurrentImage() {
+        let controller = makeController()
+        defer { controller.close() }
+        let padded = CGRect(x: -20, y: -10, width: 440, height: 320)
+        crop(controller, to: padded)
+
+        controller.toolbar.activeTool = .crop
+        drag(controller, from: CGPoint(x: 10, y: 10), to: CGPoint(x: 110, y: 60))
+        #expect(controller.canvasView.proposedCropRect == CGRect(x: 10, y: 10, width: 100, height: 50))
+        doubleClick(controller, at: CGPoint(x: 200, y: 200))
+        #expect(controller.canvasView.proposedCropRect == padded)
+        #expect(controller.canvasView.proposedCropRect == controller.model.document.canvasRect)
+    }
+
+    @Test func doubleClickThenHandleDragPads() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        controller.toolbar.activeTool = .crop
+        drag(controller, from: CGPoint(x: 10, y: 10), to: CGPoint(x: 110, y: 60))
+        doubleClick(controller, at: CGPoint(x: 50, y: 30))
+        #expect(controller.canvasView.proposedCropRect == Self.imageRect)
+        drag(controller, from: CGPoint(x: 0, y: 0), to: CGPoint(x: -30, y: -20))
+        try pressReturn(controller)
+        #expect(controller.model.document.canvasRect == CGRect(x: -30, y: -20, width: 430, height: 320))
+    }
+
+    @Test func paddingSurvivesEditsAndUndoRedo() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        let model = controller.model
+        controller.toolbar.activeTool = .crop
+        drag(controller, from: CGPoint(x: 0, y: 0), to: CGPoint(x: -30, y: -20))
+        drag(controller, from: CGPoint(x: 400, y: 300), to: CGPoint(x: 430, y: 320))
+        try pressReturn(controller)
+        let padded = CGRect(x: -30, y: -20, width: 460, height: 340)
+        #expect(model.document.canvasRect == padded)
+
+        controller.toolbar.activeTool = .rectangle
+        drag(controller, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 200, y: 200))
+        #expect(model.document.annotations.count == 1)
+        #expect(model.document.canvasRect == padded)
+        let id = try #require(model.document.annotations.first?.id)
+        controller.selection.select([id])
+        controller.selection.deleteSelected()
+        #expect(model.document.annotations.isEmpty)
+        #expect(model.document.canvasRect == padded)
+
+        model.undoManager.undo()
+        #expect(model.document.annotations.count == 1)
+        #expect(model.document.canvasRect == padded)
+        model.undoManager.undo()
+        #expect(model.document.annotations.isEmpty)
+        #expect(model.document.canvasRect == padded)
+        model.undoManager.undo()
+        #expect(model.document.canvasRect == Self.imageRect)
+        model.undoManager.redo()
+        #expect(model.document.canvasRect == padded)
+        #expect(controller.canvasView.frame.size == padded.size)
+        model.undoManager.redo()
+        model.undoManager.redo()
+        #expect(model.document.annotations.isEmpty)
+        #expect(model.document.canvasRect == padded)
+    }
+
+    @Test func statusShowsCoordinatesBeyondImage() {
+        let controller = makeController()
+        defer { controller.close() }
+        controller.toolbar.activeTool = .crop
+        drag(controller, from: CGPoint(x: 0, y: 0), to: CGPoint(x: -20, y: -10))
+        drag(controller, from: CGPoint(x: 400, y: 300), to: CGPoint(x: 420, y: 300))
+        #expect(controller.statusBar.infoLabel.stringValue == "Crop · (-20, -10) → (420, 300) · 440×310 px")
+    }
+
+    @Test func statusIsRelativeToCurrentImageAfterCrop() {
+        let controller = makeController()
+        defer { controller.close() }
+        crop(controller, to: CGRect(x: 50, y: 40, width: 100, height: 80))
+        controller.toolbar.activeTool = .crop
+        #expect(controller.statusBar.infoLabel.stringValue == "Crop · (0, 0) → (100, 80) · 100×80 px")
+        drag(controller, from: CGPoint(x: 50, y: 40), to: CGPoint(x: 30, y: 20))
+        #expect(controller.statusBar.infoLabel.stringValue == "Crop · (-20, -20) → (100, 80) · 120×100 px")
     }
 
     @Test func clickOutsideKeepsRect() {

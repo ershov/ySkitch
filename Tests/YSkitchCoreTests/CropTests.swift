@@ -93,6 +93,53 @@ import Testing
         #expect(pixel(5, 5) == red)
     }
 
+    @Test func cropBeyondImageOnAllSidesPadsWithWhite() {
+        var document = Self.redDocument()
+        let crop = CGRect(x: -10, y: -5, width: 60, height: 55)
+        document.applyCrop(crop)
+        #expect(document.canvasRect == crop)
+        let image = Renderer.flatten(document)
+        #expect(image.width == 120)
+        #expect(image.height == 110)
+        let pixel = Self.pixels(document)
+        #expect(pixel(-5, 20) == white)
+        #expect(pixel(45, 20) == white)
+        #expect(pixel(20, -3) == white)
+        #expect(pixel(20, 45) == white)
+        #expect(pixel(49, 49) == white)
+        #expect(pixel(1, 1) == red)
+        #expect(pixel(39, 39) == red)
+    }
+
+    @Test func paddingSurvivesAnnotationChanges() {
+        var document = Self.redDocument()
+        let crop = CGRect(x: -10, y: -10, width: 60, height: 60)
+        document.applyCrop(crop)
+
+        document.annotations = [Self.rectangle(CGRect(x: 10, y: 10, width: 5, height: 5))]
+        document.updateCanvas(allowShrink: true)
+        #expect(document.canvasRect == crop)
+
+        document.annotations.append(Self.rectangle(CGRect(x: 40, y: 40, width: 30, height: 30)))
+        document.updateCanvas(allowShrink: true)
+        #expect(document.canvasRect.minX == crop.minX && document.canvasRect.minY == crop.minY)
+        #expect(document.canvasRect.maxX > 70)
+
+        document.annotations = []
+        document.updateCanvas(allowShrink: true)
+        #expect(document.canvasRect == crop)
+    }
+
+    @Test func extendedCanvasLastsUntilShrink() {
+        var document = Self.redDocument()
+        document.extendCanvas(toInclude: CGRect(x: -5.2, y: 30, width: 10, height: 20.1))
+        #expect(document.canvasRect == CGRect(x: -5.5, y: 0, width: 45.5, height: 50.5))
+        document.updateCanvas(allowShrink: false)
+        #expect(document.canvasRect == CGRect(x: -5.5, y: 0, width: 45.5, height: 50.5))
+        document.updateCanvas(allowShrink: true)
+        #expect(document.canvasRect == document.imageRect)
+    }
+
     @Test func clearingCropRestoresImage() {
         var document = Self.redDocument()
         document.applyCrop(CGRect(x: 10, y: 10, width: 10, height: 10))

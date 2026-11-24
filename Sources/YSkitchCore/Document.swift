@@ -46,6 +46,11 @@ public struct Document: Equatable, Sendable {
         canvasRect = allowShrink ? fitted : canvasRect.union(fitted)
     }
 
+    /// Lasts until the next `updateCanvas(allowShrink: true)`.
+    public mutating func extendCanvas(toInclude rect: CGRect) {
+        canvasRect = canvasRect.union(Self.snappedOutward(rect, scale: scale))
+    }
+
     /// Existing annotations stop extending the canvas, so the canvas becomes the crop.
     public mutating func applyCrop(_ rect: CGRect) {
         cropRect = Self.snappedOutward(rect, scale: scale)

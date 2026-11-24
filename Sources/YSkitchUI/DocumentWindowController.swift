@@ -109,7 +109,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
             return
         }
         statusBar.update(info: canvasView.statusGeometry.map {
-            StatusText.geometry($0, canvasOrigin: document.canvasRect.origin, scale: document.scale)
+            StatusText.geometry($0, canvasOrigin: canvasView.statusOrigin, scale: document.scale)
         } ?? StatusText.size(canvas: document.canvasRect.size, scale: document.scale))
     }
 
