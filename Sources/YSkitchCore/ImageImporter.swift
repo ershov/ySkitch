@@ -23,13 +23,8 @@ public enum ImageImporter {
         return max(1, (CGFloat(pixelWidth) / pointWidth).rounded())
     }
 
+    /// Always redraws: ImageIO decodes lazily, and the result must not depend on the source file.
     public static func opaqueOnWhite(_ image: CGImage) -> CGImage {
-        switch image.alphaInfo {
-        case .none, .noneSkipFirst, .noneSkipLast:
-            return image
-        default:
-            break
-        }
         let space: CGColorSpace
         if let own = image.colorSpace, own.model == .rgb {
             space = own

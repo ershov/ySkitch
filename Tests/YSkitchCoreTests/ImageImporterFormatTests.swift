@@ -64,7 +64,14 @@ private func close(_ a: Pixel, _ b: Pixel, tolerance: Int) -> Bool {
 
     @Test(.enabled(if: canEncode(.heic)))
     func heicRoundTrip() throws {
-        let image = try ImageImporter.load(data: encode([solid(red)], type: .heic))
+        let image = try withTempFile(encode([solid(red)], type: .heic), ext: "heic") { try ImageImporter.load(url: $0) }
+        expectSolid(image, red, tolerance: 24)
+    }
+
+    @Test(arguments: [UTType.png, .jpeg, .tiff, .bmp, .gif, .heic])
+    func decodedImageSurvivesFileDeletion(_ type: UTType) throws {
+        guard canEncode(type), let ext = type.preferredFilenameExtension else { return }
+        let image = try withTempFile(encode([solid(red)], type: type), ext: ext) { try ImageImporter.load(url: $0) }
         expectSolid(image, red, tolerance: 24)
     }
 
