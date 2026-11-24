@@ -48,6 +48,20 @@ struct WindowRegistryTests {
         #expect(size.height * scrollView.magnification <= content.height + 1)
     }
 
+    @Test func newWindowShowsMarginAroundSmallDocument() throws {
+        let registry = WindowRegistry(toolSettings: .inMemory())
+        let controller = registry.show(Document(blankSize: CGSize(width: 400, height: 300), scale: 1), title: "Small")
+        defer { controller.close() }
+        let scrollView = controller.scrollView
+        let content = NSScrollView.contentSize(
+            forFrameSize: scrollView.frame.size, horizontalScrollerClass: nil, verticalScrollerClass: nil,
+            borderType: scrollView.borderType, controlSize: .regular, scrollerStyle: scrollView.scrollerStyle)
+        let size = try #require(scrollView.documentView).frame.size
+        #expect(scrollView.magnification == CGFloat(1))
+        #expect((content.width - size.width) / 2 >= WindowSizing.margin - 1)
+        #expect((content.height - size.height) / 2 >= WindowSizing.margin - 1)
+    }
+
     @Test func reopenedWindowKeepsStoredMagnification() throws {
         let registry = WindowRegistry(toolSettings: .inMemory())
         let original = registry.show(Document(blankSize: CGSize(width: 8000, height: 8000), scale: 1), title: "Large")

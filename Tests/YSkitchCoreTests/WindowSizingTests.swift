@@ -9,7 +9,7 @@ struct WindowSizingTests {
     @Test func uncapped() {
         let size = WindowSizing.contentSize(
             documentSize: CGSize(width: 800, height: 600), chrome: CGSize(width: 0, height: 40), visibleFrame: screen, minimum: minimum)
-        #expect(size == CGSize(width: 800, height: 640))
+        #expect(size == CGSize(width: 920, height: 760))
     }
 
     @Test func cappedToScreen() {
@@ -20,7 +20,7 @@ struct WindowSizingTests {
 
     @Test func atLeastMinimum() {
         let size = WindowSizing.contentSize(
-            documentSize: CGSize(width: 100, height: 50), chrome: .zero, visibleFrame: screen, minimum: minimum)
+            documentSize: CGSize(width: 10, height: 10), chrome: .zero, visibleFrame: screen, minimum: minimum)
         #expect(size == CGSize(width: 480, height: 360))
     }
 }

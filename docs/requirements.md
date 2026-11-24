@@ -68,7 +68,7 @@ No editable native format: output is always a flat regular image.
 | WIN-2 | Standard window management: Window menu, `` ⌘` `` cycling, `⌘W` close | S | 1 |
 | WIN-3 | No "unsaved changes" prompt. On close, window state (image + annotation objects + view + undo history) is kept **in memory only** | U | 1 |
 | WIN-4 | `⌘⇧T` reopens the most recently closed window (LIFO stack; repeatable). Capacity is the named constant `ClosedWindowHistory.capacity = 20`; oldest entries are dropped beyond it. History is lost when the app quits | U | 1 |
-| WIN-5 | New window sized to fit image (capped to screen) | S | 1 |
+| WIN-5 | New window sized to fit image plus a 60 pt margin on each side (`WindowSizing.margin`), capped to screen; opens at 100 % when it fits, else Fit (Fit itself adds no margin) | S | 1 |
 | WIN-6 | Standard macOS app lifecycle: app keeps running with no windows; no special handling | U | 1 |
 
 Window state is never written to disk, so unredacted originals of closed windows don't outlive the process.
