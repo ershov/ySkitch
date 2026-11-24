@@ -182,6 +182,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
 
     @discardableResult
     func paste(from pasteboard: NSPasteboard) -> Bool {
+        guard !model.isInGesture else { return false }
         if let data = pasteboard.data(forType: .annotations), pasteAnnotations(data) { return true }
         guard let image = PasteboardImageReader.read(from: pasteboard) else { return false }
         let sourceURL = PasteboardImageReader.imageFileURLs(in: pasteboard).first
@@ -194,7 +195,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     }
 
     @objc func paste(_ sender: Any?) {
-        if !paste(from: .general) { NSSound.beep() }
+        if !paste(from: .general), !model.isInGesture { NSSound.beep() }
     }
 
     @objc func delete(_ sender: Any?) { selection.deleteSelected() }
@@ -232,8 +233,8 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         case #selector(applyCrop(_:)), #selector(cancelCrop(_:)):
             canvasView.isCropping
         case #selector(paste(_:)):
-            NSPasteboard.general.availableType(from: [.annotations]) != nil
-                || PasteboardImageReader.containsImage(.general)
+            !model.isInGesture && (NSPasteboard.general.availableType(from: [.annotations]) != nil
+                || PasteboardImageReader.containsImage(.general))
         case #selector(cut(_:)), #selector(duplicate(_:)), #selector(delete(_:)):
             !selection.isEmpty && !model.isInGesture
         case #selector(selectAll(_:)): !model.document.annotations.isEmpty && !model.isInGesture

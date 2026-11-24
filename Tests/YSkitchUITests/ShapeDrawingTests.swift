@@ -115,6 +115,45 @@ struct ShapeDrawingTests {
             == .ellipse(CGRect(x: 10, y: 10, width: 40, height: 30)))
         #expect(ellipse.canvasView.model.undoManager.undoActionName == "Draw Ellipse")
     }
+
+    @Test func historyAndPasteBlockedMidDrag() throws {
+        let controller = makeController(tool: .rectangle)
+        defer { controller.close() }
+        let view = controller.canvasView
+        let model = view.model
+        let pasteboard = NSPasteboard(name: .init("ySkitch.tests.\(UUID().uuidString)"))
+        defer { pasteboard.releaseGlobally() }
+        let bitmap = try #require(NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: 40, pixelsHigh: 40, bitsPerSample: 8,
+            samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+            bytesPerRow: 0, bitsPerPixel: 0))
+        pasteboard.setData(try #require(bitmap.representation(using: .png, properties: [:])), forType: .png)
+        view.mouseDown(with: event(.leftMouseDown, CGPoint(x: 10, y: 20), in: view))
+        view.mouseDragged(with: event(.leftMouseDragged, CGPoint(x: 60, y: 50), in: view))
+        #expect(model.isInGesture)
+
+        let undo = NSMenuItem(title: "Undo", action: #selector(CanvasView.undo(_:)), keyEquivalent: "z")
+        let redo = NSMenuItem(title: "Redo", action: #selector(CanvasView.redo(_:)), keyEquivalent: "Z")
+        let paste = NSMenuItem(title: "Paste", action: #selector(DocumentWindowController.paste(_:)), keyEquivalent: "v")
+        #expect(!view.validateMenuItem(undo))
+        #expect(!view.validateMenuItem(redo))
+        #expect(!controller.validateMenuItem(paste))
+
+        let before = model.document
+        view.undo(nil)
+        view.redo(nil)
+        controller.paste(nil)
+        #expect(!controller.paste(from: pasteboard))
+        #expect(model.document == before)
+
+        view.mouseUp(with: event(.leftMouseUp, CGPoint(x: 60, y: 50), in: view))
+        #expect(model.document.annotations.count == 1)
+        #expect(view.validateMenuItem(undo))
+        view.undo(nil)
+        #expect(model.document.annotations.isEmpty)
+        #expect(!model.undoManager.canUndo)
+        #expect(controller.paste(from: pasteboard))
+    }
 }
 
 @MainActor

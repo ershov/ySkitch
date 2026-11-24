@@ -186,20 +186,21 @@ final class CanvasView: NSView, NSMenuItemValidation {
         }
     }
 
-    // Undo and redo would replace the document under the open crop session.
-    @objc func undo(_ sender: Any?) { if !isCropping { undoManager?.undo() } }
+    // Undo and redo would replace the document under an open gesture.
+    // Text editing routes them through its own text view.
+    @objc func undo(_ sender: Any?) { if !model.isInGesture { undoManager?.undo() } }
 
-    @objc func redo(_ sender: Any?) { if !isCropping { undoManager?.redo() } }
+    @objc func redo(_ sender: Any?) { if !model.isInGesture { undoManager?.redo() } }
 
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
         guard let undoManager else { return false }
         switch item.action {
         case #selector(undo(_:)):
             item.title = undoManager.undoMenuItemTitle
-            return !isCropping && undoManager.canUndo
+            return !model.isInGesture && undoManager.canUndo
         case #selector(redo(_:)):
             item.title = undoManager.redoMenuItemTitle
-            return !isCropping && undoManager.canRedo
+            return !model.isInGesture && undoManager.canRedo
         default:
             return true
         }
