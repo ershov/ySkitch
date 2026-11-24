@@ -39,7 +39,6 @@ public enum AnnotationRenderer {
     }
 
     private static func drawHighlighter(_ path: CGPath, style: AnnotationStyle, in context: CGContext) {
-        context.setBlendMode(.multiply)
         context.setAlpha(HighlighterStyle.opacity)
         context.beginTransparencyLayer(auxiliaryInfo: nil)
         context.setStrokeColor(style.color.cgColor)

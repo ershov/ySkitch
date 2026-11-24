@@ -114,9 +114,8 @@ import Testing
         #expect(abs(Int(crossing.b) - Int(single.b)) <= 3)
     }
 
-    @Test func highlighterOverBlackStaysBlack() {
+    @Test func highlighterOverBlackIsVisible() {
         let at = render(.highlighter(points: line(from: CGPoint(x: 20, y: 50), to: CGPoint(x: 80, y: 50))), black: true)
-        let p = at(50, 50)
-        #expect(p.r <= 10 && p.g <= 10 && p.b <= 10)
+        #expect(near(at(50, 50), 102, 18, 43, tolerance: 4))
     }
 }
