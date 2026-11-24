@@ -1,5 +1,4 @@
 import AppKit
-import CoreText
 import SwiftUI
 import YSkitchCore
 
@@ -12,6 +11,8 @@ struct ToolbarView: View {
     static let columnGap: CGFloat = 18
     static let colorColumnWidth: CGFloat = 54
     static let swatchFrame: CGFloat = 33
+    static let swatchDiameter: CGFloat = 27
+    static let keySpacing: CGFloat = 1
 
     static var toolsColumnHeight: CGFloat {
         let rows = Tool.groups.reduce(0) { $0 + $1.count }
@@ -97,22 +98,28 @@ private struct KeyLabel: View {
 private struct ToolIconView: View {
     let tool: Tool
 
+    /// Sized to the visible glyph so the key label's baseline lands on its bottom edge.
     var body: some View {
-        switch ToolIcon.icon(for: tool) {
-        case .symbol(let name):
-            Image(systemName: name).font(.system(size: 21))
-        case .path(let path):
-            Path(path).stroke(
-                style: StrokeStyle(
-                    lineWidth: ToolIcon.stroke, lineCap: .round,
-                    lineJoin: ToolIcon.lineJoin(for: tool)))
-        case .text:
-            let font = TextStyle.font(size: 17)
-            // Line box is centered by layout; shift so the cap height is centered instead.
-            let shift = (CTFontGetAscent(font) + CTFontGetDescent(font)) / 2
-                - (CTFontGetAscent(font) - CTFontGetCapHeight(font) / 2)
-            Text("Aa").font(Font(font)).offset(y: shift)
+        Group {
+            switch ToolIcon.icon(for: tool) {
+            case .symbol(let name):
+                Image(systemName: name).font(.system(size: 21))
+            case .path(let path):
+                let bounds = path.copy(
+                    strokingWithWidth: ToolIcon.stroke, lineCap: .round,
+                    lineJoin: ToolIcon.lineJoin(for: tool), miterLimit: 10
+                ).boundingBoxOfPath
+                Path(path.copy(using: [CGAffineTransform(translationX: 0, y: -bounds.minY)]) ?? path)
+                    .stroke(
+                        style: StrokeStyle(
+                            lineWidth: ToolIcon.stroke, lineCap: .round,
+                            lineJoin: ToolIcon.lineJoin(for: tool)))
+                    .frame(height: bounds.height)
+            case .text:
+                Text("Aa").font(Font(TextStyle.font(size: 17)))
+            }
         }
+        .frame(width: ToolIcon.boxSize.width)
     }
 }
 
@@ -123,11 +130,10 @@ private struct ToolButton: View {
     var body: some View {
         let isActive = model.activeTool == tool
         Button { model.activeTool = tool } label: {
-            HStack(spacing: 2) {
-                KeyLabel(text: String(tool.key))
+            HStack(alignment: .lastTextBaseline, spacing: ToolbarView.keySpacing) {
                 ToolIconView(tool: tool)
-                    .frame(width: ToolIcon.boxSize.width, height: ToolIcon.boxSize.height)
                     .foregroundStyle(isActive ? Color.accentColor : Color.primary)
+                KeyLabel(text: String(tool.key))
             }
             .frame(width: ToolbarView.toolButtonWidth, height: ToolbarView.rowHeight)
             .background(
@@ -149,16 +155,17 @@ private struct SwatchButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 4) {
-                KeyLabel(text: "\(index + 1)")
+            HStack(alignment: .lastTextBaseline, spacing: ToolbarView.keySpacing) {
                 ZStack {
                     Circle().strokeBorder(Color.primary, lineWidth: 1.5).opacity(isSelected ? 1 : 0)
                     Circle().fill(Palette.colors[index].swiftUIColor)
                         .overlay(Circle().strokeBorder(.white, lineWidth: 4))
                         .overlay(Circle().strokeBorder(.black.opacity(0.35), lineWidth: 0.5))
-                        .frame(width: 27, height: 27)
+                        .frame(width: ToolbarView.swatchDiameter, height: ToolbarView.swatchDiameter)
                 }
                 .frame(width: ToolbarView.swatchFrame, height: ToolbarView.swatchFrame)
+                .alignmentGuide(.lastTextBaseline) { $0[.bottom] - (ToolbarView.swatchFrame - ToolbarView.swatchDiameter) / 2 }
+                KeyLabel(text: "\(index + 1)")
             }
             .frame(width: ToolbarView.colorColumnWidth, height: ToolbarView.rowHeight)
             .contentShape(Rectangle())
