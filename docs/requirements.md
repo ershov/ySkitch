@@ -133,7 +133,7 @@ All annotations are vector objects, editable until export (flattened only on out
 | ED-4 | Nudge with arrow keys (1 pt; `⇧` = 20 pt); consecutive nudges are one undo step | S | 1 |
 | ED-5 | Z-order: bring to front / send to back | S | 2 |
 | ED-6 | Unlimited undo/redo (`⌘Z` / `⌘⇧Z`) per document | S | 1 |
-| ED-7 | Double-click text to edit (Select and Text tools) | S | 1 |
+| ED-7 | Double-click text to edit (Select and Text tools). While editing, presses inside the text go to the text view (caret, drag-select, word/line select) without committing; presses outside commit; the edited text is drawn above all other annotations | S | 1 |
 
 ### 5.8 Modifiers and shortcuts
 

@@ -123,7 +123,7 @@ final class CanvasView: NSView, NSMenuItemValidation {
         )
         let origin = model.document.canvasRect.origin
         context.translateBy(x: -origin.x, y: -origin.y)
-        Renderer.draw(model.document, in: context)
+        Renderer.draw(model.document, onTop: textEditor.editedAnnotationID, in: context)
         drawSelectionOverlay(in: context)
         drawCropOverlay(in: context)
     }

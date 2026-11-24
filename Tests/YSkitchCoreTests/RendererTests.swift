@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 import Testing
 @testable import YSkitchCore
 
@@ -104,5 +105,28 @@ let white = Pixel(r: 255, g: 255, b: 255, a: 255)
         #expect(p.pixel(20, 50) == red)
         #expect(p.pixel(45, 50) == white)
         #expect(p.pixel(5, 5) == white)
+    }
+
+    @Test func onTopAnnotationDrawsLastWithoutReordering() {
+        func stroke(_ hex: UInt32) -> Annotation {
+            Annotation(
+                style: AnnotationStyle(color: RGBAColor(hex: hex), thickness: 4),
+                shape: .rectangle(CGRect(x: 20, y: 30, width: 50, height: 40)))
+        }
+        var document = Document(blankSize: CGSize(width: 100, height: 100), scale: 1)
+        document.annotations = [stroke(0xFF0000), stroke(0x0000FF)]
+        func topPixel(onTop: UUID?) -> Pixel {
+            let context = CGContext(
+                data: nil, width: 100, height: 100, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+            context.scaleBy(x: 1, y: -1)
+            context.translateBy(x: 0, y: -100)
+            Renderer.draw(document, onTop: onTop, in: context)
+            return readPixels(context.makeImage()!).pixel(45, 30)
+        }
+        #expect(topPixel(onTop: nil) == blue)
+        #expect(topPixel(onTop: document.annotations[0].id) == red)
+        #expect(document.annotations[0].style.color == RGBAColor(hex: 0xFF0000))
     }
 }

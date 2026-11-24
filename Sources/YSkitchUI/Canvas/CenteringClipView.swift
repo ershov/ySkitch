@@ -59,7 +59,8 @@ final class CenteringClipView: NSClipView {
     /// Routes events on the surround to the canvas so drawing can start outside the image.
     override func hitTest(_ point: NSPoint) -> NSView? {
         guard let documentView, bounds.contains(convert(point, from: superview)) else { return super.hitTest(point) }
-        return documentView
+        // The canvas itself, or a subview such as the text editor lying over it.
+        return documentView.hitTest(convert(point, from: superview)) ?? documentView
     }
 
     override func resetCursorRects() {

@@ -1,8 +1,10 @@
 import CoreGraphics
+import Foundation
 
 public enum Renderer {
     /// `context` is already in document coordinates (origin top-left, y down).
-    public static func draw(_ document: Document, in context: CGContext) {
+    /// The annotation with id `onTop` is drawn last, without changing the document order.
+    public static func draw(_ document: Document, onTop: UUID? = nil, in context: CGContext) {
         context.saveGState()
         defer { context.restoreGState() }
         context.clip(to: document.canvasRect)
@@ -14,8 +16,12 @@ public enum Renderer {
             }
         }
         AnnotationRenderer.drawHighlighters(document.annotations(in: .highlight), in: context)
-        for annotation in document.annotations(in: .other) {
+        let others = document.annotations(in: .other)
+        for annotation in others where annotation.id != onTop {
             AnnotationRenderer.draw(annotation, in: context)
+        }
+        if let top = others.first(where: { $0.id == onTop }) {
+            AnnotationRenderer.draw(top, in: context)
         }
     }
 

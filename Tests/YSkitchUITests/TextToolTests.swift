@@ -145,6 +145,22 @@ struct TextToolTests {
         #expect(view.model.undoManager.undoActionName == "Typing")
     }
 
+    @Test func pressInsideEditedTextReachesTextView() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        click(controller, at: CGPoint(x: 50, y: 60))
+        try type("Hello", in: controller)
+        let view = controller.canvasView
+        let textView = try #require(view.textEditor.textView)
+        let clip = try #require(view.superview as? CenteringClipView)
+        func hit(_ point: CGPoint) -> NSView? {
+            clip.hitTest(clip.superview!.convert(point, from: view))
+        }
+        #expect(hit(CGPoint(x: textView.frame.midX, y: textView.frame.midY)) === textView)
+        #expect(hit(CGPoint(x: 300, y: 250)) === view)
+        #expect(view.textEditor.isEditing)
+    }
+
     @Test func toolChangeCommits() throws {
         let controller = makeController()
         defer { controller.close() }
