@@ -38,7 +38,7 @@ Out of scope (for now): screen capture, global hotkeys, menu-bar/background proc
 | ID | Req | Src | Stage |
 |---|---|---|---|
 | IN-1 | On launch, a new window is created. A new window (launch or `⌘N`) uses the clipboard image if one is present, otherwise a blank canvas | U | 1 |
-| IN-2 | `⌘⇧N`: new blank canvas, 1024×768 pt, white | U | 1 |
+| IN-2 | `⌘⇧N`: new blank canvas, 800×600 pt, white | U | 1 |
 | IN-3 | Open image file (PNG, JPEG, HEIC, GIF first frame, TIFF, BMP, WebP) via `⌘O` | U | 1 |
 | IN-4 | Open via drag-and-drop onto window / app icon / Dock | S | 1 |
 | IN-5 | Open via "Open With…" and CLI (`open -a ySkitch file.png`) | S | 2 |

@@ -157,7 +157,7 @@ struct WindowRegistryTests {
         defer { controller.close() }
         let document = controller.model.document
         #expect(document.base == nil)
-        #expect(document.imageRect.size == CGSize(width: 1024, height: 768))
+        #expect(document.canvasRect.size == CGSize(width: 800, height: 600))
     }
 
     @Test func openURLUsesFileName() throws {

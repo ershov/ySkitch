@@ -47,8 +47,10 @@ final class WindowRegistry {
         return true
     }
 
+    static let blankSize = CGSize(width: 800, height: 600)
+
     private static func blankDocument() -> Document {
-        Document(blankSize: CGSize(width: 1024, height: 768), scale: NSScreen.main?.backingScaleFactor ?? 2)
+        Document(blankSize: blankSize, scale: NSScreen.main?.backingScaleFactor ?? 2)
     }
 
     @discardableResult
