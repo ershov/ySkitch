@@ -17,26 +17,27 @@ Fast, keyboard-driven image annotation for macOS. Copy a screenshot, launch, mar
 
 | Tool | Key | What it does |
 |---|---|---|
-| Select | `V` | Click, `⇧`-click or marquee select; move, resize, drag endpoints |
-| Text | `T` | Multiline text; double-click to edit; thickness sets font size |
+| Select | `V` | Click, `⇧`-click or marquee select; move, resize, drag endpoints; double-click text to edit |
+| Text | `T` | Multiline text; click selects, double-click edits, click on empty space starts new text; thickness sets font size |
 | Arrow | `A` | Skitch-style tapered arrow; head scales with thickness |
 | Line | `L` | Straight segment |
 | Rectangle | `R` | Outline |
 | Rounded rectangle | `U` | Outline; corner radius scales with thickness |
 | Ellipse | `O` | Outline |
 | Pen | `P` | Freehand with stroke smoothing |
-| Highlighter | `H` | Semi-transparent marker; no darkening where a stroke overlaps itself |
-| Pixelate | `X` | Region; original pixels are unrecoverable in the output |
-| Crop | `C` | Non-destructive, re-croppable; `↩` applies, `Esc` cancels |
+| Highlighter | `H` | Semi-transparent marker; all strokes form one layer, so overlaps highlight once |
+| Pixelate | `X` | Redacts image pixels only, annotations stay on top; unrecoverable in the output; thickness sets block size |
+| Crop | `C` | Non-destructive, re-croppable; can pad beyond the image with white; double-click selects the whole image; `↩` applies, `Esc` cancels |
 
 - Fixed 8-color Skitch palette; each tool remembers its own color and thickness.
 - Drawing tools edit too: click an annotation to select it, drag it or its handles to change it.
+- Restyle several objects at once: a color or slider position applies to each selected object, in its own tool's range.
 - The canvas grows to fit annotations drawn past the image edge.
 - The status bar shows live geometry of the element being drawn or selected (position, size, length, angle, thickness).
 
 ## Workflow
 
-1. **In:** launch or `⌘N` to start from the clipboard image; `⌘O` to open a file (PNG, JPEG, HEIC, GIF, TIFF, BMP, WebP); drop an image on the window or the app icon; `⌘V` replaces the current image. `⇧⌘N` opens a blank canvas.
+1. **In:** launch or `⌘N` to start from the clipboard image; `⌘O` to open a file (PNG, JPEG, HEIC, GIF, TIFF, BMP, WebP); drop an image on the window or the app icon; `⌘V` replaces the current image. `⇧⌘N` opens a blank 800×600 pt canvas.
 2. **Annotate** with the tools above.
 3. **Out:** `⇧⌘C` (or `⌘C` with nothing selected) copies the image; `⌘S` saves a PNG; or drag the **Drag** handle in the status bar into Slack, Mail, Finder.
 
@@ -48,6 +49,8 @@ Closed a window by mistake? `⇧⌘T` brings it back, annotations and undo histo
 |---|---|
 | Palette color | `1`–`8` |
 | Thinner / thicker | `[` / `]` |
+| Add to selection | right-drag or `⌃`-drag a marquee, in any tool; with `⌥` removes |
+| Select all | `⌘A` |
 | Nudge selection | arrow keys: 1 pt, `⇧` 20 pt |
 | Clone and move | `⌘`-drag an annotation |
 | Constrain | `⇧`: 45° for lines/arrows, square/circle for shapes, axis lock when moving |
@@ -59,7 +62,7 @@ Closed a window by mistake? `⇧⌘T` brings it back, annotations and undo histo
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Copy image / save | `⇧⌘C` / `⌘S` |
 | Reopen closed window | `⇧⌘T` |
-| Cancel / deselect | `Esc` |
+| Cancel / deselect | `Esc`, in every tool |
 
 ## Command line
 
