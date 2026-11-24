@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.4 · 2026-11-24
+Status: final v1.5 · 2026-11-25
 
 ## 1. Purpose
 
@@ -42,7 +42,7 @@ Out of scope (for now): screen capture, global hotkeys, menu-bar/background proc
 | IN-2 | `⌘⇧N`: new blank canvas, 800×600 pt, white | U | 1 |
 | IN-3 | Open image file (PNG, JPEG, HEIC, GIF first frame, TIFF, BMP, WebP) via `⌘O` | U | 1 |
 | IN-4 | Open via drag-and-drop onto window / app icon / Dock | S | 1 |
-| IN-5 | Open via "Open With…" and CLI (`open -a ySkitch file.png`) | S | 2 |
+| IN-5 | Open via "Open With…" and `open -a ySkitch file.png`; command line per §5.9 | S | 2 |
 | IN-6 | Paste an image into an existing document as a movable image object | S | 2 |
 | IN-7 | Recent files menu | S | 2 |
 | IN-8 | `⌘V` with an image on the clipboard replaces the window's content: the image becomes the new base image and all annotations are cleared; undoable. When the clipboard holds copied ySkitch annotations, `⌘V` pastes those instead (ED-3) | U | 1 |
@@ -163,6 +163,27 @@ All annotations are vector objects, editable until export (flattened only on out
 - **Window:** Minimize `⌘M` · Zoom · Bring All to Front
 
 Single keys go to the focused view first: the canvas handles them, and while a text annotation is edited they are typed into it. Clicking a Tools item works like clicking the toolbar.
+
+### 5.9 Command line
+
+The app binary (`ySkitch.app/Contents/MacOS/ySkitch`, run directly or through a symlink in `PATH`) is a command-line launcher. Finder, Dock and `open` launches keep standard macOS behavior.
+
+| ID | Req | Src | Stage |
+|---|---|---|---|
+| CLI-1 | Started from a shell (parent process is not launchd), the binary only hands the request to the app and exits; the app is not tied to the terminal. It finds the `.app` through its resolved executable path (symlinks followed) and reads version and bundle identifier from that bundle's `Info.plist` | U | 2 |
+| CLI-2 | No arguments: start the app (IN-1 window), or bring a running one to the front without opening a window | U | 2 |
+| CLI-3 | `FILE …`: one new window per file, in argument order; repeats open repeated windows. Relative paths resolve against the shell's working directory | U | 2 |
+| CLI-4 | `--clipboard`: a new window from the clipboard image, in its place among the files; repeatable. No image on the clipboard: nothing opens | U | 2 |
+| CLI-5 | `-`: one window from an image read from standard input, titled like a clipboard image. Given more than once, or with nothing piped in (terminal), is a usage error | U | 2 |
+| CLI-6 | `--`: all following arguments are files | U | 2 |
+| CLI-7 | `--quit`: quit the running app; nothing running is success | U | 2 |
+| CLI-8 | `--help`: usage to stdout; `--version`: `VERSION+build` (VER-4 `full`) to stdout. Both exit 0 without starting the app | U | 2 |
+| CLI-9 | Usage errors (unknown option, repeated `-`, `--quit`/`--version` combined with other arguments, `-` on a terminal): message and a `--help` hint to stderr, exit 2, the app is not touched | S | 2 |
+| CLI-10 | File problems (missing, folder, unreadable, empty, not an image; same for standard input): the launcher prints each to stderr and exits 1, but still forwards everything. The app opens what it can and shows one alert per invocation listing all problems — a sheet on the newest window, app-modal only without windows | U | 2 |
+| CLI-11 | Fresh launch with arguments opens only the requested windows; if none opened (no clipboard image, only bad files), the IN-1 window opens so the app never starts without a window | S | 2 |
+| CLI-12 | Running app: the request goes as a distributed notification, re-posted until acknowledged (the app may still be launching); then the app is activated through LaunchServices. No acknowledgement within 10 s: "not responding" to stderr, exit 1 | S | 2 |
+
+Exit codes: 0 success · 1 file problems or the app didn't respond · 2 usage error.
 
 ## 6. UI
 

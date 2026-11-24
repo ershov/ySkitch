@@ -36,6 +36,40 @@ final class WindowRegistry {
         return show(Document(image: image), title: DocumentNaming.title(sourceURL: url, date: .now))
     }
 
+    /// One window per loadable item, in order. A clipboard without an image opens nothing and is not a problem.
+    func open(_ items: [LaunchItem], pasteboard: NSPasteboard) -> (opened: Int, problems: [OpenProblem]) {
+        var opened = 0
+        var problems: [OpenProblem] = []
+        for item in items {
+            switch item {
+            case .clipboard:
+                guard let pasted = PasteboardImageReader.read(from: pasteboard) else { continue }
+                show(Document(image: pasted.image), title: DocumentNaming.title(sourceURL: pasted.sourceURL, date: .now))
+                opened += 1
+            case .stdin:
+                continue
+            case .file(let path):
+                switch ImageFileLoader.load(path: path) {
+                case .success(let image):
+                    show(Document(image: image), title: DocumentNaming.title(sourceURL: URL(filePath: path), date: .now))
+                    opened += 1
+                case .failure(let reason):
+                    problems.append(OpenProblem(source: .file(path), reason: reason))
+                }
+            case .stdinFile(let path):
+                defer { try? FileManager.default.removeItem(atPath: path) }
+                switch ImageFileLoader.load(path: path) {
+                case .success(let image):
+                    show(Document(image: image), title: DocumentNaming.title(sourceURL: nil, date: .now))
+                    opened += 1
+                case .failure(let reason):
+                    problems.append(OpenProblem(source: .standardInput, reason: reason == .notFound ? .empty : reason))
+                }
+            }
+        }
+        return (opened, problems)
+    }
+
     @discardableResult
     func openDropped(_ pasteboard: NSPasteboard) -> Bool {
         let urls = PasteboardImageReader.imageFileURLs(in: pasteboard)

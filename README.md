@@ -61,6 +61,43 @@ Closed a window by mistake? `⇧⌘T` brings it back, annotations and undo histo
 | Reopen closed window | `⇧⌘T` |
 | Cancel / deselect | `Esc` |
 
+## Command line
+
+Link the app binary into your `PATH`:
+
+```sh
+mkdir -p ~/.local/bin
+ln -s /Applications/ySkitch.app/Contents/MacOS/ySkitch ~/.local/bin/yskitch
+```
+
+`~/bin` works the same way if it is in your `PATH`. `/usr/local/bin` may not exist on Apple Silicon and usually needs `sudo`.
+
+```text
+yskitch [--clipboard | - | FILE]...
+yskitch --quit | --help | --version
+```
+
+| Argument | Effect |
+|---|---|
+| (none) | Start ySkitch, or bring it to the front without a new window |
+| `FILE …` | One window per file, in order |
+| `--clipboard` | A window from the clipboard image, in its place among the files |
+| `-` | A window from an image on standard input |
+| `--` | Everything after it is a file |
+| `--quit` | Quit ySkitch |
+| `--help`, `--version` | Usage, version |
+
+- The command returns immediately; ySkitch keeps running on its own.
+- Files that can't be opened are listed on stderr (exit 1) and in one alert in the app; the rest still open. Usage errors exit 2 and leave the app alone.
+
+```sh
+yskitch --clipboard ~/Desktop/before.png ~/Desktop/after.png
+curl -sL https://example.com/photo.jpg | yskitch -
+git show HEAD~1:docs/screenshot.png | yskitch -
+```
+
+`open -a ySkitch file.png` works as for any app.
+
 ## Build from source
 
 Requirements: macOS 26, Command Line Tools (`xcode-select --install`). Xcode is not needed.

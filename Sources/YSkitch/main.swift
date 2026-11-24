@@ -1,5 +1,9 @@
 import YSkitchUI
 
 MainActor.assumeIsolated {
-    YSkitchApp.run()
+    if YSkitchApp.isLaunchedByLaunchServices {
+        YSkitchApp.run()
+    } else {
+        Launcher.run(arguments: CommandLine.arguments)
+    }
 }
