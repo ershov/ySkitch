@@ -35,6 +35,29 @@ struct WindowRegistryTests {
         #expect(reopened.toolbar.settings === settings)
     }
 
+    @Test func newWindowFitsLargeDocumentInViewport() throws {
+        let registry = WindowRegistry(toolSettings: .inMemory())
+        let controller = registry.show(Document(blankSize: CGSize(width: 8000, height: 8000), scale: 1), title: "Large")
+        defer { controller.close() }
+        let scrollView = controller.scrollView
+        let content = NSScrollView.contentSize(
+            forFrameSize: scrollView.frame.size, horizontalScrollerClass: nil, verticalScrollerClass: nil,
+            borderType: scrollView.borderType, controlSize: .regular, scrollerStyle: scrollView.scrollerStyle)
+        let size = try #require(scrollView.documentView).frame.size
+        #expect(size.width * scrollView.magnification <= content.width + 1)
+        #expect(size.height * scrollView.magnification <= content.height + 1)
+    }
+
+    @Test func reopenedWindowKeepsStoredMagnification() throws {
+        let registry = WindowRegistry(toolSettings: .inMemory())
+        let original = registry.show(Document(blankSize: CGSize(width: 8000, height: 8000), scale: 1), title: "Large")
+        original.scrollView.magnification = 0.5
+        try #require(original.window).close()
+        let reopened = try #require(registry.reopenLastClosed())
+        defer { reopened.close() }
+        #expect(reopened.scrollView.magnification == CGFloat(0.5))
+    }
+
     private func pngData(dpi: Double) -> Data {
         let ctx = CGContext(
             data: nil, width: 4, height: 2, bitsPerComponent: 8, bytesPerRow: 0,

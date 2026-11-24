@@ -88,6 +88,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         statusBar.dragHandle.imageProvider = { [weak self] in self?.dragPayload() }
         canvasView.onCropSessionChange = { [weak statusBar] in statusBar?.dragHandle.isEnabled = !$0 }
         updateStatusSize()
+        window.contentView?.layoutSubtreeIfNeeded()
         scrollView.zoomToFit()
         statusBar.update(magnification: scrollView.magnification)
     }

@@ -54,7 +54,7 @@ final class WindowRegistry {
     }
 
     @discardableResult
-    private func show(_ document: Document, title: String) -> DocumentWindowController {
+    func show(_ document: Document, title: String) -> DocumentWindowController {
         let controller = DocumentWindowController(document: document, title: title, toolSettings: toolSettings)
         guard let window = controller.window else { return controller }
         if controllers.isEmpty {
@@ -65,6 +65,9 @@ final class WindowRegistry {
         controller.scrollView.onDrop = { [weak self] in self?.openDropped($0) ?? false }
         register(controller, window: window)
         controller.showWindow(nil)
+        // The window frame is constrained to the screen only when shown.
+        window.contentView?.layoutSubtreeIfNeeded()
+        controller.scrollView.zoomToFit()
         return controller
     }
 
