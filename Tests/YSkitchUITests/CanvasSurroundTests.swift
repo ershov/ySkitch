@@ -28,10 +28,11 @@ struct CanvasSurroundTests {
     @Test func surroundFollowsAppearance() throws {
         let light = try surroundPixel(appearance: .aqua)
         let dark = try surroundPixel(appearance: .darkAqua)
+        #expect(light.brightnessComponent < 0.99)
         #expect(light.brightnessComponent > dark.brightnessComponent)
     }
 
-    @Test func surroundUsesWindowBackground() {
-        #expect(CanvasStyle.surroundColor == NSColor.windowBackgroundColor)
+    @Test func surroundUsesUnderPageBackground() {
+        #expect(CanvasStyle.surroundColor == NSColor.underPageBackgroundColor)
     }
 }
