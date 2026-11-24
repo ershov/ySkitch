@@ -42,6 +42,10 @@ final class CropInteraction: CanvasInteraction {
 
     var isDragging: Bool { drag != nil }
 
+    var statusGeometry: StatusGeometry? {
+        rect.map { .box(rect: $0, name: Tool.crop.name, thickness: nil) }
+    }
+
     var cursor: NSCursor { .crosshair }
 
     func activate() {

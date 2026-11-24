@@ -11,6 +11,8 @@ final class ShapeDrawingInteraction: CanvasInteraction {
     private var start: CGPoint?
     private var last: CGPoint = .zero
     private var annotationID: UUID?
+    private var rect: CGRect = .zero
+    private var thickness: CGFloat = 0
 
     init(tool: Tool, model: DocumentModel, toolbar: ToolbarModel, clickSelector: ClickSelector) {
         self.tool = tool
@@ -30,6 +32,8 @@ final class ShapeDrawingInteraction: CanvasInteraction {
         )
         start = point
         last = point
+        rect = CGRect(origin: point, size: .zero)
+        thickness = style.thickness
         annotationID = annotation.id
         model.beginGesture()
         model.updateGesture { $0.annotations.append(annotation) }
@@ -58,6 +62,14 @@ final class ShapeDrawingInteraction: CanvasInteraction {
         update(square: event.modifierFlags.contains(.shift))
     }
 
+    /// Drag start to the opposite corner of the drawn rect.
+    var statusGeometry: StatusGeometry? {
+        guard let start else { return nil }
+        let corner = CGPoint(
+            x: start.x == rect.minX ? rect.maxX : rect.minX, y: start.y == rect.minY ? rect.maxY : rect.minY)
+        return .box(name: tool.name, from: start, to: corner, thickness: thickness)
+    }
+
     func cancel() {
         guard start != nil else { return }
         start = nil
@@ -67,7 +79,8 @@ final class ShapeDrawingInteraction: CanvasInteraction {
 
     private func update(square: Bool) {
         guard let start, let id = annotationID else { return }
-        let shape = shape(for: ShapeGeometry.rect(from: start, to: last, square: square))
+        rect = ShapeGeometry.rect(from: start, to: last, square: square)
+        let shape = shape(for: rect)
         model.updateGesture { document in
             guard let index = document.annotations.firstIndex(where: { $0.id == id }) else { return }
             document.annotations[index].shape = shape

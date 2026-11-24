@@ -27,6 +27,7 @@ final class CanvasView: NSView, NSMenuItemValidation {
             guard let self else { return }
             textEditor.commit()
             _ = currentInteraction
+            statusDidChange()
         }
     }
 
@@ -52,6 +53,21 @@ final class CanvasView: NSView, NSMenuItemValidation {
     /// Starts in-place editing of a text annotation, caret at the end.
     func beginTextEditing(annotationID: UUID) {
         textEditor.beginEditing(annotationID: annotationID)
+    }
+
+    /// Called when `statusGeometry` may have changed without a document or selection change.
+    var onStatusChange: (() -> Void)?
+
+    func statusDidChange() { onStatusChange?() }
+
+    /// The element being drawn, else the text being edited, else the selection.
+    var statusGeometry: StatusGeometry? {
+        if let geometry = interaction?.handler.statusGeometry { return geometry }
+        if let id = textEditor.editedAnnotationID,
+           let annotation = model.document.annotations.first(where: { $0.id == id }) {
+            return StatusGeometry(annotation)
+        }
+        return StatusGeometry(selection: selection.selectedAnnotations)
     }
 
     func commitTextEditing() {
@@ -126,6 +142,7 @@ final class CanvasView: NSView, NSMenuItemValidation {
 
     private func cropOverlayDidChange() {
         needsDisplay = true
+        statusDidChange()
         invalidateCursors()
         guard isCropping != reportedCropping else { return }
         reportedCropping = isCropping
@@ -212,6 +229,7 @@ final class CanvasView: NSView, NSMenuItemValidation {
     }
 
     override func keyDown(with event: NSEvent) {
+        defer { statusDidChange() }
         if currentInteraction?.handleKey(event) == true { return }
         if event.keyCode == Self.escapeKeyCode {
             if let select = currentInteraction as? SelectInteraction, !select.isDragging {
@@ -270,12 +288,14 @@ final class CanvasView: NSView, NSMenuItemValidation {
     }
 
     override func mouseDown(with event: NSEvent) {
+        defer { statusDidChange() }
         if isPanMode { return }
         if textEditor.isEditing { return textEditor.commit() }
         currentInteraction?.mouseDown(at: documentPoint(event), event: event)
     }
 
     override func mouseDragged(with event: NSEvent) {
+        defer { statusDidChange() }
         guard isPanMode else { return currentInteraction?.mouseDragged(to: documentPoint(event), event: event) ?? () }
         panDrag(to: event.locationInWindow)
     }
@@ -286,11 +306,13 @@ final class CanvasView: NSView, NSMenuItemValidation {
     }
 
     override func mouseUp(with event: NSEvent) {
+        defer { statusDidChange() }
         if isPanMode { return }
         currentInteraction?.mouseUp(at: documentPoint(event), event: event)
     }
 
     override func flagsChanged(with event: NSEvent) {
+        defer { statusDidChange() }
         guard !isPanMode, let interaction = currentInteraction else { return super.flagsChanged(with: event) }
         interaction.flagsChanged(event)
     }
@@ -349,7 +371,10 @@ final class CanvasView: NSView, NSMenuItemValidation {
             SelectInteraction(
                 model: model, selection: selection, magnification: magnification,
                 beginTextEditing: { [weak self] in self?.beginTextEditing(annotationID: $0) },
-                overlayDidChange: { [weak self] in self?.needsDisplay = true })
+                overlayDidChange: { [weak self] in
+                    self?.needsDisplay = true
+                    self?.statusDidChange()
+                })
         case .text:
             TextInteraction(model: model, editor: textEditor)
         case .pen, .highlighter:

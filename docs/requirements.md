@@ -214,7 +214,18 @@ Single keys go to the focused view first: the canvas handles them, and while a t
   Later tools join the nearest group: step markers, stamps, callouts → after Text; arrow variants → shapes group.
 - **Color column**: 8 palette swatches, keys `1`–`8`, selected one ringed (`◉`); `+` (custom color) comes in Stage 2. Swatch: colored circle with a 4 pt white outline and a thin dark outer edge.
 - **Thickness slider**: below the swatches after a spacer, centered in the whole color column; it extends down so the color column ends level with the last tool row. No `[` / `]` labels. See §6.2.
-- **Status bar**: left — image size (px, pt, scale); center — drag handle (OUT-4); right, in order — `1:1` (actual size, `⌘0`), `Fit` (`⌘9`), zoom `−` / percentage / `+`.
+- **Status bar**: left — image size (px, pt, scale), or element info (below); center — drag handle (OUT-4); right, in order — `1:1` (actual size, `⌘0`), `Fit` (`⌘9`), zoom `−` / percentage / `+`.
+  - **Element info** replaces the image size while an element is drawn, moved, resized, nudged or selected, and while a text is edited, a crop session is open or a selection marquee is dragged; it updates live. Priority: element being drawn (or crop rect / marquee), else edited text, else selection, else image size.
+  - Fields are `·` separated integers; `px` = image pixels:
+    - Arrow, Line: `Arrow · (x1, y1) → (x2, y2) · L px · θ° · T pt` — start (arrow tail) → end (head), length, angle (0° = pointing right, counter-clockwise positive on screen, −179…180), stroke width.
+    - Rectangle, Rounded Rectangle, Ellipse: `Rectangle · (x1, y1) → (x2, y2) · W×H px · T pt` — while drawing: drag start corner → current corner; otherwise top-left → bottom-right.
+    - Pixelate: as Rectangle; last field = block size.
+    - Pen, Highlighter: `Pen · (x1, y1) → (x2, y2) · W×H px · T pt` — bounding box of the stroke points.
+    - Text: `Text · (x1, y1) → (x2, y2) · W×H px · 24 pt` — text box; last field = font size.
+    - Crop session: `Crop · (x1, y1) → (x2, y2) · W×H px`.
+    - Select marquee: `Select · (x1, y1) → (x2, y2) · W×H px`.
+    - Several selected: `3 objects · (x1, y1) → (x2, y2) · W×H px` — union of their geometry boxes.
+  - Coordinates: image pixels (points × scale, rounded) relative to the current canvas top-left, y down; negative beyond the top/left edge. Geometry is the model geometry (rect, endpoints, points), not render bounds. Sizes are in pt as on the thickness slider (`4 pt`, `4.5 pt`). Names are the tool names.
 - Title: source file name, else `ySkitch <date> at <time>` (same as the default export file name, DEF-8).
 
 **Dimensions** (points):

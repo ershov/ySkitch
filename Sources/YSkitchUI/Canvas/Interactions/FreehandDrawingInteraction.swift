@@ -62,6 +62,12 @@ final class FreehandDrawingInteraction: CanvasInteraction {
 
     func flagsChanged(_ event: NSEvent) {}
 
+    var statusGeometry: StatusGeometry? {
+        guard let id = annotationID,
+              let annotation = model.document.annotations.first(where: { $0.id == id }) else { return nil }
+        return StatusGeometry(annotation)
+    }
+
     func cancel() {
         guard points != nil else { return }
         points = nil

@@ -77,9 +77,13 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
             guard let self else { return }
             selection.documentDidChange()
             canvasView.documentDidChange()
-            updateStatusSize()
+            updateStatusInfo()
         }
-        selection.onChange = { [weak canvasView] in canvasView?.needsDisplay = true }
+        selection.onChange = { [weak self] in
+            self?.canvasView.needsDisplay = true
+            self?.updateStatusInfo()
+        }
+        canvasView.onStatusChange = { [weak self] in self?.updateStatusInfo() }
         statusBar.onActualSize = { [weak scrollView] in scrollView?.zoomToActualSize() }
         statusBar.onFit = { [weak scrollView] in scrollView?.zoomToFit() }
         statusBar.onZoomOut = { [weak scrollView] in scrollView?.zoomOut() }
@@ -87,14 +91,18 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         scrollView.onMagnificationChange = { [weak statusBar] in statusBar?.update(magnification: $0) }
         statusBar.dragHandle.imageProvider = { [weak self] in self?.dragPayload() }
         canvasView.onCropSessionChange = { [weak statusBar] in statusBar?.dragHandle.isEnabled = !$0 }
-        updateStatusSize()
+        updateStatusInfo()
         window.contentView?.layoutSubtreeIfNeeded()
         scrollView.zoomToFit()
         statusBar.update(magnification: scrollView.magnification)
     }
 
-    private func updateStatusSize() {
-        statusBar.update(canvasSize: model.document.canvasRect.size, scale: model.document.scale)
+    /// Geometry of the element being drawn or selected, else the image size.
+    private func updateStatusInfo() {
+        let document = model.document
+        statusBar.update(info: canvasView.statusGeometry.map {
+            StatusText.geometry($0, canvasOrigin: document.canvasRect.origin, scale: document.scale)
+        } ?? StatusText.size(canvas: document.canvasRect.size, scale: document.scale))
     }
 
     /// Nil during a crop session: the document is uncropped until the session ends.

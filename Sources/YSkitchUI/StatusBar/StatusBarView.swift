@@ -10,7 +10,7 @@ final class StatusBarView: NSView {
     let fitButton: NSButton
     let zoomOutButton: NSButton
     let zoomInButton: NSButton
-    let sizeLabel = NSTextField(labelWithString: "")
+    let infoLabel = NSTextField(labelWithString: "")
     let zoomLabel = NSTextField(labelWithString: "")
 
     var onActualSize: (() -> Void)?
@@ -36,16 +36,16 @@ final class StatusBarView: NSView {
         configure(zoomOutButton, #selector(zoomOut), "Zoom Out (⌘-)")
         configure(zoomInButton, #selector(zoomIn), "Zoom In (⌘+)")
 
-        sizeLabel.font = .systemFont(ofSize: NSFont.systemFontSize)
-        sizeLabel.textColor = .secondaryLabelColor
-        sizeLabel.lineBreakMode = .byTruncatingTail
-        sizeLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        infoLabel.font = .systemFont(ofSize: NSFont.systemFontSize)
+        infoLabel.textColor = .secondaryLabelColor
+        infoLabel.lineBreakMode = .byTruncatingTail
+        infoLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         zoomLabel.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
         zoomLabel.textColor = .secondaryLabelColor
         zoomLabel.alignment = .center
 
         controls.spacing = 6
-        for view in [sizeLabel, dragHandle, controls, separator] {
+        for view in [infoLabel, dragHandle, controls, separator] {
             view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(view)
         }
@@ -58,11 +58,11 @@ final class StatusBarView: NSView {
             separator.leadingAnchor.constraint(equalTo: leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: trailingAnchor),
             separator.heightAnchor.constraint(equalToConstant: 1),
-            sizeLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.inset),
-            sizeLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+            infoLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.inset),
+            infoLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
             dragHandle.centerXAnchor.constraint(equalTo: centerXAnchor),
             dragHandle.centerYAnchor.constraint(equalTo: centerYAnchor),
-            sizeLabel.trailingAnchor.constraint(lessThanOrEqualTo: dragHandle.leadingAnchor, constant: -Self.handleGap),
+            infoLabel.trailingAnchor.constraint(lessThanOrEqualTo: dragHandle.leadingAnchor, constant: -Self.handleGap),
             controls.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Self.inset),
             controls.centerYAnchor.constraint(equalTo: centerYAnchor),
             controls.leadingAnchor.constraint(greaterThanOrEqualTo: dragHandle.trailingAnchor, constant: Self.handleGap),
@@ -84,8 +84,8 @@ final class StatusBarView: NSView {
         separator.layer?.backgroundColor = NSColor.separatorColor.cgColor
     }
 
-    func update(canvasSize: CGSize, scale: CGFloat) {
-        sizeLabel.stringValue = StatusText.size(canvas: canvasSize, scale: scale)
+    func update(info: String) {
+        infoLabel.stringValue = info
     }
 
     func update(magnification: CGFloat) {

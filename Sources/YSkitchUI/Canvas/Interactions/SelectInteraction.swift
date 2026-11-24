@@ -46,6 +46,10 @@ final class SelectInteraction: CanvasInteraction {
 
     var isDragging: Bool { editor.isDragging || marqueeDrag != nil }
 
+    var statusGeometry: StatusGeometry? {
+        marquee.map { .box(rect: $0, name: Tool.select.name, thickness: nil) }
+    }
+
     func mouseDown(at point: CGPoint, event: NSEvent) {
         cancel()
         if editor.beginHandleDrag(at: point) { return }

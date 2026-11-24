@@ -59,6 +59,12 @@ final class LineDrawingInteraction: CanvasInteraction {
         update(flags: event.modifierFlags)
     }
 
+    var statusGeometry: StatusGeometry? {
+        guard let id = annotationID,
+              let annotation = model.document.annotations.first(where: { $0.id == id }) else { return nil }
+        return StatusGeometry(annotation)
+    }
+
     func cancel() {
         guard start != nil else { return }
         start = nil

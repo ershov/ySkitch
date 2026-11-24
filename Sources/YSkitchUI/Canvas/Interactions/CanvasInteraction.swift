@@ -14,11 +14,14 @@ protocol CanvasInteraction: AnyObject {
     func activate()
     /// Offered key-down events first; returns true when handled.
     func handleKey(_ event: NSEvent) -> Bool
+    /// Geometry of the element being drawn, if any.
+    var statusGeometry: StatusGeometry? { get }
 }
 
 extension CanvasInteraction {
     func activate() {}
     func handleKey(_ event: NSEvent) -> Bool { false }
+    var statusGeometry: StatusGeometry? { nil }
 }
 
 /// Selection behavior of a click (no drag) with a drawing tool.

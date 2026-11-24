@@ -15,7 +15,7 @@ struct StatusBarTests {
     @Test func showsSizeText() {
         let controller = makeController()
         defer { controller.close() }
-        #expect(controller.statusBar.sizeLabel.stringValue == "2880×1800 px · 1440×900 pt · @2x")
+        #expect(controller.statusBar.infoLabel.stringValue == "2880×1800 px · 1440×900 pt · @2x")
     }
 
     @Test func zoomInButtonChangesMagnification() {
@@ -75,13 +75,13 @@ struct MinimumWindowSizeTests {
 
     @Test func statusBarSubviewsDoNotOverlapAtMinimumWidth() {
         let statusBar = StatusBarView()
-        statusBar.update(canvasSize: CGSize(width: 10, height: 10), scale: 2)
+        statusBar.update(info: StatusText.size(canvas: CGSize(width: 10, height: 10), scale: 2))
         statusBar.update(magnification: 1)
         statusBar.frame = NSRect(x: 0, y: 0, width: statusBar.minimumWidth, height: StatusBarView.height)
         statusBar.layoutSubtreeIfNeeded()
 
         let handle = statusBar.dragHandle.frame
-        let label = statusBar.sizeLabel.frame
+        let label = statusBar.infoLabel.frame
         let controls = statusBar.zoomInButton.frame.union(statusBar.actualSizeButton.frame)
         let controlsInBar = statusBar.convert(controls, from: statusBar.actualSizeButton.superview)
         #expect(label.maxX <= handle.minX)

@@ -34,6 +34,7 @@ final class TextEditingController: NSObject, NSTextViewDelegate {
 
     var textView: NSTextView? { session?.textView }
     var isEditing: Bool { session != nil }
+    var editedAnnotationID: UUID? { session?.annotationID }
 
     func beginNew(at point: CGPoint) {
         commit()
@@ -72,6 +73,7 @@ final class TextEditingController: NSObject, NSTextViewDelegate {
     func commit() {
         guard let session else { return }
         self.session = nil
+        defer { canvas.statusDidChange() }
         let textView = session.textView
         textView.delegate = nil
         textView.removeFromSuperview()
@@ -115,6 +117,7 @@ final class TextEditingController: NSObject, NSTextViewDelegate {
         textView.delegate = self
         styleObservation += 1
         observeToolbarStyle()
+        canvas.statusDidChange()
     }
 
     private func configure(_ textView: EditingTextView) {

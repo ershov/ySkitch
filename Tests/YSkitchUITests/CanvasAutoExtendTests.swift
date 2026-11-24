@@ -46,7 +46,10 @@ struct CanvasAutoExtendTests {
     private func expectViewMatchesCanvas(_ controller: DocumentWindowController) {
         let canvas = controller.model.document.canvasRect
         #expect(controller.canvasView.frame.size == canvas.size)
-        #expect(controller.statusBar.sizeLabel.stringValue == StatusText.size(canvas: canvas.size, scale: 1))
+        let expected = controller.canvasView.statusGeometry.map {
+            StatusText.geometry($0, canvasOrigin: canvas.origin, scale: 1)
+        } ?? StatusText.size(canvas: canvas.size, scale: 1)
+        #expect(controller.statusBar.infoLabel.stringValue == expected)
     }
 
     @Test func drawingPastRightEdgeGrowsCanvas() {

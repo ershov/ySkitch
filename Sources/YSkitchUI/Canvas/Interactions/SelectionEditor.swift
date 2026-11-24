@@ -167,6 +167,8 @@ final class SelectionEditingInteraction: CanvasInteraction {
 
     func handleKey(_ event: NSEvent) -> Bool { drawing.handleKey(event) }
 
+    var statusGeometry: StatusGeometry? { drawing.statusGeometry }
+
     func mouseDown(at point: CGPoint, event: NSEvent) {
         cancel()
         if !editor.beginDrag(at: point, cloning: event.modifierFlags.contains(.command)) { drawing.mouseDown(at: point, event: event) }
