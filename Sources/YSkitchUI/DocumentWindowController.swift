@@ -7,7 +7,7 @@ extension NSPasteboard.PasteboardType {
 }
 
 extension Annotation {
-    fileprivate func withNewID() -> Annotation {
+    func withNewID() -> Annotation {
         var copy = self
         copy.id = UUID()
         copy.extendsCanvas = true

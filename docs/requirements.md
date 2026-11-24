@@ -128,7 +128,7 @@ All annotations are vector objects, editable until export (flattened only on out
 |---|---|---|---|
 | ED-1 | Select tool; click/marquee select; `⇧`-click multi-select. In every drawing tool except Text and Crop, a click without a drag creates nothing and selects the topmost annotation under the cursor (empty space clears the selection); the tool stays active | S | 1 |
 | ED-2 | Move, resize, endpoint drag (lines/arrows). In the drawing tools of ED-1, a press on a handle of the selected annotation or on a selected annotation (topmost under the cursor) moves/resizes it as in the Select tool; a press elsewhere draws | S | 1 |
-| ED-3 | Delete (`⌫`), duplicate (`⌘D`), copy/paste objects between windows | S | 1 |
+| ED-3 | Delete (`⌫`), duplicate (`⌘D`), copy/paste objects between windows; `⌘`-drag on an annotation (Select tool, or a selected annotation in a drawing tool) moves a copy of it (of the whole selection if it is selected) and selects the copy; `Esc` cancels; a `⌘`-click without a drag creates nothing; one undo step | S | 1 |
 | ED-4 | Nudge with arrow keys (1 pt; `⇧` = 20 pt); consecutive nudges are one undo step | S | 1 |
 | ED-5 | Z-order: bring to front / send to back | S | 2 |
 | ED-6 | Unlimited undo/redo (`⌘Z` / `⌘⇧Z`) per document | S | 1 |
@@ -139,7 +139,7 @@ All annotations are vector objects, editable until export (flattened only on out
 | ID | Req | Src | Stage |
 |---|---|---|---|
 | KEY-1 | `⇧` while drawing line/arrow: constrain to 45° steps | U | 1 |
-| KEY-2 | `⇧` while drawing rect/ellipse: square/circle; while moving: constrain axis | S | 1 |
+| KEY-2 | `⇧` while drawing rect/ellipse: square/circle; while moving or `⌘`-dragging a copy: constrain axis | S | 1 |
 | KEY-3 | `⌥` while drawing arrow: reverse direction (head at start point) | U | 1 |
 | KEY-4 | `⌥` while drawing rect/ellipse: draw from center | S | 2 |
 | KEY-5 | Single-key tool shortcuts (V select, T text, A arrow, L line, R rect, U rounded rect, O ellipse, P pen, H highlighter, X pixelate, C crop) | S | 1 |

@@ -65,6 +65,9 @@ final class SelectInteraction: CanvasInteraction {
             selection.select([hit])
             return beginTextEditing(hit)
         }
+        if event.modifierFlags.contains(.command) {
+            return editor.beginClone(of: selection.contains(hit) ? selection.selectedIDs : [hit], from: point)
+        }
         if shift {
             selection.toggle(hit)
         } else if !selection.contains(hit) {

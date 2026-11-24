@@ -6,6 +6,8 @@ import YSkitchCore
 final class SelectionEditor {
     private enum Drag {
         case move(originals: [UUID: Annotation])
+        /// `originals` are the copies at their starting position; `previous` is the selection to restore.
+        case clone(originals: [UUID: Annotation], previous: [UUID])
         case resize(original: Annotation, handle: BoundsHandle)
         case endpoint(original: Annotation, which: Endpoint)
     }
@@ -26,14 +28,15 @@ final class SelectionEditor {
 
     var isDragging: Bool { drag != nil }
 
-    /// Starts a handle drag or, on a selected topmost annotation, a move; false leaves the press to the caller.
-    func beginDrag(at point: CGPoint) -> Bool {
+    /// Starts a handle drag or, on a selected topmost annotation, a move (a clone with `cloning`);
+    /// false leaves the press to the caller.
+    func beginDrag(at point: CGPoint, cloning: Bool = false) -> Bool {
         if beginHandleDrag(at: point) { return true }
         let tolerance = SelectInteraction.hitTolerance / magnification()
         guard let hit = AnnotationHitTest.topmost(in: model.document, at: point, tolerance: tolerance),
               selection.contains(hit)
         else { return false }
-        beginMove(from: point)
+        if cloning { beginClone(of: selection.selectedIDs, from: point) } else { beginMove(from: point) }
         return true
     }
 
@@ -57,6 +60,17 @@ final class SelectionEditor {
         begin(.move(originals: Dictionary(uniqueKeysWithValues: originals.map { ($0.id, $0) })), at: point)
     }
 
+    /// Starts moving copies of the given annotations; the copies become the selection.
+    func beginClone(of ids: [UUID], from point: CGPoint) {
+        let sources = ids.compactMap { id in model.document.annotations.first { $0.id == id } }
+        guard !sources.isEmpty else { return }
+        let copies = sources.map { $0.withNewID() }
+        let previous = selection.selectedIDs
+        begin(.clone(originals: Dictionary(uniqueKeysWithValues: copies.map { ($0.id, $0) }), previous: previous), at: point)
+        model.updateGesture { $0.annotations.append(contentsOf: copies) }
+        selection.select(copies.map(\.id))
+    }
+
     func dragged(to point: CGPoint, flags: NSEvent.ModifierFlags) {
         last = point
         update(flags: flags)
@@ -66,7 +80,7 @@ final class SelectionEditor {
         guard let drag else { return }
         let shift = flags.contains(.shift)
         switch drag {
-        case .move(let originals):
+        case .move(let originals), .clone(let originals, _):
             var delta = CGVector(dx: last.x - start.x, dy: last.y - start.y)
             if shift {
                 if abs(delta.dx) >= abs(delta.dy) { delta.dy = 0 } else { delta.dx = 0 }
@@ -93,15 +107,23 @@ final class SelectionEditor {
         self.drag = nil
         switch drag {
         case .move: model.endGesture("Move")
+        case .clone(_, let previous):
+            if ShapeGeometry.isDrag(from: start, to: last) {
+                model.endGesture("Duplicate")
+            } else {
+                model.cancelGesture()
+                selection.select(previous)
+            }
         case .resize: model.endGesture("Resize")
         case .endpoint: model.endGesture("Move Endpoint")
         }
     }
 
     func cancel() {
-        guard drag != nil else { return }
-        drag = nil
+        guard let drag else { return }
+        self.drag = nil
         model.cancelGesture()
+        if case .clone(_, let previous) = drag { selection.select(previous) }
     }
 
     private func begin(_ drag: Drag, at point: CGPoint) {
@@ -147,7 +169,7 @@ final class SelectionEditingInteraction: CanvasInteraction {
 
     func mouseDown(at point: CGPoint, event: NSEvent) {
         cancel()
-        if !editor.beginDrag(at: point) { drawing.mouseDown(at: point, event: event) }
+        if !editor.beginDrag(at: point, cloning: event.modifierFlags.contains(.command)) { drawing.mouseDown(at: point, event: event) }
     }
 
     func mouseDragged(to point: CGPoint, event: NSEvent) {
