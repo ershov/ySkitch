@@ -1,4 +1,5 @@
 import AppKit
+import YSkitchCore
 
 /// Centers a document smaller than the viewport instead of pinning it to a corner.
 final class CenteringClipView: NSClipView {
@@ -19,6 +20,11 @@ final class CenteringClipView: NSClipView {
         documentFrameObserver.map(NotificationCenter.default.removeObserver)
     }
 
+    override func viewDidChangeBackingProperties() {
+        super.viewDidChangeBackingProperties()
+        scroll(to: constrainBoundsRect(bounds).origin)
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         guard let documentFrame = documentView?.frame, let context = NSGraphicsContext.current else { return }
@@ -36,11 +42,16 @@ final class CenteringClipView: NSClipView {
     override func constrainBoundsRect(_ proposedBounds: NSRect) -> NSRect {
         var rect = super.constrainBoundsRect(proposedBounds)
         guard let documentFrame = documentView?.frame else { return rect }
+        let pixelsPerPoint = ((superview as? NSScrollView)?.magnification ?? 1) * (window?.backingScaleFactor ?? 1)
         if rect.width > documentFrame.width {
-            rect.origin.x = documentFrame.minX - (rect.width - documentFrame.width) / 2
+            rect.origin.x = PixelAlignment.centeredOrigin(
+                documentMin: documentFrame.minX, documentLength: documentFrame.width,
+                viewportLength: rect.width, pixelsPerPoint: pixelsPerPoint)
         }
         if rect.height > documentFrame.height {
-            rect.origin.y = documentFrame.minY - (rect.height - documentFrame.height) / 2
+            rect.origin.y = PixelAlignment.centeredOrigin(
+                documentMin: documentFrame.minY, documentLength: documentFrame.height,
+                viewportLength: rect.height, pixelsPerPoint: pixelsPerPoint)
         }
         return rect
     }
