@@ -6,6 +6,15 @@ public enum ToolShortcut {
         case thicknessStep(Int)
     }
 
+    /// The lowercase key that triggers `action`; thickness steps map by sign.
+    public static func key(for action: Action) -> String {
+        switch action {
+        case .tool(let tool): tool.key.lowercased()
+        case .color(let index): "\(index + 1)"
+        case .thicknessStep(let steps): steps < 0 ? "[" : "]"
+        }
+    }
+
     public static func action(for characters: String) -> Action? {
         guard characters.count == 1, let character = characters.first else { return nil }
         switch character {

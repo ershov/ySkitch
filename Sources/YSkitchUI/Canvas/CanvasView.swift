@@ -116,6 +116,10 @@ final class CanvasView: NSView, NSMenuItemValidation {
 
     var isCropping: Bool { crop?.isActive ?? false }
 
+    func applyCrop() { crop?.apply() }
+
+    func cancelCrop() { crop?.dismiss() }
+
     /// Called with the new state when a crop session starts or ends.
     var onCropSessionChange: ((Bool) -> Void)?
     private var reportedCropping = false
@@ -227,6 +231,8 @@ final class CanvasView: NSView, NSMenuItemValidation {
             }
             return
         }
+        // Plain keys reach menu key equivalents only when no responder handles them; handling them here
+        // also covers ⇧ variants.
         if event.modifierFlags.isDisjoint(with: [.command, .control, .option]),
            let action = event.charactersIgnoringModifiers.flatMap(ToolShortcut.action(for:)) {
             toolbar.perform(action)

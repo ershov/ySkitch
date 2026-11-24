@@ -145,6 +145,22 @@ All annotations are vector objects, editable until export (flattened only on out
 | KEY-5 | Single-key tool shortcuts (V select, T text, A arrow, L line, R rect, U rounded rect, O ellipse, P pen, H highlighter, X pixelate, C crop) | S | 1 |
 | KEY-6 | Number keys `1`–`8` select palette color; `[` / `]` step the thickness slider down / up | S | 1 |
 | KEY-7 | `Esc` cancels current operation / deselects | S | 1 |
+| KEY-8 | Every function has a menu item showing its shortcut (menus below) | U | 1 |
+
+#### Menus
+
+- **ySkitch:** About · Hide `⌘H` · Hide Others `⌥⌘H` · Show All · Quit `⌘Q`
+- **File:** New `⌘N` · New Blank `⇧⌘N` · Open… `⌘O` · Reopen Closed Window `⇧⌘T` (disabled with empty history) · Save `⌘S` · Save As… `⇧⌘S` · Close `⌘W`
+- **Edit:** Undo `⌘Z` · Redo `⇧⌘Z` · Cut `⌘X` · Copy `⌘C` · Copy Image `⇧⌘C` · Paste `⌘V` · Duplicate `⌘D` · Delete (`⌫` on the canvas) · Select All `⌘A`
+- **Tools** (single keys, no modifiers):
+  - Tools in toolbar groups, checkmark on the active one: Select `V` · Text `T` · Arrow `A`, Line `L`, Rectangle `R`, Rounded Rectangle `U`, Ellipse `O` · Pen `P`, Highlighter `H` · Pixelate `X` · Crop `C`
+  - Color ▸ Red `1` … Black `8` (§6.3), checkmark on the shown color; disabled when the tool or selection has no color
+  - Thinner `[` · Thicker `]`; disabled without a thickness
+  - Apply Crop `↩` · Cancel Crop `Esc`; enabled only during a crop session
+- **View:** Zoom In `⌘+` (also `⌘=`) · Zoom Out `⌘-` · Actual Size `⌘0` · Zoom to Fit `⌘9` · Enter Full Screen `⌃⌘F`
+- **Window:** Minimize `⌘M` · Zoom · Bring All to Front
+
+Single keys go to the focused view first: the canvas handles them, and while a text annotation is edited they are typed into it. Clicking a Tools item works like clicking the toolbar.
 
 ## 6. UI
 

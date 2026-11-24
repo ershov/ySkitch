@@ -11,6 +11,9 @@ public enum Palette {
         RGBAColor(hex: 0x000000),
     ]
 
+    /// Parallel to `colors`.
+    public static let names = ["Red", "Orange", "Yellow", "Green", "Blue", "Pink", "White", "Black"]
+
     public static let defaultColorIndex = 5
     public static let defaultColor = colors[defaultColorIndex]
 }

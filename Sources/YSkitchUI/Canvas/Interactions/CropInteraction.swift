@@ -60,8 +60,7 @@ final class CropInteraction: CanvasInteraction {
             return true
         }
         if event.keyCode == Self.escapeKeyCode {
-            cancel()
-            toolbar.activeTool = toolbar.previousTool
+            dismiss()
             return true
         }
         return false
@@ -73,6 +72,13 @@ final class CropInteraction: CanvasInteraction {
         drag = nil
         model.updateGesture { $0.applyCrop(rect) }
         model.endGesture("Crop")
+        toolbar.activeTool = toolbar.previousTool
+    }
+
+    /// Cancels the session and returns to the previous tool.
+    func dismiss() {
+        guard isActive else { return }
+        cancel()
         toolbar.activeTool = toolbar.previousTool
     }
 

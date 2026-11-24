@@ -12,7 +12,7 @@ struct MainMenuTests {
 
     @Test func topLevelTitles() {
         let titles = MainMenu.build().items.compactMap { $0.submenu?.title }
-        #expect(titles == ["ySkitch", "File", "Edit", "View", "Window", "Help"])
+        #expect(titles == ["ySkitch", "File", "Edit", "Tools", "View", "Window", "Help"])
     }
 
     @Test func shortcuts() throws {
@@ -30,6 +30,13 @@ struct MainMenuTests {
             ("Edit", "Redo", "z", [.command, .shift], #selector(UndoActions.redo(_:))),
             ("Edit", "Copy", "c", .command, #selector(NSText.copy(_:))),
             ("Edit", "Paste", "v", .command, #selector(NSText.paste(_:))),
+            ("Edit", "Cut", "x", .command, #selector(DocumentWindowController.cut(_:))),
+            ("Edit", "Duplicate", "d", .command, #selector(DocumentWindowController.duplicate(_:))),
+            ("Edit", "Delete", "", [], #selector(NSText.delete(_:))),
+            ("Edit", "Select All", "a", .command, #selector(NSText.selectAll(_:))),
+            ("View", "Enter Full Screen", "f", [.command, .control], #selector(NSWindow.toggleFullScreen(_:))),
+            ("Window", "Zoom", "", [], #selector(NSWindow.performZoom(_:))),
+            ("Window", "Bring All to Front", "", [], #selector(NSApplication.arrangeInFront(_:))),
             ("Window", "Minimize", "m", .command, #selector(NSWindow.performMiniaturize(_:))),
             ("View", "Zoom In", "+", .command, #selector(DocumentWindowController.zoomIn(_:))),
             ("View", "Zoom Out", "-", .command, #selector(DocumentWindowController.zoomOut(_:))),
@@ -39,7 +46,7 @@ struct MainMenuTests {
         for (menu, title, key, modifiers, action) in cases {
             let item = try menuItem(menu, title)
             #expect(item.keyEquivalent == key, "\(title) key")
-            #expect(item.keyEquivalentModifierMask == modifiers, "\(title) modifiers")
+            if !key.isEmpty { #expect(item.keyEquivalentModifierMask == modifiers, "\(title) modifiers") }
             #expect(item.action == action, "\(title) action")
             #expect(item.target == nil, "\(title) target")
         }

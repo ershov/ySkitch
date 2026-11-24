@@ -1,4 +1,5 @@
 import AppKit
+import YSkitchCore
 
 @MainActor
 enum MainMenu {
@@ -6,7 +7,7 @@ enum MainMenu {
 
     static func build() -> NSMenu {
         let main = NSMenu()
-        for menu in [appMenu(), fileMenu(), editMenu(), viewMenu(), windowMenu(), helpMenu()] {
+        for menu in [appMenu(), fileMenu(), editMenu(), toolsMenu(), viewMenu(), windowMenu(), helpMenu()] {
             let item = NSMenuItem(title: menu.title, action: nil, keyEquivalent: "")
             item.submenu = menu
             main.addItem(item)
@@ -69,6 +70,46 @@ enum MainMenu {
         menu.addItem(item("Delete", #selector(NSText.delete(_:))))
         menu.addItem(item("Select All", #selector(NSText.selectAll(_:)), "a"))
         return menu
+    }
+
+    /// Keys without modifiers: AppKit offers them to the menu only when the focused view does not handle them.
+    private static func toolsMenu() -> NSMenu {
+        let menu = NSMenu(title: "Tools")
+        for (index, group) in Tool.groups.enumerated() {
+            if index > 0 { menu.addItem(.separator()) }
+            for tool in group { menu.addItem(shortcutItem(tool.name, .tool(tool))) }
+        }
+        menu.addItem(.separator())
+        let colors = NSMenu(title: "Color")
+        for (index, name) in Palette.names.enumerated() {
+            let item = shortcutItem(name, .color(index))
+            item.image = swatch(Palette.colors[index])
+            colors.addItem(item)
+        }
+        let color = NSMenuItem(title: colors.title, action: nil, keyEquivalent: "")
+        color.submenu = colors
+        menu.addItem(color)
+        menu.addItem(shortcutItem("Thinner", .thicknessStep(-1)))
+        menu.addItem(shortcutItem("Thicker", .thicknessStep(1)))
+        menu.addItem(.separator())
+        menu.addItem(item("Apply Crop", #selector(DocumentWindowController.applyCrop(_:)), "\r", []))
+        menu.addItem(item("Cancel Crop", #selector(DocumentWindowController.cancelCrop(_:)), "\u{1b}", []))
+        return menu
+    }
+
+    private static func shortcutItem(_ title: String, _ action: ToolShortcut.Action) -> NSMenuItem {
+        item(title, #selector(DocumentWindowController.performToolShortcut(_:)), ToolShortcut.key(for: action), [])
+    }
+
+    private static func swatch(_ color: RGBAColor) -> NSImage {
+        NSImage(size: NSSize(width: 12, height: 12), flipped: false) { rect in
+            let path = NSBezierPath(ovalIn: rect.insetBy(dx: 0.5, dy: 0.5))
+            NSColor(cgColor: color.cgColor)?.setFill()
+            path.fill()
+            NSColor.separatorColor.setStroke()
+            path.stroke()
+            return true
+        }
     }
 
     private static func viewMenu() -> NSMenu {

@@ -40,9 +40,8 @@ final class ToolbarModel {
     var displayedStyle: ToolStyle { selectionStyle?.style ?? currentStyle }
 
     func selectColor(index: Int) {
-        guard Palette.colors.indices.contains(index) else { return }
+        guard Palette.colors.indices.contains(index), styleTool.usesColor else { return }
         if let selection, selectionStyle != nil { return selection.setColor(Palette.colors[index]) }
-        guard activeTool.usesColor else { return }
         settings.setColor(Palette.colors[index], for: activeTool)
     }
 
@@ -61,6 +60,24 @@ final class ToolbarModel {
     func beginThicknessDrag() { selection?.beginStyleGesture() }
 
     func endThicknessDrag() { selection?.endStyleGesture() }
+
+    /// Whether `action` applies to the shown style controls.
+    func canPerform(_ action: ToolShortcut.Action) -> Bool {
+        switch action {
+        case .tool: true
+        case .color: styleTool.usesColor
+        case .thicknessStep: styleTool.thicknessRange != nil
+        }
+    }
+
+    /// Whether `action` selects the active tool or the shown color.
+    func isCurrent(_ action: ToolShortcut.Action) -> Bool {
+        switch action {
+        case .tool(let tool): activeTool == tool
+        case .color(let index): styleTool.usesColor && displayedStyle.color == Palette.colors[index]
+        case .thicknessStep: false
+        }
+    }
 
     func perform(_ action: ToolShortcut.Action) {
         switch action {

@@ -49,6 +49,7 @@ import Testing
         #expect(hex == ["FF2500", "FF941A", "FEF500", "00E700", "198EFE", "FF2E6C", "FFFFFF", "000000"])
         #expect(Palette.defaultColor == RGBAColor(hex: 0xFF2E6C))
         #expect(Palette.colors[5] == Palette.defaultColor)
+        #expect(Palette.names == ["Red", "Orange", "Yellow", "Green", "Blue", "Pink", "White", "Black"])
     }
 }
 
@@ -174,6 +175,18 @@ import Testing
     @Test func brackets() {
         #expect(ToolShortcut.action(for: "[") == .thicknessStep(-1))
         #expect(ToolShortcut.action(for: "]") == .thicknessStep(1))
+    }
+
+    @Test func keysRoundTrip() {
+        let actions = Tool.allCases.map { ToolShortcut.Action.tool($0) }
+            + Palette.colors.indices.map { .color($0) } + [.thicknessStep(-1), .thicknessStep(1)]
+        for action in actions {
+            let key = ToolShortcut.key(for: action)
+            #expect(key == key.lowercased())
+            #expect(ToolShortcut.action(for: key) == action)
+        }
+        #expect(ToolShortcut.key(for: .tool(.roundedRectangle)) == "u")
+        #expect(ToolShortcut.key(for: .color(0)) == "1")
     }
 
     @Test func unknown() {

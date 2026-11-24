@@ -205,6 +205,16 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         selection.selectAll()
     }
 
+    /// The action comes from the item's key equivalent; the Tools menu builds items from `ToolShortcut`.
+    @objc func performToolShortcut(_ sender: NSMenuItem) {
+        guard let action = ToolShortcut.action(for: sender.keyEquivalent) else { return }
+        toolbar.perform(action)
+    }
+
+    @objc func applyCrop(_ sender: Any?) { canvasView.applyCrop() }
+
+    @objc func cancelCrop(_ sender: Any?) { canvasView.cancelCrop() }
+
     /// Actions that read or replace the document; it is uncropped while a crop session is open.
     private static let blockedWhileCropping: Set<Selector> = [
         #selector(paste(_:)), #selector(cut(_:)), #selector(copy(_:)), #selector(copyImage(_:)),
@@ -217,6 +227,10 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
             return false
         }
         return switch item.action {
+        case #selector(performToolShortcut(_:)):
+            validateToolShortcut(item)
+        case #selector(applyCrop(_:)), #selector(cancelCrop(_:)):
+            canvasView.isCropping
         case #selector(paste(_:)):
             NSPasteboard.general.availableType(from: [.annotations]) != nil
                 || PasteboardImageReader.containsImage(.general)
@@ -225,6 +239,12 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         case #selector(selectAll(_:)): !model.document.annotations.isEmpty && !model.isInGesture
         default: true
         }
+    }
+
+    private func validateToolShortcut(_ item: NSMenuItem) -> Bool {
+        guard let action = ToolShortcut.action(for: item.keyEquivalent) else { return false }
+        item.state = toolbar.isCurrent(action) ? .on : .off
+        return toolbar.canPerform(action)
     }
 
     func write(to url: URL) throws {
