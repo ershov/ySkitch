@@ -9,7 +9,7 @@ Fast, keyboard-driven image annotation for macOS. Copy a screenshot, launch, mar
 - **Clipboard-first.** A new window opens with the image already on the clipboard. Annotate, press `⇧⌘C`, paste anywhere.
 - **Readable on any background.** Every arrow, shape, line, pen stroke and text gets a Skitch-style double outline: a white inner outline and a soft dark halo.
 - **Editable until export.** Annotations stay vector objects: select, move, resize, restyle, copy between windows, undo without limit. The image is flattened only on output.
-- **Retina-aware.** A 2× screenshot stays 2× with crisp strokes. Exported PNGs keep the right point size and carry no EXIF/GPS metadata.
+- **Retina-aware.** A 2× screenshot stays 2× with crisp strokes. Switch the output to @1x, @2x or @3x from the status bar: share a Retina shot at @1x, or upscale a 1x shot so annotations come out crisp. Non-destructive and undoable. Exported PNGs keep the right point size and carry no EXIF/GPS metadata.
 - **Everything on the keyboard.** Single-key tools, number keys for colors, `[` `]` for thickness, every command in a menu with its shortcut.
 - **What you see is the size you get.** The thickness slider is drawn to true size, with a live sample of the stroke, font or block size.
 
@@ -18,7 +18,7 @@ Fast, keyboard-driven image annotation for macOS. Copy a screenshot, launch, mar
 | Tool | Key | What it does |
 |---|---|---|
 | Select | `V` | Click, `⇧`-click or marquee select; move, resize, drag endpoints; double-click text to edit |
-| Text | `T` | Multiline text; click selects, double-click edits, click on empty space starts new text; thickness sets font size |
+| Text | `T` | Multiline text; click selects, double-click edits (clicks inside then place the cursor), click on empty space starts new text; thickness sets font size |
 | Arrow | `A` | Skitch-style tapered arrow; head scales with thickness |
 | Line | `L` | Straight segment |
 | Rectangle | `R` | Outline |
@@ -61,6 +61,7 @@ Closed a window by mistake? `⇧⌘T` brings it back, annotations and undo histo
 | Duplicate / delete | `⌘D` / `⌫` |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Copy image / save | `⇧⌘C` / `⌘S` |
+| Output scale @1x / @2x / @3x | `⌥⌘1` / `⌥⌘2` / `⌥⌘3` |
 | Reopen closed window | `⇧⌘T` |
 | Cancel / deselect | `Esc`, in every tool |
 
