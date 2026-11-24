@@ -30,7 +30,7 @@ struct ThicknessSlider: NSViewRepresentable {
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSSlider, context: Context) -> CGSize? {
-        CGSize(width: proposal.width ?? ToolbarView.swatchSize, height: proposal.height ?? ToolbarView.rowHeight)
+        CGSize(width: proposal.width ?? ToolbarView.colorColumnWidth, height: proposal.height ?? ToolbarView.rowHeight)
     }
 
     func updateNSView(_ slider: NSSlider, context: Context) {

@@ -3,7 +3,7 @@ import YSkitchCore
 
 @MainActor
 final class StatusBarView: NSView {
-    static let height: CGFloat = 28
+    static let height: CGFloat = 40
 
     let dragHandle = DragHandleView()
     let actualSizeButton: NSButton
@@ -32,16 +32,16 @@ final class StatusBarView: NSView {
         configure(zoomOutButton, #selector(zoomOut), "Zoom Out (⌘-)")
         configure(zoomInButton, #selector(zoomIn), "Zoom In (⌘+)")
 
-        sizeLabel.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+        sizeLabel.font = .systemFont(ofSize: NSFont.systemFontSize)
         sizeLabel.textColor = .secondaryLabelColor
         sizeLabel.lineBreakMode = .byTruncatingTail
         sizeLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        zoomLabel.font = .monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+        zoomLabel.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
         zoomLabel.textColor = .secondaryLabelColor
         zoomLabel.alignment = .center
 
         let controls = NSStackView(views: [actualSizeButton, fitButton, zoomOutButton, zoomLabel, zoomInButton])
-        controls.spacing = 4
+        controls.spacing = 6
         for view in [sizeLabel, dragHandle, controls, separator] {
             view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(view)
@@ -50,17 +50,17 @@ final class StatusBarView: NSView {
 
         NSLayoutConstraint.activate([
             heightAnchor.constraint(equalToConstant: Self.height),
-            zoomLabel.widthAnchor.constraint(equalToConstant: 44),
+            zoomLabel.widthAnchor.constraint(equalToConstant: 52),
             separator.topAnchor.constraint(equalTo: topAnchor),
             separator.leadingAnchor.constraint(equalTo: leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: trailingAnchor),
             separator.heightAnchor.constraint(equalToConstant: 1),
-            sizeLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
+            sizeLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
             sizeLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
             dragHandle.centerXAnchor.constraint(equalTo: centerXAnchor),
             dragHandle.centerYAnchor.constraint(equalTo: centerYAnchor),
             sizeLabel.trailingAnchor.constraint(lessThanOrEqualTo: dragHandle.leadingAnchor, constant: -8),
-            controls.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
+            controls.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
             controls.centerYAnchor.constraint(equalTo: centerYAnchor),
             controls.leadingAnchor.constraint(greaterThanOrEqualTo: dragHandle.trailingAnchor, constant: 8),
         ])
@@ -88,7 +88,7 @@ final class StatusBarView: NSView {
         button.target = self
         button.action = action
         button.bezelStyle = .accessoryBarAction
-        button.controlSize = .small
+        button.controlSize = .regular
         button.toolTip = toolTip
     }
 

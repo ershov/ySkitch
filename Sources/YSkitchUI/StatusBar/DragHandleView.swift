@@ -4,7 +4,7 @@ import AppKit
 final class DragHandleView: NSView, NSDraggingSource {
     typealias Payload = (png: Data, fileName: String, thumbnail: NSImage)
 
-    static let size = NSSize(width: 80, height: 20)
+    static let size = NSSize(width: 110, height: 26)
     private static let maxThumbnailSide: CGFloat = 128
 
     /// Returns nil when there is nothing to drag.
@@ -27,9 +27,9 @@ final class DragHandleView: NSView, NSDraggingSource {
             ?? NSImage(systemSymbolName: "photo", accessibilityDescription: nil)
         let icon = NSImageView(image: symbol ?? NSImage())
         icon.contentTintColor = .secondaryLabelColor
-        icon.symbolConfiguration = .init(pointSize: 11, weight: .regular)
+        icon.symbolConfiguration = .init(pointSize: 15, weight: .regular)
         let label = NSTextField(labelWithString: "Drag")
-        label.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+        label.font = .systemFont(ofSize: NSFont.systemFontSize)
         label.textColor = .secondaryLabelColor
         let stack = NSStackView(views: [icon, label])
         stack.spacing = 4

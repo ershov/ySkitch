@@ -67,7 +67,7 @@ struct ToolbarTests {
     }
 
     @Test func toolbarWidthDrivesChrome() {
-        #expect(ToolbarView.width == 100)
+        #expect(ToolbarView.width == 140)
         #expect(DocumentWindowController.chromeSize.width == ToolbarView.width)
     }
 
@@ -84,7 +84,7 @@ struct ToolbarTests {
         }
         let slider = try #require(sliders(in: content.toolbarSlot).first)
         #expect(slider.cell is WedgeSliderCell)
-        #expect(slider.frame.width == ToolbarView.swatchSize)
+        #expect(slider.frame.width == ToolbarView.colorColumnWidth)
     }
 
     @Test func wedgeKnobGrowsWithThickness() throws {
