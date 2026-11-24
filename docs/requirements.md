@@ -89,7 +89,7 @@ All annotations are vector objects, editable until export (flattened only on out
 
 | ID | Tool | Details | Src | Stage |
 |---|---|---|---|---|
-| T-1 | Arrow | Skitch-style tapered arrow; head scales with thickness | U | 1 |
+| T-1 | Arrow | Skitch-style tapered arrow; head scales with thickness; short arrows narrow proportionally so they keep the arrow shape | U | 1 |
 | T-2 | Text | Multiline; editable after creation; thickness slider sets font size | U | 1 |
 | T-3 | Rectangle | Outline | U | 1 |
 | T-3a | Fill for rectangle, rounded rectangle, ellipse (needs sketch update) | S | 2 |

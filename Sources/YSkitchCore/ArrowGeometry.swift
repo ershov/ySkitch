@@ -8,6 +8,8 @@ public enum ArrowGeometry {
     public static let tailWidthRatio: CGFloat = 0.4
     /// Minimum arrow length as a multiple of the head length before the head is scaled down.
     public static let minimumLengthRatio: CGFloat = 1.2
+    /// Minimum arrow length as a multiple of its effective thickness; shorter arrows narrow so the shaft stays slimmer than the head.
+    public static let minimumLengthToWidthRatio: CGFloat = 5
     /// Where the shaft meets the head, as a fraction of the head length measured from the tip.
     public static let notchRatio: CGFloat = 0.8
 
@@ -30,6 +32,7 @@ public enum ArrowGeometry {
         let uy = dy / length
         let normal = CGPoint(x: -uy, y: ux)
 
+        let thickness = min(thickness, length / minimumLengthToWidthRatio)
         var headLength = headLength(thickness: thickness)
         var headWidth = headWidth(thickness: thickness)
         let minimum = headLength * minimumLengthRatio

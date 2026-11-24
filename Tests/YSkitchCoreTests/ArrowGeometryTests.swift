@@ -53,6 +53,43 @@ import Testing
         }
     }
 
+    @Test func shortArrowNarrowsShaft() {
+        let t: CGFloat = 20
+        let length: CGFloat = 40
+        let v = vertices(ArrowGeometry.path(tail: .zero, head: CGPoint(x: length, y: 0), thickness: t))
+        let effective = length / ArrowGeometry.minimumLengthToWidthRatio
+        #expect(abs(v[1].y - v[5].y) <= effective + 0.001)
+        #expect(abs(v[2].y - v[4].y) > abs(v[1].y - v[5].y))
+    }
+
+    @Test func longArrowIsUnchanged() {
+        let t: CGFloat = 10
+        let length = t * ArrowGeometry.minimumLengthToWidthRatio
+        let v = vertices(ArrowGeometry.path(tail: .zero, head: CGPoint(x: length, y: 0), thickness: t))
+        #expect(abs(v[1].y - v[5].y) == t)
+        let longer = vertices(ArrowGeometry.path(tail: .zero, head: CGPoint(x: 300, y: 0), thickness: t))
+        #expect(abs(longer[1].y - longer[5].y) == t)
+        #expect(abs(longer[0].y - longer[6].y) == ArrowGeometry.tailWidthRatio * t)
+    }
+
+    @Test func headStaysWiderThanShaft() {
+        for t: CGFloat in [4, 40] {
+            var length: CGFloat = 0.5
+            while length <= 200 {
+                let v = vertices(ArrowGeometry.path(tail: .zero, head: CGPoint(x: length, y: 0), thickness: t))
+                #expect(v.count == 7)
+                #expect(abs(v[2].y - v[4].y) > abs(v[1].y - v[5].y))
+                length += 0.5
+            }
+        }
+    }
+
+    @Test func subPointArrowIsValid() {
+        let path = ArrowGeometry.path(tail: .zero, head: CGPoint(x: 0.3, y: 0), thickness: 8)
+        #expect(!path.isEmpty)
+        #expect(vertices(path).count == 7)
+    }
+
     @Test func zeroLengthIsEmpty() {
         let p = CGPoint(x: 5, y: 5)
         #expect(ArrowGeometry.path(tail: p, head: p, thickness: 4).isEmpty)
