@@ -204,6 +204,7 @@ final class TextEditingController: NSObject, NSTextViewDelegate {
                   case .text(var content) = document.annotations[index].shape else { return }
             content.string = string
             document.annotations[index].shape = .text(content)
+            document.annotations[index].extendsCanvas = true
         }
         layoutTextView()
     }
@@ -237,6 +238,7 @@ final class TextEditingController: NSObject, NSTextViewDelegate {
         model.updateGesture { document in
             guard let index = document.annotations.firstIndex(where: { $0.id == id }) else { return }
             document.annotations[index].style = AnnotationStyle(color: style.color, thickness: style.thickness)
+            document.annotations[index].extendsCanvas = true
         }
         if let annotation = annotation(id) { apply(annotation.style, to: session.textView) }
         layoutTextView()

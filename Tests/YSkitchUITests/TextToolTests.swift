@@ -175,6 +175,57 @@ struct TextToolTests {
         #expect(model.document.annotations.isEmpty)
     }
 
+    /// Commits "Hi" at `point`, then crops so the text lies partly outside the canvas.
+    private func cropThroughText(_ controller: DocumentWindowController) throws -> Annotation {
+        try addText(controller, at: CGPoint(x: 50, y: 60))
+        let model = controller.canvasView.model
+        let bounds = model.document.annotations[0].bounds
+        let crop = CGRect(x: bounds.minX + 5, y: 0, width: 100, height: 300)
+        model.perform("Crop") { $0.applyCrop(crop) }
+        #expect(!model.document.annotations[0].extendsCanvas)
+        #expect(!model.document.canvasRect.contains(model.document.annotations[0].renderBounds))
+        return model.document.annotations[0]
+    }
+
+    @Test func editingTextExtendsCanvas() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        let annotation = try cropThroughText(controller)
+        let view = controller.canvasView
+        view.beginTextEditing(annotationID: annotation.id)
+        try type("!", in: controller)
+        view.commitTextEditing()
+        let edited = view.model.document.annotations[0]
+        #expect(edited.extendsCanvas)
+        #expect(view.model.document.canvasRect.contains(edited.renderBounds))
+    }
+
+    @Test func restylingTextWhileEditingExtendsCanvas() async throws {
+        let controller = makeController()
+        defer { controller.close() }
+        let annotation = try cropThroughText(controller)
+        let view = controller.canvasView
+        view.beginTextEditing(annotationID: annotation.id)
+        view.toolbar.setThickness(60)
+        for _ in 0..<10 { await Task.yield() }
+        view.commitTextEditing()
+        let edited = view.model.document.annotations[0]
+        #expect(edited.style.thickness == 60)
+        #expect(edited.extendsCanvas)
+        #expect(view.model.document.canvasRect.contains(edited.renderBounds))
+    }
+
+    @Test func unchangedEditKeepsCanvasFlag() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        let annotation = try cropThroughText(controller)
+        let view = controller.canvasView
+        view.beginTextEditing(annotationID: annotation.id)
+        view.commitTextEditing()
+        #expect(!view.model.document.annotations[0].extendsCanvas)
+        #expect(view.model.undoManager.undoActionName == "Crop")
+    }
+
     @Test func clearingExistingTextRemovesIt() throws {
         let controller = makeController()
         defer { controller.close() }
