@@ -119,6 +119,11 @@ struct SpacePanTests {
         view.keyDown(with: space(.keyDown, in: view))
         // The first move may set the baseline when the window has no usable pointer location.
         view.mouseMoved(with: mouse(.mouseMoved, CGPoint(x: 100, y: 100), in: view))
+        // The baseline may be the real pointer, so the first pan can land anywhere; recenter to avoid clamping.
+        let documentSize = view.frame.size
+        clip.scroll(to: CGPoint(
+            x: (documentSize.width - clip.bounds.width) / 2, y: (documentSize.height - clip.bounds.height) / 2))
+        controller.scrollView.reflectScrolledClipView(clip)
         let start = clip.bounds.origin
         view.mouseMoved(with: mouse(.mouseMoved, CGPoint(x: 90, y: 130), in: view))
         let magnification = controller.scrollView.magnification
