@@ -72,6 +72,16 @@ public enum Tool: String, CaseIterable, Codable, Sendable {
         }
     }
 
+    /// What `thicknessRange` measures; nil when the tool has no size.
+    public var thicknessName: String? {
+        switch self {
+        case .arrow, .line, .rectangle, .roundedRectangle, .ellipse, .pen, .highlighter: "Width"
+        case .text: "Font size"
+        case .pixelate: "Block size"
+        case .select, .crop: nil
+        }
+    }
+
     public var defaultThickness: CGFloat? {
         switch self {
         case .arrow, .line, .rectangle, .roundedRectangle, .ellipse, .pen: Self.strokeDefault

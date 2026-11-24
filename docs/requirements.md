@@ -214,7 +214,7 @@ Single keys go to the focused view first: the canvas handles them, and while a t
   Later tools join the nearest group: step markers, stamps, callouts → after Text; arrow variants → shapes group.
 - **Color column**: 8 palette swatches, keys `1`–`8`, selected one ringed (`◉`); `+` (custom color) comes in Stage 2. Swatch: colored circle with a 4 pt white outline and a thin dark outer edge.
 - **Thickness slider**: below the swatches after a spacer, centered in the whole color column; it extends down so the color column ends level with the last tool row. No `[` / `]` labels. See §6.2.
-- **Status bar**: left — image size (px, pt, scale), or element info (below); center — drag handle (OUT-4); right, in order — `1:1` (actual size, `⌘0`), `Fit` (`⌘9`), zoom `−` / percentage / `+`.
+- **Status bar**: left — image size (px, pt, scale), or element info (below); center — drag handle (OUT-4); while the thickness slider is dragged, left shows its value instead (§6.2); right, in order — `1:1` (actual size, `⌘0`), `Fit` (`⌘9`), zoom `−` / percentage / `+`.
   - **Element info** replaces the image size while an element is drawn, moved, resized, nudged or selected, and while a text is edited, a crop session is open or a selection marquee is dragged; it updates live. Priority: element being drawn (or crop rect / marquee), else edited text, else selection, else image size.
   - Fields are `·` separated integers; `px` = image pixels:
     - Arrow, Line: `Arrow · (x1, y1) → (x2, y2) · L px · θ° · T pt` — start (arrow tail) → end (head), length, angle (0° = pointing right, counter-clockwise positive on screen, −179…180), stroke width.
@@ -252,6 +252,7 @@ Single keys go to the focused view first: the canvas handles them, and while a t
 | Pixelate | Block size | 2–40 pt | 10 pt |
 | Blur (later) | Radius | 2–40 pt | 10 pt |
 
+- While the slider is dragged (mouse-down to mouse-up, not `[` / `]`), the status bar's left label shows `<Tool> · <Meaning> <value> pt` (e.g. `Arrow · Width 12 pt`, `Text · Font size 36 pt`), updating live, for the shown style tool (the selection's tool when editing a selection); afterwards it returns to the normal content.
 - Logarithmic mapping, so small sizes get finer control. Top = minimum, bottom = maximum.
 - `[` / `]` move the slider by 1/20 of its range (logarithmic steps).
 - Ranges and defaults are named constants in code.

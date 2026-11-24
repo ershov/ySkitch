@@ -83,6 +83,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
             self?.canvasView.needsDisplay = true
             self?.updateStatusInfo()
         }
+        toolbar.onThicknessDragChange = { [weak self] in self?.updateStatusInfo() }
         canvasView.onStatusChange = { [weak self] in self?.updateStatusInfo() }
         statusBar.onActualSize = { [weak scrollView] in scrollView?.zoomToActualSize() }
         statusBar.onFit = { [weak scrollView] in scrollView?.zoomToFit() }
@@ -97,9 +98,15 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         statusBar.update(magnification: scrollView.magnification)
     }
 
-    /// Geometry of the element being drawn or selected, else the image size.
+    /// Slider value while dragging, else geometry of the element being drawn or selected, else the image size.
     private func updateStatusInfo() {
         let document = model.document
+        if toolbar.isDraggingThickness,
+            let text = StatusText.thickness(tool: toolbar.styleTool, value: toolbar.displayedStyle.thickness)
+        {
+            statusBar.update(info: text)
+            return
+        }
         statusBar.update(info: canvasView.statusGeometry.map {
             StatusText.geometry($0, canvasOrigin: document.canvasRect.origin, scale: document.scale)
         } ?? StatusText.size(canvas: document.canvasRect.size, scale: document.scale))

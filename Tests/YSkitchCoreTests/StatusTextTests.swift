@@ -126,3 +126,15 @@ struct StatusTextTests {
         #expect(StatusGeometry(selection: [line]) == StatusGeometry(line))
     }
 }
+
+struct ThicknessStatusTests {
+    @Test func meaningPerTool() {
+        #expect(StatusText.thickness(tool: .arrow, value: 12) == "Arrow · Width 12 pt")
+        #expect(StatusText.thickness(tool: .highlighter, value: 20) == "Highlighter · Width 20 pt")
+        #expect(StatusText.thickness(tool: .text, value: 36) == "Text · Font size 36 pt")
+        #expect(StatusText.thickness(tool: .pixelate, value: 10) == "Pixelate · Block size 10 pt")
+        #expect(StatusText.thickness(tool: .pen, value: 4.5) == "Pen · Width 4.5 pt")
+        #expect(StatusText.thickness(tool: .select, value: 4) == nil)
+        #expect(StatusText.thickness(tool: .crop, value: 4) == nil)
+    }
+}

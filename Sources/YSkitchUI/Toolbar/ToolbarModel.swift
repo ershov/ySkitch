@@ -21,6 +21,12 @@ final class ToolbarModel {
 
     @ObservationIgnored var onActiveToolChange: (() -> Void)?
 
+    /// True from slider mouse-down until mouse-up.
+    @ObservationIgnored private(set) var isDraggingThickness = false
+
+    /// Fires on drag start, end and every value change during the drag.
+    @ObservationIgnored var onThicknessDragChange: (() -> Void)?
+
     /// The tool that was active before the current one.
     @ObservationIgnored private(set) var previousTool: Tool = .select
 
@@ -50,6 +56,7 @@ final class ToolbarModel {
     }
 
     func setThickness(_ thickness: CGFloat) {
+        defer { if isDraggingThickness { onThicknessDragChange?() } }
         if let selection, selectionStyle != nil {
             selection.setThickness(thickness)
             adoptSelectionStyles(color: false, thickness: true)
@@ -78,9 +85,17 @@ final class ToolbarModel {
     }
 
     /// Brackets a slider drag so a selection edit is one undo step.
-    func beginThicknessDrag() { selection?.beginStyleGesture() }
+    func beginThicknessDrag() {
+        selection?.beginStyleGesture()
+        isDraggingThickness = true
+        onThicknessDragChange?()
+    }
 
-    func endThicknessDrag() { selection?.endStyleGesture() }
+    func endThicknessDrag() {
+        selection?.endStyleGesture()
+        isDraggingThickness = false
+        onThicknessDragChange?()
+    }
 
     /// Whether `action` applies to the shown style controls.
     func canPerform(_ action: ToolShortcut.Action) -> Bool {

@@ -40,6 +40,11 @@ public enum StatusText {
         }
     }
 
+    /// Nil for tools without a size.
+    public static func thickness(tool: Tool, value: CGFloat) -> String? {
+        tool.thicknessName.map { "\(tool.name) · \($0) \(points(value))" }
+    }
+
     private static func points(_ value: CGFloat) -> String {
         let text = value == value.rounded() ? "\(Int(value))" : String(format: "%.1f", Double(value))
         return "\(text) pt"

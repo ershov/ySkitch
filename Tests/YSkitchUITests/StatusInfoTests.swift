@@ -32,6 +32,35 @@ struct StatusInfoTests {
         Annotation(style: AnnotationStyle(color: RGBAColor(red: 1, green: 0, blue: 0), thickness: 4), shape: .rectangle(rect))
     }
 
+    @Test func sliderDragShowsValueThenImageSize() {
+        let controller = makeController(tool: .arrow)
+        defer { controller.close() }
+        let toolbar = controller.toolbar
+
+        toolbar.beginThicknessDrag()
+        toolbar.setThickness(12)
+        #expect(label(controller) == "Arrow · Width 12 pt")
+        toolbar.setThickness(7.5)
+        #expect(label(controller) == "Arrow · Width 7.5 pt")
+        toolbar.endThicknessDrag()
+        #expect(label(controller) == Self.sizeText)
+    }
+
+    @Test func sliderDragOnSelectionShowsSelectionToolThenGeometry() {
+        let box = rectangle(CGRect(x: 10, y: 20, width: 50, height: 30))
+        let controller = makeController(tool: .select, annotations: [box])
+        defer { controller.close() }
+        controller.selection.select([box.id])
+        #expect(label(controller).hasPrefix("Rectangle · ("))
+
+        controller.toolbar.beginThicknessDrag()
+        controller.toolbar.setThickness(9)
+        #expect(label(controller) == "Rectangle · Width 9 pt")
+        controller.toolbar.endThicknessDrag()
+        #expect(label(controller).hasPrefix("Rectangle · ("))
+        #expect(label(controller).hasSuffix("· 9 pt"))
+    }
+
     @Test func drawingRectangleShowsDragCornersThenImageSize() {
         let controller = makeController(tool: .rectangle)
         defer { controller.close() }
