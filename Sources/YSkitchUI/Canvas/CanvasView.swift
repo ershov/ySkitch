@@ -331,29 +331,36 @@ final class CanvasView: NSView, NSMenuItemValidation {
         if let interaction, interaction.tool == tool { return interaction.handler }
         interaction?.handler.cancel()
         interaction = nil
-        let clickSelector = ClickSelector(
-            selection: selection, magnification: { [weak self] in self?.enclosingScrollView?.magnification ?? 1 })
+        let magnification = { [weak self] in self?.enclosingScrollView?.magnification ?? 1 }
+        let clickSelector = ClickSelector(selection: selection, magnification: magnification)
+        let editor = SelectionEditor(model: model, selection: selection, magnification: magnification)
         let handler: any CanvasInteraction = switch tool {
         case .rectangle, .roundedRectangle, .ellipse, .pixelate:
-            ShapeDrawingInteraction(tool: tool, model: model, toolbar: toolbar, clickSelector: clickSelector)
+            SelectionEditingInteraction(
+                drawing: ShapeDrawingInteraction(
+                    tool: tool, model: model, toolbar: toolbar, clickSelector: clickSelector),
+                editor: editor)
         case .line, .arrow:
-            LineDrawingInteraction(tool: tool, model: model, toolbar: toolbar, clickSelector: clickSelector)
+            SelectionEditingInteraction(
+                drawing: LineDrawingInteraction(
+                    tool: tool, model: model, toolbar: toolbar, clickSelector: clickSelector),
+                editor: editor)
         case .select:
             SelectInteraction(
-                model: model, selection: selection,
-                magnification: { [weak self] in self?.enclosingScrollView?.magnification ?? 1 },
+                model: model, selection: selection, magnification: magnification,
                 beginTextEditing: { [weak self] in self?.beginTextEditing(annotationID: $0) },
                 overlayDidChange: { [weak self] in self?.needsDisplay = true })
         case .text:
             TextInteraction(model: model, editor: textEditor)
         case .pen, .highlighter:
-            FreehandDrawingInteraction(
-                tool: tool, model: model, toolbar: toolbar, clickSelector: clickSelector,
-                magnification: { [weak self] in self?.enclosingScrollView?.magnification ?? 1 })
+            SelectionEditingInteraction(
+                drawing: FreehandDrawingInteraction(
+                    tool: tool, model: model, toolbar: toolbar, clickSelector: clickSelector,
+                    magnification: magnification),
+                editor: editor)
         case .crop:
             CropInteraction(
-                model: model, toolbar: toolbar,
-                magnification: { [weak self] in self?.enclosingScrollView?.magnification ?? 1 },
+                model: model, toolbar: toolbar, magnification: magnification,
                 overlayDidChange: { [weak self] in self?.cropOverlayDidChange() })
         }
         interaction = (tool, handler)
