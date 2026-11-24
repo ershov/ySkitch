@@ -83,4 +83,37 @@ struct PasteTests {
         #expect(controller.canvasView.frame.size == controller.model.document.canvasRect.size)
         #expect(controller.window?.title == controller.defaultFileName)
     }
+
+    @Test func undoPasteImageRestoresTitleAndSavedURL() throws {
+        let saved = URL(fileURLWithPath: "/tmp/ySkitch-test.png")
+        let controller = DocumentWindowController(
+            model: DocumentModel(document: Document(blankSize: CGSize(width: 50, height: 30), scale: 1)),
+            title: "Test", savedURL: saved,
+            toolSettings: ToolSettings(preferences: Preferences(store: InMemoryPreferencesStore())))
+        defer { controller.close() }
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("Other.png")
+        try pngData(pixels: 40).write(to: file)
+        let pasteboard = privatePasteboard()
+        defer { pasteboard.releaseGlobally() }
+        pasteboard.writeObjects([file as NSURL])
+
+        #expect(controller.paste(from: pasteboard))
+        let pastedName = controller.defaultFileName
+        #expect(pastedName.contains("Other"))
+        #expect(controller.savedURL == nil)
+        #expect(controller.model.undoManager.undoMenuItemTitle == "Undo Paste Image")
+
+        controller.model.undoManager.undo()
+        #expect(controller.window?.title == "Test")
+        #expect(controller.defaultFileName == "Test")
+        #expect(controller.savedURL == saved)
+        #expect(controller.model.undoManager.redoMenuItemTitle == "Redo Paste Image")
+
+        controller.model.undoManager.redo()
+        #expect(controller.window?.title == pastedName)
+        #expect(controller.savedURL == nil)
+    }
 }

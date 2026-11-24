@@ -187,12 +187,28 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         if let data = pasteboard.data(forType: .annotations), pasteAnnotations(data) { return true }
         guard let image = PasteboardImageReader.read(from: pasteboard) else { return false }
         let sourceURL = PasteboardImageReader.imageFileURLs(in: pasteboard).first
+        let undoManager = model.undoManager
+        undoManager.beginUndoGrouping()
         model.perform("Paste Image") { $0 = Document(image: image) }
-        defaultFileName = DocumentNaming.title(sourceURL: sourceURL, date: .now)
-        window?.title = defaultFileName
-        savedURL = nil
+        setIdentity(
+            fileName: DocumentNaming.title(sourceURL: sourceURL, date: .now), savedURL: nil, actionName: "Paste Image")
+        undoManager.setActionName("Paste Image")
+        undoManager.endUndoGrouping()
         scrollView.zoomToFit()
         return true
+    }
+
+    /// Sets title, default file name and saved URL, registering the inverse so undo and redo keep them with the document.
+    private func setIdentity(fileName: String, savedURL: URL?, actionName: String) {
+        let previousName = defaultFileName
+        let previousURL = self.savedURL
+        model.undoManager.registerUndo(withTarget: self) {
+            $0.setIdentity(fileName: previousName, savedURL: previousURL, actionName: actionName)
+        }
+        model.undoManager.setActionName(actionName)
+        defaultFileName = fileName
+        window?.title = fileName
+        self.savedURL = savedURL
     }
 
     @objc func paste(_ sender: Any?) {
