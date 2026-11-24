@@ -21,4 +21,15 @@ struct StatusTextTests {
         #expect(StatusText.zoom(0.667) == "67%")
         #expect(StatusText.zoom(24) == "2400%")
     }
+
+    @Test func pixelCountMatchesFlattenedImageAtScale3() {
+        for n in 1...200 {
+            var document = Document(blankSize: CGSize(width: 1, height: 1), scale: 3)
+            document.applyCrop(CGRect(x: -50.0 / 3, y: 0, width: CGFloat(n) / 3, height: 1))
+            let canvas = document.canvasRect
+            let text = StatusText.size(canvas: canvas.size, scale: 3)
+            let pixelWidth = Int(text.split(separator: "×")[0])
+            #expect(pixelWidth == Renderer.flatten(document).width, "n=\(n)")
+        }
+    }
 }

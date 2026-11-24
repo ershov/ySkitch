@@ -37,9 +37,7 @@ public enum Renderer {
 
     public static func flatten(_ document: Document) -> CGImage {
         let canvas = document.canvasRect
-        let tolerance = Document.pixelTolerance
-        let width = max(1, Int((canvas.width * document.scale - tolerance).rounded(.up)))
-        let height = max(1, Int((canvas.height * document.scale - tolerance).rounded(.up)))
+        let (width, height) = Document.pixelSize(points: canvas.size, scale: document.scale)
         let context = CGContext(
             data: nil,
             width: width,

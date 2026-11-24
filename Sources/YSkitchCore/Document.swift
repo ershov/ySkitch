@@ -56,6 +56,14 @@ public struct Document: Equatable, Sendable {
     /// Tolerance in pixels for floating-point error when snapping to the pixel grid.
     static let pixelTolerance: CGFloat = 1e-6
 
+    /// Output pixel size of a canvas of the given size; shared by export and the status bar.
+    static func pixelSize(points: CGSize, scale: CGFloat) -> (width: Int, height: Int) {
+        (
+            max(1, Int((points.width * scale - pixelTolerance).rounded(.up))),
+            max(1, Int((points.height * scale - pixelTolerance).rounded(.up)))
+        )
+    }
+
     static func snappedOutward(_ rect: CGRect, scale: CGFloat) -> CGRect {
         let minX = (rect.minX * scale + pixelTolerance).rounded(.down) / scale
         let minY = (rect.minY * scale + pixelTolerance).rounded(.down) / scale
