@@ -7,7 +7,7 @@ enum MainMenu {
 
     static func build() -> NSMenu {
         let main = NSMenu()
-        for menu in [appMenu(), fileMenu(), editMenu(), toolsMenu(), viewMenu(), windowMenu(), helpMenu()] {
+        for menu in [appMenu(), fileMenu(), editMenu(), toolsMenu(), imageMenu(), viewMenu(), windowMenu(), helpMenu()] {
             let item = NSMenuItem(title: menu.title, action: nil, keyEquivalent: "")
             item.submenu = menu
             main.addItem(item)
@@ -130,6 +130,19 @@ enum MainMenu {
             path.stroke()
             return true
         }
+    }
+
+    private static func imageMenu() -> NSMenu {
+        let menu = NSMenu(title: "Image")
+        for scale in Document.scaleChoices {
+            let key = "\(Int(scale))"
+            let item = item(
+                "Scale \(StatusText.scale(scale))", #selector(DocumentWindowController.changeScale(_:)), key,
+                [.command, .option])
+            item.representedObject = NSNumber(value: Double(scale))
+            menu.addItem(item)
+        }
+        return menu
     }
 
     private static func viewMenu() -> NSMenu {

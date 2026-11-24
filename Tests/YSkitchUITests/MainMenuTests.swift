@@ -12,7 +12,7 @@ struct MainMenuTests {
 
     @Test func topLevelTitles() {
         let titles = MainMenu.build().items.compactMap { $0.submenu?.title }
-        #expect(titles == ["ySkitch", "File", "Edit", "Tools", "View", "Window", "Help"])
+        #expect(titles == ["ySkitch", "File", "Edit", "Tools", "Image", "View", "Window", "Help"])
     }
 
     @Test func shortcuts() throws {

@@ -84,6 +84,14 @@ struct CanvasTests {
         #expect(CanvasView.interpolation(magnification: 1, backingScale: 2, documentScale: 2) == .high)
         #expect(CanvasView.interpolation(magnification: 2, backingScale: 2, documentScale: 2) == .none)
     }
+
+    @Test func previewsOutputPixelsWhenScreenIsDenser() {
+        #expect(CanvasView.previewsOutputPixels(backingScale: 2, documentScale: 1))
+        #expect(CanvasView.previewsOutputPixels(backingScale: 3, documentScale: 2))
+        #expect(!CanvasView.previewsOutputPixels(backingScale: 2, documentScale: 2))
+        #expect(!CanvasView.previewsOutputPixels(backingScale: 2, documentScale: 3))
+        #expect(!CanvasView.previewsOutputPixels(backingScale: 1, documentScale: 1))
+    }
 }
 
 @MainActor

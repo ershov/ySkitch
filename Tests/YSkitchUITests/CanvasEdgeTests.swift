@@ -75,7 +75,18 @@ struct CanvasEdgeTests {
 
     @Test(arguments: [0.5, 0.73, 1.37, 2.03, 2.71, 3.17] as [CGFloat], [false, true])
     func trailingEdgesShowNoWhite(magnification: CGFloat, layerBacked: Bool) throws {
-        let rendering = try render(magnification: magnification, layerBacked: layerBacked)
+        try expectDarkTrailingEdges(render(magnification: magnification, layerBacked: layerBacked))
+    }
+
+    /// On a 2× screen the canvas shows the output's own pixels.
+    @Test(arguments: [0.73, 1.37, 2.03, 3.17] as [CGFloat], [false, true])
+    func trailingEdgesShowNoWhiteAtLowerOutputScale(magnification: CGFloat, layerBacked: Bool) throws {
+        var document = Document(image: BaseImage(cgImage: Self.blackImage(width: 848, height: 168), scale: 2))
+        document.setScale(1)
+        try expectDarkTrailingEdges(render(document, magnification: magnification, layerBacked: layerBacked))
+    }
+
+    private func expectDarkTrailingEdges(_ rendering: Rendering) {
         let canvas = rendering.canvas
         #expect(rendering.clip.contains(canvas.insetBy(dx: -2, dy: -2)))
         let surround = rendering.brightness(x: Int(rendering.clip.minX) + 2, y: Int(rendering.clip.minY) + 2)

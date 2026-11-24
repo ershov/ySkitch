@@ -107,25 +107,46 @@ final class CanvasView: NSView, NSMenuItemValidation {
         scrollView.reflectScrolledClipView(clipView)
     }
 
-    /// Crisp pixels once an image pixel covers at least 2×2 device pixels.
+    /// Crisp pixels once an output pixel covers at least 2×2 device pixels.
     static func interpolation(
         magnification: CGFloat, backingScale: CGFloat, documentScale: CGFloat
     ) -> CGInterpolationQuality {
         magnification * backingScale / documentScale >= 2 ? .none : .high
     }
 
+    /// True when the output is less dense than the screen, so the canvas shows the output's own pixels at every zoom.
+    static func previewsOutputPixels(backingScale: CGFloat, documentScale: CGFloat) -> Bool {
+        documentScale < backingScale - 1e-3
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
+        let document = model.document
+        let magnification = enclosingScrollView?.magnification ?? 1
+        let backingScale = window?.backingScaleFactor ?? 1
         context.interpolationQuality = Self.interpolation(
-            magnification: enclosingScrollView?.magnification ?? 1,
-            backingScale: window?.backingScaleFactor ?? 1,
-            documentScale: model.document.scale
-        )
-        let origin = model.document.canvasRect.origin
+            magnification: magnification, backingScale: backingScale, documentScale: document.scale)
+        let origin = document.canvasRect.origin
         context.translateBy(x: -origin.x, y: -origin.y)
-        Renderer.draw(model.document, onTop: textEditor.editedAnnotationID, in: context)
+        if Self.previewsOutputPixels(backingScale: backingScale, documentScale: document.scale) {
+            drawOutputPixels(covering: dirtyRect.offsetBy(dx: origin.x, dy: origin.y), in: context)
+        } else {
+            Renderer.draw(document, onTop: textEditor.editedAnnotationID, in: context)
+        }
         drawSelectionOverlay(in: context)
         drawCropOverlay(in: context)
+    }
+
+    /// `rect` is in document coordinates; the context's interpolation scales the output pixels up.
+    private func drawOutputPixels(covering rect: CGRect, in context: CGContext) {
+        guard let (image, region) = Renderer.render(
+            model.document, covering: rect, onTop: textEditor.editedAnnotationID)
+        else { return }
+        context.saveGState()
+        defer { context.restoreGState() }
+        context.translateBy(x: region.minX, y: region.maxY)
+        context.scaleBy(x: 1, y: -1)
+        context.draw(image, in: CGRect(origin: .zero, size: region.size))
     }
 
     private var crop: CropInteraction? { interaction?.handler as? CropInteraction }

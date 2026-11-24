@@ -6,8 +6,12 @@ public enum StatusText {
         let (pixelWidth, pixelHeight) = Document.pixelSize(points: canvas, scale: scale)
         let pixels = "\(pixelWidth)×\(pixelHeight)"
         let points = "\(Int(canvas.width.rounded()))×\(Int(canvas.height.rounded()))"
-        let scaleText = scale == scale.rounded() ? "\(Int(scale))" : String(format: "%.1f", Double(scale))
-        return "\(pixels) px · \(points) pt · @\(scaleText)x"
+        return "\(pixels) px · \(points) pt"
+    }
+
+    public static func scale(_ scale: CGFloat) -> String {
+        let text = scale == scale.rounded() ? "\(Int(scale))" : String(format: "%.1f", Double(scale))
+        return "@\(text)x"
     }
 
     public static func zoom(_ magnification: CGFloat) -> String {

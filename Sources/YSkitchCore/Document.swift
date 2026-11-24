@@ -4,8 +4,8 @@ public struct Document: Equatable, Sendable {
     public var base: BaseImage?
     /// Points, origin `.zero`.
     public var imageRect: CGRect
-    /// Output pixels per point.
-    public var scale: CGFloat
+    /// Output pixels per point; the base image is resampled to it. Changed with `setScale(_:)`.
+    public private(set) var scale: CGFloat
     /// Document order; rendered per `RenderLayer`, last on top within a layer.
     public var annotations: [Annotation] = []
     /// Output area; kept in sync with the annotations by `updateCanvas(allowShrink:)`.
@@ -49,6 +49,15 @@ public struct Document: Equatable, Sendable {
     /// Lasts until the next `updateCanvas(allowShrink: true)`.
     public mutating func extendCanvas(toInclude rect: CGRect) {
         canvasRect = canvasRect.union(Self.snappedOutward(rect, scale: scale))
+    }
+
+    public static let scaleChoices: [CGFloat] = [1, 2, 3]
+
+    /// Geometry stays in points; the crop and the canvas snap outward to the new pixel grid.
+    public mutating func setScale(_ newScale: CGFloat) {
+        scale = newScale
+        cropRect = cropRect.map { Self.snappedOutward($0, scale: newScale) }
+        updateCanvas(allowShrink: true)
     }
 
     /// Existing annotations stop extending the canvas, so the canvas becomes the crop.

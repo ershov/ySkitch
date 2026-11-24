@@ -11,17 +11,21 @@ final class StatusBarView: NSView {
     let zoomOutButton: NSButton
     let zoomInButton: NSButton
     let infoLabel = NSTextField(labelWithString: "")
+    let scaleButton = NSPopUpButton(frame: .zero, pullsDown: false)
     let zoomLabel = NSTextField(labelWithString: "")
 
     var onActualSize: (() -> Void)?
     var onFit: (() -> Void)?
     var onZoomOut: (() -> Void)?
     var onZoomIn: (() -> Void)?
+    var onScaleChange: ((CGFloat) -> Void)?
 
     private let separator = NSView()
     private let controls: NSStackView
     private static let inset: CGFloat = 14
     private static let handleGap: CGFloat = 8
+    private static let labelGap: CGFloat = 4
+    private var shownScale: CGFloat?
 
     init() {
         actualSizeButton = NSButton(title: "1:1", target: nil, action: nil)
@@ -40,12 +44,20 @@ final class StatusBarView: NSView {
         infoLabel.textColor = .secondaryLabelColor
         infoLabel.lineBreakMode = .byTruncatingTail
         infoLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        scaleButton.isBordered = false
+        scaleButton.font = infoLabel.font
+        scaleButton.contentTintColor = .secondaryLabelColor
+        scaleButton.toolTip = "Output Scale"
+        scaleButton.target = self
+        scaleButton.action = #selector(scaleSelected)
+        scaleButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        scaleButton.setContentHuggingPriority(.required, for: .horizontal)
         zoomLabel.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
         zoomLabel.textColor = .secondaryLabelColor
         zoomLabel.alignment = .center
 
         controls.spacing = 6
-        for view in [infoLabel, dragHandle, controls, separator] {
+        for view in [infoLabel, scaleButton, dragHandle, controls, separator] {
             view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(view)
         }
@@ -62,7 +74,9 @@ final class StatusBarView: NSView {
             infoLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
             dragHandle.centerXAnchor.constraint(equalTo: centerXAnchor),
             dragHandle.centerYAnchor.constraint(equalTo: centerYAnchor),
-            infoLabel.trailingAnchor.constraint(lessThanOrEqualTo: dragHandle.leadingAnchor, constant: -Self.handleGap),
+            scaleButton.leadingAnchor.constraint(equalTo: infoLabel.trailingAnchor, constant: Self.labelGap),
+            scaleButton.firstBaselineAnchor.constraint(equalTo: infoLabel.firstBaselineAnchor),
+            scaleButton.trailingAnchor.constraint(lessThanOrEqualTo: dragHandle.leadingAnchor, constant: -Self.handleGap),
             controls.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Self.inset),
             controls.centerYAnchor.constraint(equalTo: centerYAnchor),
             controls.leadingAnchor.constraint(greaterThanOrEqualTo: dragHandle.trailingAnchor, constant: Self.handleGap),
@@ -72,9 +86,10 @@ final class StatusBarView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
-    /// The drag handle is centered, so both halves must fit the controls beside it.
+    /// The drag handle is centered, so each half must fit the wider side; the info label truncates.
     var minimumWidth: CGFloat {
-        2 * (DragHandleView.size.width / 2 + Self.handleGap + controls.fittingSize.width + Self.inset)
+        let side = max(Self.labelGap + scaleButton.fittingSize.width, controls.fittingSize.width)
+        return 2 * (DragHandleView.size.width / 2 + Self.handleGap + side + Self.inset)
     }
 
     override var wantsUpdateLayer: Bool { true }
@@ -86,6 +101,24 @@ final class StatusBarView: NSView {
 
     func update(info: String) {
         infoLabel.stringValue = info
+    }
+
+    /// Lists `Document.scaleChoices`, plus `scale` when it is not one of them.
+    func update(scale: CGFloat) {
+        guard scale != shownScale else { return }
+        shownScale = scale
+        let scales = Document.scaleChoices.contains(scale) ? Document.scaleChoices : Document.scaleChoices + [scale]
+        scaleButton.removeAllItems()
+        for choice in scales {
+            scaleButton.addItem(withTitle: StatusText.scale(choice))
+            scaleButton.lastItem?.representedObject = NSNumber(value: Double(choice))
+        }
+        selectShownScale()
+    }
+
+    private func selectShownScale() {
+        guard let shownScale else { return }
+        scaleButton.selectItem(at: scaleButton.indexOfItem(withRepresentedObject: NSNumber(value: Double(shownScale))))
     }
 
     func update(magnification: CGFloat) {
@@ -104,4 +137,12 @@ final class StatusBarView: NSView {
     @objc private func fit() { onFit?() }
     @objc private func zoomOut() { onZoomOut?() }
     @objc private func zoomIn() { onZoomIn?() }
+
+    @objc private func scaleSelected() {
+        guard let scale = (scaleButton.selectedItem?.representedObject as? NSNumber).map({ CGFloat($0.doubleValue) })
+        else { return }
+        onScaleChange?(scale)
+        // A refused change keeps the document's scale selected.
+        selectShownScale()
+    }
 }

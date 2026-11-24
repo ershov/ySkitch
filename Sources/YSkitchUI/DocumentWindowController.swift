@@ -89,9 +89,17 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         statusBar.onFit = { [weak scrollView] in scrollView?.zoomToFit() }
         statusBar.onZoomOut = { [weak scrollView] in scrollView?.zoomOut() }
         statusBar.onZoomIn = { [weak scrollView] in scrollView?.zoomIn() }
+        statusBar.onScaleChange = { [weak self] in
+            // The pop-up doesn't take focus, so an open text edit would otherwise block the change.
+            self?.canvasView.commitTextEditing()
+            self?.changeScale(to: $0)
+        }
         scrollView.onMagnificationChange = { [weak statusBar] in statusBar?.update(magnification: $0) }
         statusBar.dragHandle.imageProvider = { [weak self] in self?.dragPayload() }
-        canvasView.onCropSessionChange = { [weak statusBar] in statusBar?.dragHandle.isEnabled = !$0 }
+        canvasView.onCropSessionChange = { [weak self] in
+            self?.statusBar.dragHandle.isEnabled = !$0
+            self?.updateStatusInfo()
+        }
         updateStatusInfo()
         window.contentView?.layoutSubtreeIfNeeded()
         refreshMinimumSize()
@@ -102,6 +110,8 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     /// Slider value while dragging, else geometry of the element being drawn or selected, else the image size.
     private func updateStatusInfo() {
         let document = model.document
+        statusBar.update(scale: document.scale)
+        statusBar.scaleButton.isEnabled = !canvasView.isCropping
         if toolbar.isDraggingThickness,
             let text = StatusText.thickness(tool: toolbar.styleTool, value: toolbar.displayedStyle.thickness)
         {
@@ -264,6 +274,19 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         toolbar.perform(action)
     }
 
+    /// Text editing and crop sessions are gestures too.
+    private var canChangeScale: Bool { !model.isInGesture }
+
+    func changeScale(to scale: CGFloat) {
+        guard canChangeScale else { return }
+        model.perform("Change Scale") { $0.setScale(scale) }
+    }
+
+    @objc func changeScale(_ sender: NSMenuItem) {
+        guard let scale = (sender.representedObject as? NSNumber).map({ CGFloat($0.doubleValue) }) else { return }
+        changeScale(to: scale)
+    }
+
     @objc func applyCrop(_ sender: Any?) { canvasView.applyCrop() }
 
     @objc func cancelCrop(_ sender: Any?) { canvasView.cancelCrop() }
@@ -282,6 +305,8 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         return switch item.action {
         case #selector(performToolShortcut(_:)):
             validateToolShortcut(item)
+        case #selector(changeScale(_:)):
+            validateScale(item)
         case #selector(applyCrop(_:)), #selector(cancelCrop(_:)):
             canvasView.isCropping
         case #selector(paste(_:)):
@@ -294,6 +319,12 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         case #selector(selectAll(_:)): !model.document.annotations.isEmpty && !model.isInGesture
         default: true
         }
+    }
+
+    private func validateScale(_ item: NSMenuItem) -> Bool {
+        let scale = (item.representedObject as? NSNumber).map { CGFloat($0.doubleValue) }
+        item.state = scale == model.document.scale ? .on : .off
+        return canChangeScale
     }
 
     private func validateToolShortcut(_ item: NSMenuItem) -> Bool {

@@ -4,15 +4,21 @@ import Testing
 
 struct StatusTextTests {
     @Test func sizeAt2x() {
-        #expect(StatusText.size(canvas: CGSize(width: 1440, height: 900), scale: 2) == "2880×1800 px · 1440×900 pt · @2x")
+        #expect(StatusText.size(canvas: CGSize(width: 1440, height: 900), scale: 2) == "2880×1800 px · 1440×900 pt")
     }
 
     @Test func sizeAt1x() {
-        #expect(StatusText.size(canvas: CGSize(width: 100, height: 50), scale: 1) == "100×50 px · 100×50 pt · @1x")
+        #expect(StatusText.size(canvas: CGSize(width: 100, height: 50), scale: 1) == "100×50 px · 100×50 pt")
     }
 
     @Test func sizeAtFractionalScale() {
-        #expect(StatusText.size(canvas: CGSize(width: 101, height: 51), scale: 1.5) == "152×77 px · 101×51 pt · @1.5x")
+        #expect(StatusText.size(canvas: CGSize(width: 101, height: 51), scale: 1.5) == "152×77 px · 101×51 pt")
+    }
+
+    @Test func scale() {
+        #expect(StatusText.scale(1) == "@1x")
+        #expect(StatusText.scale(3) == "@3x")
+        #expect(StatusText.scale(1.5) == "@1.5x")
     }
 
     @Test func zoomRounds() {
