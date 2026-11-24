@@ -156,7 +156,7 @@ All annotations are vector objects, editable until export (flattened only on out
   - Arrow, Line, Rect, Rounded rect, Ellipse: code-drawn with a 3.4 pt stroke (twice the SF Symbol regular stroke); the rectangle has square corners.
   - Text: "Aa" in the text annotation font (bold system font).
   - Other tools: SF Symbols.
-- Canvas surround color is an internal constant `CanvasStyle.surroundColor` (neutral grey).
+- Canvas surround is the system window background color (`CanvasStyle.surroundColor`), so it follows light/dark mode. The canvas has a soft drop shadow (black 25 %, blur 6 pt, 1 pt down), constant on screen regardless of zoom.
 - Design reference: `docs/toolbar-design.png` (light mode, 1× points).
 - **No UI is implemented or changed without the user confirming the sketch first.**
 

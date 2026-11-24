@@ -2,5 +2,10 @@ import AppKit
 
 @MainActor
 enum CanvasStyle {
-    static let surroundColor = NSColor(srgbRed: 0.45, green: 0.45, blue: 0.45, alpha: 1)
+    static let surroundColor = NSColor.windowBackgroundColor
+
+    /// Screen-space values: unaffected by zoom.
+    static let shadowOpacity: CGFloat = 0.25
+    static let shadowBlur: CGFloat = 6
+    static let shadowOffset = NSSize(width: 0, height: -1)
 }

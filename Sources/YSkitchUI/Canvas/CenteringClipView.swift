@@ -2,6 +2,37 @@ import AppKit
 
 /// Centers a document smaller than the viewport instead of pinning it to a corner.
 final class CenteringClipView: NSClipView {
+    private var documentFrameObserver: (any NSObjectProtocol)?
+
+    override func didAddSubview(_ subview: NSView) {
+        super.didAddSubview(subview)
+        guard subview === documentView else { return }
+        subview.postsFrameChangedNotifications = true
+        documentFrameObserver = NotificationCenter.default.addObserver(
+            forName: NSView.frameDidChangeNotification, object: subview, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.needsDisplay = true }
+        }
+    }
+
+    isolated deinit {
+        documentFrameObserver.map(NotificationCenter.default.removeObserver)
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        guard let documentFrame = documentView?.frame, let context = NSGraphicsContext.current else { return }
+        context.saveGraphicsState()
+        defer { context.restoreGraphicsState() }
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(CanvasStyle.shadowOpacity)
+        shadow.shadowBlurRadius = CanvasStyle.shadowBlur
+        shadow.shadowOffset = CanvasStyle.shadowOffset
+        shadow.set()
+        NSColor.white.setFill()
+        documentFrame.fill()
+    }
+
     override func constrainBoundsRect(_ proposedBounds: NSRect) -> NSRect {
         var rect = super.constrainBoundsRect(proposedBounds)
         guard let documentFrame = documentView?.frame else { return rect }
