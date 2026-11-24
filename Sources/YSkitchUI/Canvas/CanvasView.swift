@@ -226,6 +226,11 @@ final class CanvasView: NSView, NSMenuItemValidation {
             selection.deleteSelected()
             return
         }
+        if let direction = NudgeDirection(keyCode: event.keyCode), !selection.isEmpty, !model.isInGesture,
+           event.modifierFlags.isDisjoint(with: [.command, .control, .option]) {
+            selection.nudge(by: direction.vector(large: event.modifierFlags.contains(.shift)))
+            return
+        }
         if event.keyCode == Self.spaceKeyCode {
             if !event.isARepeat, event.modifierFlags.isDisjoint(with: [.command, .control, .option]) {
                 beginPanMode()

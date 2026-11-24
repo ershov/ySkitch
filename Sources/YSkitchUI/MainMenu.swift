@@ -69,6 +69,26 @@ enum MainMenu {
         menu.addItem(item("Duplicate", #selector(DocumentWindowController.duplicate(_:)), "d"))
         menu.addItem(item("Delete", #selector(NSText.delete(_:))))
         menu.addItem(item("Select All", #selector(NSText.selectAll(_:)), "a"))
+        menu.addItem(.separator())
+        let nudge = NSMenuItem(title: "Nudge", action: nil, keyEquivalent: "")
+        nudge.submenu = nudgeMenu()
+        menu.addItem(nudge)
+        return menu
+    }
+
+    private static func nudgeMenu() -> NSMenu {
+        let menu = NSMenu(title: "Nudge")
+        for direction in NudgeDirection.allCases {
+            let key = direction.keyEquivalent
+            let name = direction.name
+            let small = item(name, #selector(DocumentWindowController.nudge(_:)), key, [])
+            small.representedObject = direction.vector(large: false)
+            let large = item("Nudge \(name) \(Int(NudgeDirection.largeStep)) pt", #selector(DocumentWindowController.nudge(_:)), key, [.shift])
+            large.representedObject = direction.vector(large: true)
+            large.isAlternate = true
+            menu.addItem(small)
+            menu.addItem(large)
+        }
         return menu
     }
 

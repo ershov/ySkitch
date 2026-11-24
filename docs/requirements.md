@@ -129,7 +129,7 @@ All annotations are vector objects, editable until export (flattened only on out
 | ED-1 | Select tool; click/marquee select; `⇧`-click multi-select. In every drawing tool except Text and Crop, a click without a drag creates nothing and selects the topmost annotation under the cursor (empty space clears the selection); the tool stays active | S | 1 |
 | ED-2 | Move, resize, endpoint drag (lines/arrows) | S | 1 |
 | ED-3 | Delete (`⌫`), duplicate (`⌘D`), copy/paste objects between windows | S | 1 |
-| ED-4 | Nudge with arrow keys (1 pt; `⇧` = 10 pt) | S | 2 |
+| ED-4 | Nudge with arrow keys (1 pt; `⇧` = 20 pt); consecutive nudges are one undo step | S | 1 |
 | ED-5 | Z-order: bring to front / send to back | S | 2 |
 | ED-6 | Unlimited undo/redo (`⌘Z` / `⌘⇧Z`) per document | S | 1 |
 | ED-7 | Double-click text to edit | S | 1 |
@@ -151,7 +151,7 @@ All annotations are vector objects, editable until export (flattened only on out
 
 - **ySkitch:** About · Hide `⌘H` · Hide Others `⌥⌘H` · Show All · Quit `⌘Q`
 - **File:** New `⌘N` · New Blank `⇧⌘N` · Open… `⌘O` · Reopen Closed Window `⇧⌘T` (disabled with empty history) · Save `⌘S` · Save As… `⇧⌘S` · Close `⌘W`
-- **Edit:** Undo `⌘Z` · Redo `⇧⌘Z` · Cut `⌘X` · Copy `⌘C` · Copy Image `⇧⌘C` · Paste `⌘V` · Duplicate `⌘D` · Delete (`⌫` on the canvas) · Select All `⌘A`
+- **Edit:** Undo `⌘Z` · Redo `⇧⌘Z` · Cut `⌘X` · Copy `⌘C` · Copy Image `⇧⌘C` · Paste `⌘V` · Duplicate `⌘D` · Delete (`⌫` on the canvas) · Select All `⌘A` · Nudge ▸ Left `←` · Right `→` · Up `↑` · Down `↓` (`⇧` alternates: 20 pt; need a selection)
 - **Tools** (single keys, no modifiers):
   - Tools in toolbar groups, checkmark on the active one: Select `V` · Text `T` · Arrow `A`, Line `L`, Rectangle `R`, Rounded Rectangle `U`, Ellipse `O` · Pen `P`, Highlighter `H` · Pixelate `X` · Crop `C`
   - Color ▸ Red `1` … Black `8` (§6.3), checkmark on the shown color; disabled when the tool or selection has no color

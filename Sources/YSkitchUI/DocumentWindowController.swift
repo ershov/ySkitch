@@ -217,6 +217,11 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
 
     @objc func delete(_ sender: Any?) { selection.deleteSelected() }
 
+    @objc func nudge(_ sender: NSMenuItem) {
+        guard let delta = sender.representedObject as? CGVector else { return }
+        selection.nudge(by: delta)
+    }
+
     /// Switches to the Select tool so the selection stays visible and editable.
     override func selectAll(_ sender: Any?) {
         toolbar.activeTool = .select
@@ -254,6 +259,8 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
                 || PasteboardImageReader.containsImage(.general))
         case #selector(cut(_:)), #selector(duplicate(_:)), #selector(delete(_:)):
             !selection.isEmpty && !model.isInGesture
+        case #selector(nudge(_:)):
+            !selection.isEmpty && !model.isInGesture && !canvasView.textEditor.isEditing
         case #selector(selectAll(_:)): !model.document.annotations.isEmpty && !model.isInGesture
         default: true
         }

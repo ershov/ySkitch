@@ -16,6 +16,7 @@ final class DocumentModel {
     var onChange: (() -> Void)?
 
     private var gestureStart: Document?
+    private var lastCoalesced: (key: String, document: Document)?
 
     var isInGesture: Bool { gestureStart != nil }
 
@@ -25,17 +26,23 @@ final class DocumentModel {
         self.document = document
     }
 
-    func perform(_ actionName: String, _ change: (inout Document) -> Void) {
+    /// With a `key`, consecutive performs with the same key on an otherwise untouched document share one undo step.
+    func perform(_ actionName: String, coalescing key: String? = nil, _ change: (inout Document) -> Void) {
         var updated = document
         change(&updated)
         updated.updateCanvas(allowShrink: true)
         guard updated != document else { return }
-        registerUndo(previous: document, actionName: actionName)
+        let merges = key != nil && lastCoalesced.map { $0.key == key && $0.document == document } == true
+        if !merges { registerUndo(previous: document, actionName: actionName) }
+        lastCoalesced = key.map { ($0, updated) }
         document = updated
     }
 
+    func endCoalescing() { lastCoalesced = nil }
+
     func beginGesture() {
         precondition(gestureStart == nil, "Nested gestures are not supported")
+        lastCoalesced = nil
         gestureStart = document
     }
 
@@ -72,6 +79,7 @@ final class DocumentModel {
     }
 
     private func restore(_ previous: Document, actionName: String) {
+        lastCoalesced = nil
         let current = document
         document = previous
         undoManager.registerUndo(withTarget: self) { $0.restore(current, actionName: actionName) }
