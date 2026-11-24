@@ -30,12 +30,13 @@ struct CanvasTests {
     }
 
     @Test func windowControllerSizesCanvasToDocument() {
+        let screen = NSScreen.main?.visibleFrame.size ?? CGSize(width: 1440, height: 900)
+        let size = CGSize(width: screen.width + 500, height: screen.height + 500)
         let controller = DocumentWindowController(
-            document: Document(blankSize: CGSize(width: 2000, height: 1000), scale: 1), title: "Test",
-            toolSettings: .inMemory()
+            document: Document(blankSize: size, scale: 1), title: "Test", toolSettings: .inMemory()
         )
         defer { controller.close() }
-        #expect(controller.canvasView.frame.size == NSSize(width: 2000, height: 1000))
+        #expect(controller.canvasView.frame.size == size)
         #expect(controller.scrollView.magnification < 1)
 
         controller.zoomToActualSize(nil)

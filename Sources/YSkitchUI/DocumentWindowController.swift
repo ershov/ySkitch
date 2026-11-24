@@ -94,6 +94,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         canvasView.onCropSessionChange = { [weak statusBar] in statusBar?.dragHandle.isEnabled = !$0 }
         updateStatusInfo()
         window.contentView?.layoutSubtreeIfNeeded()
+        refreshMinimumSize()
         scrollView.zoomToFit()
         statusBar.update(magnification: scrollView.magnification)
     }
@@ -128,6 +129,20 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? { model.undoManager }
+
+    /// Control metrics change once the window is attached to a screen, so the pre-window minimum can be too small.
+    private func refreshMinimumSize() {
+        guard let window else { return }
+        window.contentView?.layoutSubtreeIfNeeded()
+        let minimum = Self.minimumContentSize(statusBar: statusBar)
+        window.contentMinSize = minimum
+        let current = window.contentRect(forFrameRect: window.frame).size
+        if current.width < minimum.width || current.height < minimum.height {
+            window.setContentSize(CGSize(width: max(current.width, minimum.width), height: max(current.height, minimum.height)))
+        }
+    }
+
+    func windowDidChangeBackingProperties(_ notification: Notification) { refreshMinimumSize() }
 
     func windowDidResignKey(_ notification: Notification) { canvasView.commitTextEditing() }
 
