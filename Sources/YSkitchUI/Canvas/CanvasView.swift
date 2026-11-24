@@ -237,7 +237,9 @@ final class CanvasView: NSView, NSMenuItemValidation {
         if event.keyCode == Self.escapeKeyCode {
             if marquee != nil {
                 cancelMarquee()
-            } else if let select = currentInteraction as? SelectInteraction, !select.isDragging {
+            } else if model.isInGesture || (currentInteraction as? SelectInteraction)?.isDragging == true {
+                currentInteraction?.cancel()
+            } else if !selection.isEmpty {
                 selection.clear()
             } else {
                 currentInteraction?.cancel()

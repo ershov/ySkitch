@@ -145,7 +145,7 @@ All annotations are vector objects, editable until export (flattened only on out
 | KEY-4 | `⌥` while drawing rect/ellipse: draw from center | S | 2 |
 | KEY-5 | Single-key tool shortcuts (V select, T text, A arrow, L line, R rect, U rounded rect, O ellipse, P pen, H highlighter, X pixelate, C crop) | S | 1 |
 | KEY-6 | Number keys `1`–`8` select palette color; `[` / `]` step the thickness slider down / up | S | 1 |
-| KEY-7 | `Esc` cancels current operation / deselects | S | 1 |
+| KEY-7 | `Esc` cancels current operation, otherwise deselects (every tool) | S | 1 |
 | KEY-8 | Every function has a menu item showing its shortcut (menus below) | U | 1 |
 | KEY-9 | Right-drag or `⌃`-drag in any tool: marquee adds to the selection; with `⌥` removes from it (ED-1) | U | 1 |
 

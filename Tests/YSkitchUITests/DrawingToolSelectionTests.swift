@@ -186,6 +186,21 @@ struct DrawingToolSelectionTests {
         #expect(!controller.model.undoManager.canUndo)
     }
 
+    @Test func escapeClearsSelectionInEveryTool() throws {
+        for tool in [.select, .text] + Self.tools {
+            let controller = selectTarget(tool: tool)
+            defer { controller.close() }
+            #expect(controller.selection.selectedIDs == [target.id])
+            let escape = try #require(NSEvent.keyEvent(
+                with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0,
+                context: nil, characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", isARepeat: false,
+                keyCode: 53))
+            controller.canvasView.keyDown(with: escape)
+            #expect(controller.selection.isEmpty, "\(tool)")
+            #expect(controller.model.document.annotations == [target])
+        }
+    }
+
     @Test func toolbarColorEditsSelection() throws {
         let controller = selectTarget(tool: .highlighter)
         defer { controller.close() }
