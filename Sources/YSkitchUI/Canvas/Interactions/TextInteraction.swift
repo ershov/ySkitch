@@ -1,31 +1,66 @@
 import AppKit
 import YSkitchCore
 
+/// Click selects (and drags move/resize) like the Select tool; double-click on text edits it;
+/// a press on empty space starts new text.
 @MainActor
 final class TextInteraction: CanvasInteraction {
     private let model: DocumentModel
+    private let selection: SelectionModel
     private let editor: TextEditingController
+    private let selectionEditor: SelectionEditor
+    private let magnification: () -> CGFloat
 
-    init(model: DocumentModel, editor: TextEditingController) {
+    init(
+        model: DocumentModel, selection: SelectionModel, editor: TextEditingController,
+        selectionEditor: SelectionEditor, magnification: @escaping () -> CGFloat
+    ) {
         self.model = model
+        self.selection = selection
         self.editor = editor
+        self.selectionEditor = selectionEditor
+        self.magnification = magnification
     }
 
     var cursor: NSCursor { .iBeam }
 
     func mouseDown(at point: CGPoint, event: NSEvent) {
-        if let hit = model.document.annotationsInVisualOrder.last(where: { $0.isText && AnnotationHitTest.contains($0, point: point, tolerance: 0) }) {
-            editor.beginEditing(annotationID: hit.id, at: point)
-        } else {
-            editor.beginNew(at: point)
+        cancel()
+        if selectionEditor.beginHandleDrag(at: point) { return }
+        let document = model.document
+        guard let hit = AnnotationHitTest.topmost(
+            in: document, at: point, tolerance: SelectInteraction.hitTolerance / magnification())
+        else {
+            selection.clear()
+            return editor.beginNew(at: point)
         }
+        if event.clickCount >= 2, document.annotations.contains(where: { $0.id == hit && $0.isText }) {
+            selection.select([hit])
+            return editor.beginEditing(annotationID: hit, at: point)
+        }
+        if event.modifierFlags.contains(.command) {
+            return selectionEditor.beginClone(of: selection.contains(hit) ? selection.selectedIDs : [hit], from: point)
+        }
+        if !selection.contains(hit) { selection.select([hit]) }
+        selectionEditor.beginMove(from: point)
     }
 
-    func mouseDragged(to point: CGPoint, event: NSEvent) {}
-    func mouseUp(at point: CGPoint, event: NSEvent) {}
-    func flagsChanged(_ event: NSEvent) {}
+    func mouseDragged(to point: CGPoint, event: NSEvent) {
+        if selectionEditor.isDragging { selectionEditor.dragged(to: point, flags: event.modifierFlags) }
+    }
 
-    func cancel() { editor.commit() }
+    func mouseUp(at point: CGPoint, event: NSEvent) {
+        selectionEditor.end()
+    }
+
+    func flagsChanged(_ event: NSEvent) {
+        selectionEditor.update(flags: event.modifierFlags)
+    }
+
+    func cancel() {
+        selectionEditor.cancel()
+        editor.commit()
+    }
 }
 
 extension Annotation {

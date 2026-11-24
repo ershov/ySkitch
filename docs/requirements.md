@@ -91,7 +91,7 @@ All annotations are vector objects, editable until export (flattened only on out
 | ID | Tool | Details | Src | Stage |
 |---|---|---|---|---|
 | T-1 | Arrow | Skitch-style tapered arrow; head scales with thickness; short arrows narrow proportionally so they keep the arrow shape | U | 1 |
-| T-2 | Text | Multiline; editable after creation; thickness slider sets font size | U | 1 |
+| T-2 | Text | Multiline; editable after creation; thickness slider sets font size. With the Text tool and no text being edited: a click on any annotation selects it (press-drag moves it, handles resize, `⌘`-drag copies, as in the Select tool); a double-click on text edits it (ED-7); a click on empty space clears the selection and starts new text | U | 1 |
 | T-3 | Rectangle | Outline | U | 1 |
 | T-3a | Fill for rectangle, rounded rectangle, ellipse (needs sketch update) | S | 2 |
 | T-4 | Rounded rectangle | Radius scales with thickness | U | 1 |
@@ -133,7 +133,7 @@ All annotations are vector objects, editable until export (flattened only on out
 | ED-4 | Nudge with arrow keys (1 pt; `⇧` = 20 pt); consecutive nudges are one undo step | S | 1 |
 | ED-5 | Z-order: bring to front / send to back | S | 2 |
 | ED-6 | Unlimited undo/redo (`⌘Z` / `⌘⇧Z`) per document | S | 1 |
-| ED-7 | Double-click text to edit | S | 1 |
+| ED-7 | Double-click text to edit (Select and Text tools) | S | 1 |
 
 ### 5.8 Modifiers and shortcuts
 

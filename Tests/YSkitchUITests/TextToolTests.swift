@@ -14,15 +14,28 @@ struct TextToolTests {
         return controller
     }
 
-    private func click(_ controller: DocumentWindowController, at point: CGPoint) {
+    private func click(_ controller: DocumentWindowController, at point: CGPoint, clickCount: Int = 1) {
         let view = controller.canvasView
         for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
             let event = NSEvent.mouseEvent(
                 with: type, location: view.convert(point, to: nil), modifierFlags: [], timestamp: 0,
-                windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: 1,
+                windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: clickCount,
                 pressure: 1)!
             type == .leftMouseDown ? view.mouseDown(with: event) : view.mouseUp(with: event)
         }
+    }
+
+    private func drag(_ controller: DocumentWindowController, from a: CGPoint, to b: CGPoint) {
+        let view = controller.canvasView
+        func event(_ type: NSEvent.EventType, _ point: CGPoint) -> NSEvent {
+            NSEvent.mouseEvent(
+                with: type, location: view.convert(point, to: nil), modifierFlags: [], timestamp: 0,
+                windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: 1,
+                pressure: 1)!
+        }
+        view.mouseDown(with: event(.leftMouseDown, a))
+        view.mouseDragged(with: event(.leftMouseDragged, b))
+        view.mouseUp(with: event(.leftMouseUp, b))
     }
 
     private func type(_ text: String, in controller: DocumentWindowController) throws {
@@ -143,13 +156,81 @@ struct TextToolTests {
         #expect(!controller.canvasView.model.isInGesture)
     }
 
-    @Test func clickOnExistingTextEditsIt() throws {
+    @Test func clickOnTextSelectsWithoutEditing() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        try addText(controller, at: CGPoint(x: 50, y: 60))
+        let view = controller.canvasView
+        let annotation = view.model.document.annotations[0]
+        click(controller, at: CGPoint(x: annotation.bounds.midX, y: annotation.bounds.midY))
+        #expect(view.textEditor.textView == nil)
+        #expect(view.selection.selectedIDs == [annotation.id])
+        #expect(view.model.document.annotations.count == 1)
+    }
+
+    @Test func dragOnTextMovesIt() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        try addText(controller, at: CGPoint(x: 50, y: 60))
+        let view = controller.canvasView
+        let annotation = view.model.document.annotations[0]
+        let start = CGPoint(x: annotation.bounds.midX, y: annotation.bounds.midY)
+        drag(controller, from: start, to: CGPoint(x: start.x + 40, y: start.y + 30))
+        #expect(view.textEditor.textView == nil)
+        let moved = view.model.document.annotations[0]
+        #expect(moved.bounds.minX == annotation.bounds.minX + 40)
+        #expect(moved.bounds.minY == annotation.bounds.minY + 30)
+        #expect(view.selection.selectedIDs == [annotation.id])
+    }
+
+    @Test func clickOnRectangleSelectsIt() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        let rect = Annotation(
+            style: AnnotationStyle(color: RGBAColor(hex: 0xFF2500), thickness: 4),
+            shape: .rectangle(CGRect(x: 100, y: 100, width: 80, height: 60)))
+        controller.canvasView.model.perform("Add") { $0.annotations.append(rect) }
+        click(controller, at: CGPoint(x: 100, y: 130))
+        let view = controller.canvasView
+        #expect(view.textEditor.textView == nil)
+        #expect(view.selection.selectedIDs == [rect.id])
+        #expect(view.model.document.annotations.count == 1)
+    }
+
+    @Test func clickOnEmptySpaceClearsSelectionAndStartsNewText() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        try addText(controller, at: CGPoint(x: 50, y: 60))
+        let view = controller.canvasView
+        let annotation = view.model.document.annotations[0]
+        click(controller, at: CGPoint(x: annotation.bounds.midX, y: annotation.bounds.midY))
+        click(controller, at: CGPoint(x: 300, y: 250))
+        #expect(view.selection.isEmpty)
+        #expect(view.textEditor.textView != nil)
+        #expect(texts(controller) == ["Hi", ""])
+    }
+
+    @Test func doubleClickOnTextEditsIt() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        try addText(controller, at: CGPoint(x: 50, y: 60))
+        let view = controller.canvasView
+        let annotation = view.model.document.annotations[0]
+        let point = CGPoint(x: annotation.bounds.maxX - 1, y: annotation.bounds.midY)
+        click(controller, at: point)
+        click(controller, at: point, clickCount: 2)
+        let textView = try #require(view.textEditor.textView)
+        #expect(textView.string == "Hi")
+        #expect(textView.selectedRange() == NSRange(location: 2, length: 0))
+    }
+
+    @Test func doubleClickEditsAndTypingCommitsOneStep() throws {
         let controller = makeController()
         defer { controller.close() }
         try addText(controller, at: CGPoint(x: 50, y: 60))
         let model = controller.canvasView.model
         let annotation = model.document.annotations[0]
-        click(controller, at: CGPoint(x: annotation.bounds.maxX - 1, y: annotation.bounds.midY))
+        click(controller, at: CGPoint(x: annotation.bounds.maxX - 1, y: annotation.bounds.midY), clickCount: 2)
         let textView = try #require(controller.canvasView.textEditor.textView)
         #expect(textView.string == "Hi")
         #expect(textView.selectedRange() == NSRange(location: 2, length: 0))

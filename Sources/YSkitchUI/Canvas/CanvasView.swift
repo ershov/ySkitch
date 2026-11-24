@@ -422,7 +422,9 @@ final class CanvasView: NSView, NSMenuItemValidation {
                     self?.statusDidChange()
                 })
         case .text:
-            TextInteraction(model: model, editor: textEditor)
+            TextInteraction(
+                model: model, selection: selection, editor: textEditor, selectionEditor: editor,
+                magnification: magnification)
         case .pen, .highlighter:
             SelectionEditingInteraction(
                 drawing: FreehandDrawingInteraction(
