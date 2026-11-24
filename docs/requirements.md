@@ -167,7 +167,7 @@ Single keys go to the focused view first: the canvas handles them, and while a t
 
 - Left-side toolbar, Skitch-style, in two columns: tools · colors with the thickness slider below them. No column headings.
 - Every toolbar item shows its keyboard key right next to it, bottom-aligned with the icon or swatch (e.g. a small `A` at the bottom right of the arrow icon). Icons only, no tool names.
-- With an object selected, color/thickness controls reflect and edit it.
+- With an object selected, color/thickness controls reflect and edit it. With several selected, they show the last selected object (most recently added to the selection).
 - Controls that do not apply to the current tool (colors, thickness slider) are dimmed and disabled, never hidden.
 - Icons: SF Symbols or code-drawn; no external assets.
   - Arrow, Line, Rect, Rounded rect, Ellipse: code-drawn with a 3.4 pt stroke (twice the SF Symbol regular stroke); the rectangle has square corners.
@@ -255,6 +255,7 @@ Single keys go to the focused view first: the canvas handles them, and while a t
 
 - While the slider is dragged (mouse-down to mouse-up, not `[` / `]`), the status bar's left label shows `<Tool> · <Meaning> <value> pt` (e.g. `Arrow · Width 12 pt`, `Text · Font size 36 pt`), updating live, for the shown style tool (the selection's tool when editing a selection); afterwards it returns to the normal content.
 - Logarithmic mapping, so small sizes get finer control. Top = minimum, bottom = maximum.
+- With several objects selected, the slider position applies per object: each gets the value at that position in its own tool's range (e.g. top of the range: arrow 40 pt, text 120 pt).
 - `[` / `]` move the slider by 1/20 of its range (logarithmic steps).
 - Ranges and defaults are named constants in code.
 - The track is a true size scale: at each slider position its drawn width equals the value at that position (clamped at the column width), so its outline is an exponential curve.

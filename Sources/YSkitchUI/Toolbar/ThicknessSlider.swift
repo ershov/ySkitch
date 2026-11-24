@@ -9,7 +9,8 @@ struct ThicknessSlider: NSViewRepresentable {
     let range: ClosedRange<CGFloat>
     var onDragBegin: () -> Void = {}
     var onDragEnd: () -> Void = {}
-    let onChange: (CGFloat) -> Void
+    /// Receives the slider position (0 = minimum, 1 = maximum).
+    let onChange: (Double) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -54,12 +55,12 @@ struct ThicknessSlider: NSViewRepresentable {
     @MainActor
     final class Coordinator: NSObject {
         var range: ClosedRange<CGFloat> = Tool.strokeRange
-        var onChange: (CGFloat) -> Void = { _ in }
+        var onChange: (Double) -> Void = { _ in }
         var onDragBegin: () -> Void = {}
         var onDragEnd: () -> Void = {}
 
         @objc func changed(_ sender: NSSlider) {
-            onChange(ThicknessScale.value(at: 1 - sender.doubleValue, in: range))
+            onChange(1 - sender.doubleValue)
         }
     }
 }

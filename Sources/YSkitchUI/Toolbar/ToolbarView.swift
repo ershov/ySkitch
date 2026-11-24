@@ -77,7 +77,7 @@ struct ToolbarView: View {
         return ThicknessSlider(
             tool: tool, style: model.displayedStyle, range: range,
             onDragBegin: { model.beginThicknessDrag() }, onDragEnd: { model.endThicknessDrag() }
-        ) { model.setThickness($0) }
+        ) { model.setThickness(atPosition: $0) }
             .frame(maxHeight: .infinity)
             .help("Size")
             .disabled(tool.thicknessRange == nil)

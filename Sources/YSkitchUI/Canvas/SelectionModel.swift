@@ -66,7 +66,7 @@ final class SelectionModel {
     @ObservationIgnored let model: DocumentModel
     @ObservationIgnored var onChange: (() -> Void)?
 
-    /// Selection order; the first one drives the toolbar.
+    /// Selection order; the last one drives the toolbar.
     private(set) var selectedIDs: [UUID] = [] {
         didSet {
             guard selectedIDs != oldValue else { return }
@@ -76,7 +76,7 @@ final class SelectionModel {
         }
     }
 
-    /// Style of the first selected annotation.
+    /// Style of the last selected annotation.
     private(set) var style: Style?
 
     @ObservationIgnored private var ownsStyleGesture = false
@@ -130,9 +130,12 @@ final class SelectionModel {
         edit("Change Color") { $0.withStyle(color: color) }
     }
 
-    /// Clamped per annotation to its kind's range.
-    func setThickness(_ thickness: CGFloat) {
-        edit("Change Thickness") { $0.withStyle(thickness: thickness) }
+    /// Each annotation gets the value at slider `position` (0...1) in its own kind's range.
+    func setThickness(atPosition position: Double) {
+        edit("Change Thickness") { annotation in
+            guard let range = annotation.shape.tool.thicknessRange else { return annotation }
+            return annotation.withStyle(thickness: ThicknessScale.value(at: position, in: range))
+        }
     }
 
     /// Steps each annotation's own thickness within its kind's range.
@@ -174,8 +177,8 @@ final class SelectionModel {
     }
 
     private func refreshStyle() {
-        let first = selectedIDs.first.flatMap { id in model.document.annotations.first { $0.id == id } }
-        let updated = first.map {
+        let last = selectedIDs.last.flatMap { id in model.document.annotations.first { $0.id == id } }
+        let updated = last.map {
             Style(tool: $0.shape.tool, style: ToolStyle(color: $0.style.color, thickness: $0.style.thickness))
         }
         if updated != style { style = updated }

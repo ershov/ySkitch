@@ -227,7 +227,7 @@ struct SelectionTests {
         defer { controller.close() }
         let model = controller.model
         let toolbar = controller.toolbar
-        controller.selection.select([a.id, pixelate.id])
+        controller.selection.select([pixelate.id, a.id])
         #expect(toolbar.styleTool == .rectangle)
         #expect(toolbar.displayedStyle.color == Self.style.color)
 
@@ -299,6 +299,55 @@ struct SelectionTests {
         #expect(size > 10)
         #expect(settings.style(for: .pixelate).thickness == size)
         #expect(settings.style(for: .arrow).thickness == 12)
+    }
+
+    private func arrowAndText() -> (arrow: Annotation, text: Annotation) {
+        let arrow = Annotation(style: Self.style, shape: .arrow(tail: CGPoint(x: 20, y: 20), head: CGPoint(x: 100, y: 80)))
+        let text = Annotation(
+            style: AnnotationStyle(color: Self.style.color, thickness: 24),
+            shape: .text(TextContent(origin: CGPoint(x: 150, y: 20), string: "Hi")))
+        return (arrow, text)
+    }
+
+    @Test func sliderPositionAppliesPerObjectRange() throws {
+        let (arrow, text) = arrowAndText()
+        let controller = makeController([arrow, text])
+        defer { controller.close() }
+        controller.selection.select([arrow.id, text.id])
+        let toolbar = controller.toolbar
+        let annotations = { controller.model.document.annotations }
+
+        toolbar.setThickness(atPosition: 1)
+        #expect(annotations()[0].style.thickness == 40)
+        #expect(annotations()[1].style.thickness == 120)
+        #expect(settings.style(for: .arrow).thickness == 40)
+        #expect(settings.style(for: .text).thickness == 120)
+
+        toolbar.setThickness(atPosition: 0.5)
+        let arrowRange = try #require(Tool.arrow.thicknessRange)
+        let textRange = try #require(Tool.text.thicknessRange)
+        #expect(annotations()[0].style.thickness == ThicknessScale.value(at: 0.5, in: arrowRange))
+        #expect(annotations()[1].style.thickness == ThicknessScale.value(at: 0.5, in: textRange))
+        #expect(settings.style(for: .text).thickness == annotations()[1].style.thickness)
+
+        let shown = toolbar.displayedStyle.thickness
+        #expect(ThicknessScale.value(at: ThicknessScale.position(of: shown, in: textRange), in: textRange) == shown)
+    }
+
+    @Test func toolbarShowsLastSelectedObject() {
+        let (arrow, text) = arrowAndText()
+        let rect = rectangle(CGRect(x: 250, y: 20, width: 60, height: 40))
+        let controller = makeController([arrow, text, rect])
+        defer { controller.close() }
+        let toolbar = controller.toolbar
+        controller.selection.select([arrow.id])
+        #expect(toolbar.styleTool == .arrow)
+        controller.selection.select([arrow.id, text.id])
+        #expect(toolbar.styleTool == .text)
+        #expect(toolbar.displayedStyle.thickness == 24)
+        controller.selection.toggle(rect.id)
+        #expect(toolbar.styleTool == .rectangle)
+        #expect(toolbar.displayedStyle.thickness == 4)
     }
 
     @Test func sliderDragUpdatesDefaultsContinuously() {

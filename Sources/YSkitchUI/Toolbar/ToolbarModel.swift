@@ -55,14 +55,22 @@ final class ToolbarModel {
         settings.setColor(Palette.colors[index], for: activeTool)
     }
 
-    func setThickness(_ thickness: CGFloat) {
+    /// `position` is the slider position (0...1); every selected object maps it into its own range.
+    func setThickness(atPosition position: Double) {
         defer { if isDraggingThickness { onThicknessDragChange?() } }
         if let selection, selectionStyle != nil {
-            selection.setThickness(thickness)
+            selection.setThickness(atPosition: position)
             adoptSelectionStyles(color: false, thickness: true)
             return
         }
-        settings.setThickness(thickness, for: activeTool)
+        guard let range = activeTool.thicknessRange else { return }
+        settings.setThickness(ThicknessScale.value(at: position, in: range), for: activeTool)
+    }
+
+    /// `thickness` is a value in the displayed tool's range.
+    func setThickness(_ thickness: CGFloat) {
+        guard let range = styleTool.thicknessRange else { return }
+        setThickness(atPosition: ThicknessScale.position(of: thickness, in: range))
     }
 
     func stepThickness(by steps: Int) {
