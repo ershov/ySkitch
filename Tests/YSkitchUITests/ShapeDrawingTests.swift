@@ -127,7 +127,7 @@ struct ShapeDrawingTests {
             bitmapDataPlanes: nil, pixelsWide: 40, pixelsHigh: 40, bitsPerSample: 8,
             samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
             bytesPerRow: 0, bitsPerPixel: 0))
-        pasteboard.setData(try #require(bitmap.representation(using: .png, properties: [:])), forType: .png)
+        pasteboard.setData(bitmap.representation(using: .png, properties: [:]), forType: .png)
         view.mouseDown(with: event(.leftMouseDown, CGPoint(x: 10, y: 20), in: view))
         view.mouseDragged(with: event(.leftMouseDragged, CGPoint(x: 60, y: 50), in: view))
         #expect(model.isInGesture)
