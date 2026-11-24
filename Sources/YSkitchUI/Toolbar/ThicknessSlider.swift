@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import YSkitchCore
 
-/// Vertical; the top is the minimum so it lines up with the `[` (thinner) label.
+/// Vertical; the top is the minimum.
 struct ThicknessSlider: NSViewRepresentable {
     let tool: Tool
     let style: ToolStyle
@@ -38,6 +38,7 @@ struct ThicknessSlider: NSViewRepresentable {
         context.coordinator.onChange = onChange
         context.coordinator.onDragBegin = onDragBegin
         context.coordinator.onDragEnd = onDragEnd
+        slider.isEnabled = context.environment.isEnabled
         if let cell = slider.cell as? WedgeSliderCell {
             cell.tool = tool
             cell.color = style.color
@@ -63,14 +64,9 @@ struct ThicknessSlider: NSViewRepresentable {
     }
 }
 
-/// Draws the track as a wedge (thin at the top, thick at the bottom) and the knob as a size preview.
+/// Draws the track as a true size scale with a real-size sample of the current value.
 /// `doubleValue` 1 is the top (minimum thickness).
 final class WedgeSliderCell: NSSliderCell {
-    static let minKnob: CGFloat = 8
-    static let minLabelKnob: CGFloat = 14
-    static let wedgeTop: CGFloat = 2
-    static let wedgeBottom: CGFloat = 12
-
     var tool: Tool = .arrow
     var color: RGBAColor = Palette.defaultColor
     var range: ClosedRange<CGFloat> = Tool.strokeRange
@@ -90,123 +86,114 @@ final class WedgeSliderCell: NSSliderCell {
 
     private var bounds: NSRect { controlView?.bounds ?? .zero }
 
-    private var maxKnob: CGFloat { max(bounds.width, Self.minKnob) }
-
-    func knobSide(at position: Double) -> CGFloat {
-        switch tool {
-        case .text, .pixelate:
-            return Self.minLabelKnob + (maxKnob - Self.minLabelKnob) * CGFloat(position)
-        default:
-            return min(max(ThicknessScale.value(at: position, in: range), Self.minKnob), maxKnob)
-        }
+    /// In top-down coordinates.
+    private var geometry: ThicknessSliderGeometry {
+        ThicknessSliderGeometry(track: NSRect(origin: .zero, size: bounds.size), range: range)
     }
 
-    /// Knob centers at the ends of travel, measured from the top; the same for every tool.
-    private var travel: (top: CGFloat, bottom: CGFloat) {
-        let top = Self.minLabelKnob / 2
-        return (top, max(bounds.height - maxKnob / 2, top))
-    }
+    private var sampleRect: NSRect { geometry.sampleRect(value: thickness, at: position) }
 
-    private func centerY(flipped: Bool) -> CGFloat {
-        let (top, bottom) = travel
-        let y = top + (bottom - top) * CGFloat(position)
-        return flipped ? y : bounds.height - y
+    private func fromTop(_ rect: NSRect, flipped: Bool) -> NSRect {
+        flipped ? rect : NSRect(x: rect.minX, y: bounds.height - rect.maxY, width: rect.width, height: rect.height)
     }
 
     override func knobRect(flipped: Bool) -> NSRect {
-        let side = knobSide(at: position)
-        return NSRect(x: bounds.midX - side / 2, y: centerY(flipped: flipped) - side / 2, width: side, height: side)
+        fromTop(sampleRect.intersection(geometry.track), flipped: flipped)
     }
 
-    override func barRect(flipped: Bool) -> NSRect {
-        let (top, bottom) = travel
-        let y = flipped ? top : bounds.height - bottom
-        return NSRect(x: bounds.midX - Self.wedgeBottom / 2, y: y, width: Self.wedgeBottom, height: bottom - top)
-    }
+    override func barRect(flipped: Bool) -> NSRect { bounds }
 
     override func drawBar(inside rect: NSRect, flipped: Bool) {
-        let bar = barRect(flipped: flipped)
-        let thin = Self.wedgeTop / 2, thick = Self.wedgeBottom / 2
-        let topCenter = NSPoint(x: bar.midX, y: flipped ? bar.minY : bar.maxY)
-        let bottomCenter = NSPoint(x: bar.midX, y: flipped ? bar.maxY : bar.minY)
-        let length = abs(bottomCenter.y - topCenter.y)
-        guard length > thick - thin else { return }
-        // Hull of the two end circles: tangent lines joined by arcs around the far sides.
-        let s: CGFloat = bottomCenter.y > topCenter.y ? 1 : -1
-        let alpha = asin((thick - thin) / length) * 180 / .pi
-        let right = -s * alpha, left = 180 + s * alpha
-        let path = NSBezierPath()
-        path.appendArc(withCenter: bottomCenter, radius: thick, startAngle: right, endAngle: left, clockwise: s < 0)
-        path.appendArc(withCenter: topCenter, radius: thin, startAngle: left, endAngle: right, clockwise: s < 0)
-        path.close()
+        NSGraphicsContext.saveGraphicsState()
+        defer { NSGraphicsContext.restoreGraphicsState() }
+        if !flipped {
+            let transform = NSAffineTransform()
+            transform.translateX(by: 0, yBy: bounds.height)
+            transform.scaleX(by: 1, yBy: -1)
+            transform.concat()
+        }
+        let geometry = geometry
+        let wedge = NSBezierPath(cgPath: geometry.wedge())
         NSColor.tertiaryLabelColor.setFill()
-        path.fill()
+        wedge.fill()
+
+        let y = geometry.y(at: position)
+        drawIndicator(at: y, in: geometry.track)
+
+        NSGraphicsContext.saveGraphicsState()
+        NSBezierPath(rect: geometry.track).addClip()
+        drawSample(in: sampleRect, lineY: y)
+        NSGraphicsContext.restoreGraphicsState()
+
+        NSColor.secondaryLabelColor.setStroke()
+        wedge.lineWidth = 1
+        wedge.stroke()
     }
 
-    override func drawKnob(_ knobRect: NSRect) {
-        let rect = knobRect.insetBy(dx: 0.5, dy: 0.5)
+    /// Everything is drawn in `drawBar` to keep the layer order.
+    override func drawKnob(_ knobRect: NSRect) {}
+
+    private func drawIndicator(at y: CGFloat, in track: NSRect) {
+        let width = ToolIcon.stroke
+        let line = NSBezierPath()
+        line.move(to: NSPoint(x: track.minX + width / 2, y: y))
+        line.line(to: NSPoint(x: track.maxX - width / 2, y: y))
+        line.lineCapStyle = .round
+        NSColor.white.setStroke()
+        line.lineWidth = width + 2
+        line.stroke()
+        NSColor.labelColor.setStroke()
+        line.lineWidth = width
+        line.stroke()
+    }
+
+    private func drawSample(in rect: NSRect, lineY: CGFloat) {
         let ring = min(2, rect.width / 6)
-        let outer: NSBezierPath
-        let inner: NSBezierPath
-        switch tool {
-        case .text, .pixelate:
-            outer = NSBezierPath(roundedRect: rect, xRadius: 4, yRadius: 4)
-            inner = NSBezierPath(roundedRect: rect.insetBy(dx: ring, dy: ring), xRadius: 3, yRadius: 3)
-        default:
-            outer = NSBezierPath(ovalIn: rect)
-            inner = NSBezierPath(ovalIn: rect.insetBy(dx: ring, dy: ring))
+        let radius: CGFloat = tool == .text ? min(4, rect.width / 4) : 0
+        func shape(_ rect: NSRect, radius: CGFloat) -> NSBezierPath {
+            switch tool {
+            case .text, .pixelate: NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
+            default: NSBezierPath(ovalIn: rect)
+            }
         }
+        let outer = shape(rect, radius: radius)
         NSColor.white.setFill()
         outer.fill()
 
         let fill = NSColor(cgColor: color.cgColor) ?? .black
         switch tool {
-        case .pixelate:
-            drawMosaic(in: inner)
-        case .highlighter:
-            fill.withAlphaComponent(HighlighterStyle.opacity).setFill()
-            inner.fill()
-        default:
-            fill.setFill()
-            inner.fill()
+        case .pixelate: NSColor.labelColor.setFill()
+        case .highlighter: fill.withAlphaComponent(HighlighterStyle.opacity).setFill()
+        default: fill.setFill()
         }
-        if tool == .text { drawLabel(in: rect) }
+        shape(rect.insetBy(dx: ring, dy: ring), radius: max(radius - ring / 2, 0)).fill()
+        if tool == .text { drawLetter(in: rect, lineY: lineY) }
 
         NSColor.black.withAlphaComponent(0.35).setStroke()
         outer.lineWidth = 0.5
         outer.stroke()
     }
 
-    private func drawMosaic(in path: NSBezierPath) {
-        NSGraphicsContext.saveGraphicsState()
-        path.addClip()
-        let shades: [CGFloat] = [0.55, 0.75, 0.65, 0.85]
-        let box = path.bounds
-        let block = box.width / 3
-        for row in 0..<3 {
-            for column in 0..<3 {
-                NSColor(white: shades[(row * 3 + column * 2 + row * column) % shades.count], alpha: 1).setFill()
-                NSRect(x: box.minX + CGFloat(column) * block, y: box.minY + CGFloat(row) * block,
-                       width: block, height: block).fill()
-            }
-        }
-        NSGraphicsContext.restoreGraphicsState()
-    }
-
-    private func drawLabel(in rect: NSRect) {
+    /// The crossbar of the "A" lies on the indicator line.
+    private func drawLetter(in rect: NSRect, lineY: CGFloat) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        let font = TextStyle.font(size: rect.height * 0.8)
         let luminance = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: rect.height * 0.45, weight: .bold),
-            .foregroundColor: luminance > 0.6 ? NSColor.black : NSColor.white,
+            .font: font, .foregroundColor: luminance > 0.6 ? NSColor.black : NSColor.white,
         ]
-        let text = NSAttributedString(string: "Aa", attributes: attributes)
-        let size = text.size()
-        text.draw(at: NSPoint(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2))
+        let line = CTLineCreateWithAttributedString(NSAttributedString(string: "A", attributes: attributes))
+        let width = CTLineGetTypographicBounds(line, nil, nil, nil)
+        context.saveGState()
+        context.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
+        context.textPosition = CGPoint(x: rect.midX - width / 2, y: lineY + CTFontGetCapHeight(font) * 0.3)
+        CTLineDraw(line, context)
+        context.restoreGState()
     }
 
     override func startTracking(at startPoint: NSPoint, in controlView: NSView) -> Bool {
-        let knob = knobRect(flipped: controlView.isFlipped)
-        dragOffset = knob.contains(startPoint) ? startPoint.y - knob.midY : 0
+        let y = topDownY(startPoint, in: controlView)
+        dragOffset = knobRect(flipped: controlView.isFlipped).contains(startPoint) ? y - geometry.y(at: position) : 0
         onTrackingBegin?()
         track(to: startPoint, in: controlView)
         return true
@@ -222,12 +209,13 @@ final class WedgeSliderCell: NSSliderCell {
         return true
     }
 
+    private func topDownY(_ point: NSPoint, in controlView: NSView) -> CGFloat {
+        controlView.isFlipped ? point.y : bounds.height - point.y
+    }
+
     private func track(to point: NSPoint, in controlView: NSView) {
-        let y = point.y - dragOffset
-        let fromTop = controlView.isFlipped ? y : bounds.height - y
-        let (top, bottom) = travel
-        let position = bottom > top ? min(max((fromTop - top) / (bottom - top), 0), 1) : 0
-        doubleValue = minValue + (maxValue - minValue) * (1 - Double(position))
+        let position = geometry.position(atY: topDownY(point, in: controlView) - dragOffset)
+        doubleValue = minValue + (maxValue - minValue) * (1 - position)
         controlView.needsDisplay = true
     }
 }

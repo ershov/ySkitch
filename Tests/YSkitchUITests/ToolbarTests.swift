@@ -89,8 +89,8 @@ struct ToolbarTests {
         #expect(slider.frame.width == ToolbarView.colorColumnWidth)
     }
 
-    @Test func wedgeKnobGrowsWithThickness() throws {
-        let slider = NSSlider(frame: NSRect(x: 0, y: 0, width: 22, height: 100))
+    @Test func knobIsRealSizeSample() throws {
+        let slider = NSSlider(frame: NSRect(x: 0, y: 0, width: 54, height: 158))
         let cell = WedgeSliderCell()
         slider.cell = cell
         slider.minValue = 0
@@ -104,14 +104,49 @@ struct ToolbarTests {
         slider.doubleValue = 1 - ThicknessScale.position(of: 16, in: Tool.strokeRange)
         let large = cell.knobRect(flipped: true)
         #expect(cell.thickness == 16)
-        #expect(small.width == WedgeSliderCell.minKnob)
+        #expect(small.width == 2)
         #expect(large.width == 16)
         #expect(large.midY > small.midY)
         #expect(large.midX == small.midX)
 
         slider.doubleValue = 0
-        #expect(cell.knobRect(flipped: true).width == 22)
-        #expect(cell.knobRect(flipped: true).maxY <= 100)
+        #expect(cell.knobRect(flipped: true) == NSRect(x: 7, y: 118, width: 40, height: 40))
+        #expect(cell.knobRect(flipped: false) == NSRect(x: 7, y: 0, width: 40, height: 40))
+
+        cell.tool = .text
+        cell.range = Tool.fontSizeRange
+        #expect(cell.knobRect(flipped: true) == NSRect(x: 0, y: 71, width: 54, height: 87))
+    }
+
+    @Test func sliderDimmedWithoutThickness() throws {
+        let controller = DocumentWindowController(
+            document: Document(blankSize: CGSize(width: 800, height: 600), scale: 1), title: "Test",
+            toolSettings: ToolSettings(preferences: Preferences(store: store)))
+        defer { controller.close() }
+        let content = try #require(controller.window?.contentView as? DocumentContentView)
+        func slider() throws -> NSSlider {
+            func sliders(in view: NSView) -> [NSSlider] {
+                (view as? NSSlider).map { [$0] } ?? view.subviews.flatMap(sliders(in:))
+            }
+            content.layoutSubtreeIfNeeded()
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+            return try #require(sliders(in: content.toolbarSlot).first)
+        }
+        func opacity(_ view: NSView) -> CGFloat {
+            sequence(first: view, next: \.superview).reduce(1) {
+                $0 * $1.alphaValue * CGFloat($1.layer?.opacity ?? 1)
+            }
+        }
+        #expect(try slider().isEnabled)
+        #expect(try opacity(slider()) == 1)
+        for tool in [Tool.select, .crop] {
+            controller.toolbar.activeTool = tool
+            let slider = try slider()
+            #expect(!slider.isEnabled)
+            #expect(!slider.isHiddenOrHasHiddenAncestor)
+            #expect(opacity(slider) > 0 && opacity(slider) < 1)
+            #expect(slider.frame.height > 100)
+        }
     }
 
     @Test func keyEventsDriveToolbar() throws {

@@ -13,6 +13,8 @@ struct ToolbarView: View {
     static let swatchFrame: CGFloat = 33
     static let swatchDiameter: CGFloat = 27
     static let keySpacing: CGFloat = 1
+    static let sliderSpacing: CGFloat = 20
+    static let dimmedOpacity: CGFloat = 0.35
 
     static var toolsColumnHeight: CGFloat {
         let rows = Tool.groups.reduce(0) { $0 + $1.count }
@@ -47,7 +49,7 @@ struct ToolbarView: View {
     }
 
     private var colorsColumn: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Self.sliderSpacing) {
             swatches
             thicknessControl.frame(width: Self.colorColumnWidth)
         }
@@ -64,24 +66,20 @@ struct ToolbarView: View {
             }
         }
         .disabled(!tool.usesColor)
-        .opacity(tool.usesColor ? 1 : 0.35)
+        .opacity(tool.usesColor ? 1 : Self.dimmedOpacity)
     }
 
     private var thicknessControl: some View {
         let tool = model.styleTool
         let range = tool.thicknessRange ?? Tool.strokeRange
-        return VStack(spacing: 2) {
-            KeyLabel(text: "[")
-            ThicknessSlider(
-                tool: tool, style: model.displayedStyle, range: range,
-                onDragBegin: { model.beginThicknessDrag() }, onDragEnd: { model.endThicknessDrag() }
-            ) { model.setThickness($0) }
-                .frame(maxHeight: .infinity)
-                .help("Size")
-            KeyLabel(text: "]")
-        }
-        .disabled(tool.thicknessRange == nil)
-        .opacity(tool.thicknessRange == nil ? 0 : 1)
+        return ThicknessSlider(
+            tool: tool, style: model.displayedStyle, range: range,
+            onDragBegin: { model.beginThicknessDrag() }, onDragEnd: { model.endThicknessDrag() }
+        ) { model.setThickness($0) }
+            .frame(maxHeight: .infinity)
+            .help("Size")
+            .disabled(tool.thicknessRange == nil)
+            .opacity(tool.thicknessRange == nil ? Self.dimmedOpacity : 1)
     }
 }
 

@@ -12,10 +12,14 @@ public enum ThicknessScale {
     }
 
     public static func value(at position: Double, in range: ClosedRange<CGFloat>) -> CGFloat {
-        let p = CGFloat(min(max(position, 0), 1))
-        let raw = range.lowerBound * pow(range.upperBound / range.lowerBound, p)
-        let rounded = (raw / granularity).rounded() * granularity
+        let rounded = (exactValue(at: position, in: range) / granularity).rounded() * granularity
         return min(max(rounded, range.lowerBound), range.upperBound)
+    }
+
+    /// Not rounded to `granularity`; for drawing smooth curves.
+    public static func exactValue(at position: Double, in range: ClosedRange<CGFloat>) -> CGFloat {
+        let p = CGFloat(min(max(position, 0), 1))
+        return range.lowerBound * pow(range.upperBound / range.lowerBound, p)
     }
 
     /// Moves by `stepSize` per step; keeps moving while the rounded value is unchanged,
