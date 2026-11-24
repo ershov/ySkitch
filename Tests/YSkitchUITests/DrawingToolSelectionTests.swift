@@ -47,6 +47,15 @@ struct DrawingToolSelectionTests {
         view.mouseUp(with: event(.leftMouseUp, b, in: view, flags: flags))
     }
 
+    private func rightDrag(
+        _ controller: DocumentWindowController, from a: CGPoint, to b: CGPoint, flags: NSEvent.ModifierFlags = []
+    ) {
+        let view = controller.canvasView
+        view.rightMouseDown(with: event(.rightMouseDown, a, in: view, flags: flags))
+        view.rightMouseDragged(with: event(.rightMouseDragged, b, in: view, flags: flags))
+        view.rightMouseUp(with: event(.rightMouseUp, b, in: view, flags: flags))
+    }
+
     /// Click-selects `target` with `tool`.
     private func selectTarget(tool: Tool) -> DocumentWindowController {
         let controller = makeController(tool: tool, annotations: [target])
@@ -183,5 +192,110 @@ struct DrawingToolSelectionTests {
         let index = try #require(Palette.colors.firstIndex { $0 != Self.style.color })
         controller.toolbar.selectColor(index: index)
         #expect(controller.model.document.annotations.first?.style.color == Palette.colors[index])
+    }
+
+    // MARK: - Right/⌃-drag marquee
+
+    private static let marqueeTools: [Tool] = [.select, .text] + tools
+
+    /// `target`, plus `a` and `b` below it; `target` is selected.
+    private func marqueeSetup(tool: Tool) -> (DocumentWindowController, Annotation, Annotation) {
+        let a = Annotation(style: Self.style, shape: .rectangle(CGRect(x: 20, y: 200, width: 40, height: 30)))
+        let b = Annotation(style: Self.style, shape: .ellipse(CGRect(x: 100, y: 200, width: 40, height: 30)))
+        let controller = makeController(tool: tool, annotations: [target, a, b])
+        controller.selection.select([target.id])
+        return (controller, a, b)
+    }
+
+    @Test func rightDragAddsTouchedInEveryTool() {
+        for tool in Self.marqueeTools {
+            let (controller, a, b) = marqueeSetup(tool: tool)
+            defer { controller.close() }
+            rightDrag(controller, from: CGPoint(x: 10, y: 190), to: CGPoint(x: 150, y: 210))
+            #expect(controller.selection.selectedIDs == [target.id, a.id, b.id], "\(tool)")
+            #expect(controller.model.document.annotations.count == 3, "\(tool)")
+            #expect(!controller.model.undoManager.canUndo, "\(tool)")
+            #expect(controller.toolbar.activeTool == tool, "\(tool)")
+        }
+    }
+
+    @Test func optionRightDragRemovesTouched() {
+        let (controller, a, b) = marqueeSetup(tool: .arrow)
+        defer { controller.close() }
+        controller.selection.select([a.id, target.id, b.id])
+        rightDrag(controller, from: CGPoint(x: 10, y: 190), to: CGPoint(x: 70, y: 240), flags: .option)
+        #expect(controller.selection.selectedIDs == [target.id, b.id])
+    }
+
+    @Test func controlDragActsLikeRightDrag() {
+        for tool in Self.marqueeTools {
+            let (controller, a, b) = marqueeSetup(tool: tool)
+            defer { controller.close() }
+            drag(controller, from: CGPoint(x: 10, y: 190), to: CGPoint(x: 150, y: 210), flags: .control)
+            #expect(controller.selection.selectedIDs == [target.id, a.id, b.id], "\(tool)")
+            #expect(controller.model.document.annotations.count == 3, "\(tool)")
+            drag(controller, from: CGPoint(x: 90, y: 190), to: CGPoint(x: 190, y: 210), flags: [.control, .option])
+            #expect(controller.selection.selectedIDs == [target.id, a.id], "\(tool)")
+        }
+    }
+
+    @Test func marqueeTouchesDrawnGeometryOnly() {
+        let arrow = Annotation(
+            style: Self.style, shape: .arrow(tail: CGPoint(x: 200, y: 50), head: CGPoint(x: 300, y: 150)))
+        let controller = makeController(tool: .rectangle, annotations: [arrow])
+        defer { controller.close() }
+        rightDrag(controller, from: CGPoint(x: 280, y: 40), to: CGPoint(x: 310, y: 60))
+        #expect(controller.selection.isEmpty)
+        rightDrag(controller, from: CGPoint(x: 240, y: 80), to: CGPoint(x: 260, y: 100))
+        #expect(controller.selection.selectedIDs == [arrow.id])
+    }
+
+    @Test func rightClickWithoutDragChangesNothing() {
+        let (controller, _, _) = marqueeSetup(tool: .pen)
+        defer { controller.close() }
+        let view = controller.canvasView
+        view.rightMouseDown(with: event(.rightMouseDown, CGPoint(x: 300, y: 50), in: view))
+        view.rightMouseUp(with: event(.rightMouseUp, CGPoint(x: 300, y: 50), in: view))
+        click(controller, CGPoint(x: 100, y: 130))
+        let point = CGPoint(x: 300, y: 50)
+        view.mouseDown(with: event(.leftMouseDown, point, in: view, flags: .control))
+        view.mouseUp(with: event(.leftMouseUp, point, in: view, flags: .control))
+        #expect(controller.selection.selectedIDs == [target.id])
+        #expect(controller.model.document.annotations.count == 3)
+    }
+
+    @Test func marqueeShowsStatusAndEscapeCancels() throws {
+        let (controller, _, _) = marqueeSetup(tool: .line)
+        defer { controller.close() }
+        let view = controller.canvasView
+        view.rightMouseDown(with: event(.rightMouseDown, CGPoint(x: 10, y: 190), in: view))
+        view.rightMouseDragged(with: event(.rightMouseDragged, CGPoint(x: 150, y: 210), in: view))
+        #expect(controller.statusBar.infoLabel.stringValue == "Select · (10, 190) → (150, 210) · 140×20 px")
+        #expect(controller.selection.selectedIDs.count == 3)
+        let escape = try #require(NSEvent.keyEvent(
+            with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0,
+            context: nil, characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", isARepeat: false,
+            keyCode: 53))
+        view.keyDown(with: escape)
+        #expect(controller.selection.selectedIDs == [target.id])
+        view.rightMouseUp(with: event(.rightMouseUp, CGPoint(x: 150, y: 210), in: view))
+        #expect(controller.selection.selectedIDs == [target.id])
+    }
+
+    @Test func marqueeBlockedInCropSessionAndTextEditing() {
+        let (crop, _, _) = marqueeSetup(tool: .crop)
+        defer { crop.close() }
+        #expect(crop.canvasView.isCropping)
+        rightDrag(crop, from: CGPoint(x: 10, y: 190), to: CGPoint(x: 150, y: 210))
+        #expect(crop.selection.selectedIDs == [target.id])
+
+        let (text, _, _) = marqueeSetup(tool: .text)
+        defer { text.close() }
+        click(text, CGPoint(x: 300, y: 50))
+        #expect(text.canvasView.textEditor.isEditing)
+        let selected = text.selection.selectedIDs
+        rightDrag(text, from: CGPoint(x: 10, y: 190), to: CGPoint(x: 150, y: 210))
+        #expect(text.selection.selectedIDs == selected)
+        #expect(text.canvasView.textEditor.isEditing)
     }
 }

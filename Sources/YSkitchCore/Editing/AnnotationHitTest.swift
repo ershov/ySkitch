@@ -21,6 +21,23 @@ public enum AnnotationHitTest {
         }
     }
 
+    /// Whether `rect` touches the drawn geometry: the stroke of outline-only shapes, the filled area otherwise.
+    public static func intersects(_ annotation: Annotation, rect: CGRect) -> Bool {
+        let thickness = annotation.style.thickness
+        switch annotation.shape {
+        case .pixelate, .text:
+            return annotation.bounds.intersects(rect)
+        case .arrow(let tail, let head):
+            return ArrowGeometry.path(tail: tail, head: head, thickness: thickness)
+                .intersects(CGPath(rect: rect, transform: nil))
+        case .rectangle, .roundedRectangle, .ellipse, .line, .pen, .highlighter:
+            guard let stroke = annotation.stroke else { return false }
+            return stroke.path
+                .copy(strokingWithWidth: thickness, lineCap: stroke.cap, lineJoin: stroke.join, miterLimit: 10)
+                .intersects(CGPath(rect: rect, transform: nil))
+        }
+    }
+
     /// The visually topmost annotation that contains `point`.
     public static func topmost(in document: Document, at point: CGPoint, tolerance: CGFloat) -> UUID? {
         document.annotationsInVisualOrder.last { contains($0, point: point, tolerance: tolerance) }?.id

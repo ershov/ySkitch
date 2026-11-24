@@ -162,6 +162,20 @@ struct SelectionTests {
         #expect(selection.selectedIDs == [a.id, b.id, c.id])
     }
 
+    @Test func marqueeTouchesDrawnGeometryOnly() {
+        let arrow = Annotation(
+            style: Self.style, shape: .arrow(tail: CGPoint(x: 200, y: 50), head: CGPoint(x: 300, y: 150)))
+        let outline = rectangle(CGRect(x: 20, y: 20, width: 100, height: 100))
+        let controller = makeController([arrow, outline])
+        defer { controller.close() }
+        let selection = controller.selection
+        drag(controller, from: CGPoint(x: 280, y: 40), to: CGPoint(x: 310, y: 60))
+        drag(controller, from: CGPoint(x: 50, y: 50), to: CGPoint(x: 90, y: 90), flags: .shift)
+        #expect(selection.isEmpty)
+        drag(controller, from: CGPoint(x: 240, y: 80), to: CGPoint(x: 260, y: 100))
+        #expect(selection.selectedIDs == [arrow.id])
+    }
+
     @Test func deleteEscapeAndSelectAll() throws {
         let a = rectangle(CGRect(x: 20, y: 20, width: 60, height: 40))
         let b = rectangle(CGRect(x: 150, y: 20, width: 60, height: 40))

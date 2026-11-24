@@ -12,6 +12,8 @@ final class CanvasView: NSView, NSMenuItemValidation {
     private var panLastLocation: NSPoint?
     private var previousAcceptsMouseMoved = false
     private var interaction: (tool: Tool, handler: any CanvasInteraction)?
+    /// Right-drag or `⌃`-drag marquee; works in every tool.
+    private var marquee: MarqueeSelection?
     private var canvasOrigin: CGPoint
     private(set) lazy var textEditor = TextEditingController(canvas: self, model: model, toolbar: toolbar)
 
@@ -62,7 +64,7 @@ final class CanvasView: NSView, NSMenuItemValidation {
 
     /// The element being drawn, else the text being edited, else the selection.
     var statusGeometry: StatusGeometry? {
-        if let geometry = interaction?.handler.statusGeometry { return geometry }
+        if let geometry = marquee?.statusGeometry ?? interaction?.handler.statusGeometry { return geometry }
         if let id = textEditor.editedAnnotationID,
            let annotation = model.document.annotations.first(where: { $0.id == id }) {
             return StatusGeometry(annotation)
@@ -76,6 +78,7 @@ final class CanvasView: NSView, NSMenuItemValidation {
 
     /// Commits an open text edit and cancels any other gesture in progress, e.g. a crop session.
     func cancelActiveGesture() {
+        cancelMarquee()
         commitTextEditing()
         interaction?.handler.cancel()
     }
@@ -158,7 +161,7 @@ final class CanvasView: NSView, NSMenuItemValidation {
 
     private func drawSelectionOverlay(in context: CGContext) {
         let selected = selection.selectedAnnotations
-        let marquee = (interaction?.handler as? SelectInteraction)?.marquee
+        let marquee = self.marquee?.rect ?? (interaction?.handler as? SelectInteraction)?.marquee
         guard !selected.isEmpty || marquee != nil else { return }
         let pixel = 1 / (enclosingScrollView?.magnification ?? 1)
         let accent = NSColor.controlAccentColor.cgColor
@@ -232,7 +235,9 @@ final class CanvasView: NSView, NSMenuItemValidation {
         defer { statusDidChange() }
         if currentInteraction?.handleKey(event) == true { return }
         if event.keyCode == Self.escapeKeyCode {
-            if let select = currentInteraction as? SelectInteraction, !select.isDragging {
+            if marquee != nil {
+                cancelMarquee()
+            } else if let select = currentInteraction as? SelectInteraction, !select.isDragging {
                 selection.clear()
             } else {
                 currentInteraction?.cancel()
@@ -291,11 +296,14 @@ final class CanvasView: NSView, NSMenuItemValidation {
         defer { statusDidChange() }
         if isPanMode { return }
         if textEditor.isEditing { return textEditor.commit() }
+        if marquee != nil { return }
+        if event.modifierFlags.contains(.control), beginMarquee(event) { return }
         currentInteraction?.mouseDown(at: documentPoint(event), event: event)
     }
 
     override func mouseDragged(with event: NSEvent) {
         defer { statusDidChange() }
+        if let marquee { return marquee.drag(to: documentPoint(event)) }
         guard isPanMode else { return currentInteraction?.mouseDragged(to: documentPoint(event), event: event) ?? () }
         panDrag(to: event.locationInWindow)
     }
@@ -307,8 +315,25 @@ final class CanvasView: NSView, NSMenuItemValidation {
 
     override func mouseUp(with event: NSEvent) {
         defer { statusDidChange() }
+        if marquee != nil { return endMarquee() }
         if isPanMode { return }
         currentInteraction?.mouseUp(at: documentPoint(event), event: event)
+    }
+
+    // Not calling super: no context menu.
+    override func rightMouseDown(with event: NSEvent) {
+        defer { statusDidChange() }
+        if marquee == nil { _ = beginMarquee(event) }
+    }
+
+    override func rightMouseDragged(with event: NSEvent) {
+        defer { statusDidChange() }
+        marquee?.drag(to: documentPoint(event))
+    }
+
+    override func rightMouseUp(with event: NSEvent) {
+        defer { statusDidChange() }
+        endMarquee()
     }
 
     override func flagsChanged(with event: NSEvent) {
@@ -340,6 +365,27 @@ final class CanvasView: NSView, NSMenuItemValidation {
     private func invalidateCursors() {
         window?.invalidateCursorRects(for: self)
         if let clip = superview { window?.invalidateCursorRects(for: clip) }
+    }
+
+    /// Blocked while panning, editing text, in a crop session or during another drag.
+    private func beginMarquee(_ event: NSEvent) -> Bool {
+        let selectDragging = (currentInteraction as? SelectInteraction)?.isDragging ?? false
+        guard !isPanMode, !textEditor.isEditing, !model.isInGesture, !selectDragging else { return false }
+        marquee = MarqueeSelection(
+            selection: selection, start: documentPoint(event),
+            mode: event.modifierFlags.contains(.option) ? .remove : .add,
+            overlayDidChange: { [weak self] in self?.needsDisplay = true })
+        return true
+    }
+
+    private func endMarquee() {
+        marquee?.end()
+        marquee = nil
+    }
+
+    private func cancelMarquee() {
+        marquee?.cancel()
+        marquee = nil
     }
 
     private func documentPoint(_ event: NSEvent) -> CGPoint {
@@ -409,7 +455,7 @@ final class CanvasView: NSView, NSMenuItemValidation {
     }
 
     private func beginPanMode() {
-        guard !isPanMode, !blocksPanning else { return }
+        guard !isPanMode, !blocksPanning, marquee == nil else { return }
         isPanMode = true
         panLastLocation = window?.mouseLocationOutsideOfEventStream
         previousAcceptsMouseMoved = window?.acceptsMouseMovedEvents ?? false

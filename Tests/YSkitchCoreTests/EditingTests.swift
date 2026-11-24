@@ -71,6 +71,35 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
         #expect(!hit(pixelate, 5, 50, tolerance: 0))
     }
 
+    @Test func intersectsDrawnGeometryNotBounds() {
+        func touches(_ a: Annotation, _ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> Bool {
+            AnnotationHitTest.intersects(a, rect: CGRect(x: x, y: y, width: w, height: h))
+        }
+        let arrow = annotation(.arrow(tail: CGPoint(x: 0, y: 0), head: CGPoint(x: 100, y: 100)))
+        #expect(arrow.renderBounds.intersects(CGRect(x: 80, y: 0, width: 15, height: 15)))
+        #expect(!touches(arrow, 80, 0, 15, 15))
+        #expect(touches(arrow, 40, 40, 20, 20))
+        #expect(touches(arrow, -10, -10, 200, 200))
+
+        let outline = annotation(.rectangle(rect))
+        #expect(!touches(outline, 40, 40, 20, 20))
+        #expect(!touches(outline, 0, 40, 7.5, 10))
+        #expect(touches(outline, 0, 40, 8.5, 10))
+        #expect(touches(outline, 0, 0, 200, 200))
+
+        let line = annotation(.line(start: CGPoint(x: 0, y: 0), end: CGPoint(x: 100, y: 100)), thickness: 10)
+        #expect(!touches(line, 80, 0, 15, 15))
+        #expect(touches(line, 52, 46, 2, 2))
+
+        let pixelate = annotation(.pixelate(rect))
+        #expect(touches(pixelate, 40, 40, 20, 20))
+        #expect(!touches(pixelate, 0, 0, 5, 5))
+
+        let text = annotation(.text(TextContent(origin: CGPoint(x: 10, y: 10), string: "I I")), thickness: 40)
+        #expect(touches(text, text.bounds.midX, text.bounds.midY, 1, 1))
+        #expect(!touches(text, text.bounds.maxX + 1, text.bounds.midY, 5, 5))
+    }
+
     @Test func topmostIsLastInDrawingOrder() {
         var document = Document(blankSize: CGSize(width: 200, height: 200), scale: 1)
         let bottom = annotation(.pixelate(CGRect(x: 0, y: 0, width: 100, height: 100)))

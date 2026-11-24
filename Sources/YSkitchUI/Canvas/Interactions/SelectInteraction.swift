@@ -9,12 +9,6 @@ final class SelectInteraction: CanvasInteraction {
     /// Extra on-screen points around a handle that still grab it.
     static let handleSlop: CGFloat = 2
 
-    /// `base` is kept selected; `previous` is restored on cancel.
-    private struct MarqueeDrag {
-        let base: [UUID]
-        let previous: [UUID]
-    }
-
     private let model: DocumentModel
     private let selection: SelectionModel
     private let magnification: () -> CGFloat
@@ -22,13 +16,10 @@ final class SelectInteraction: CanvasInteraction {
     private let overlayDidChange: () -> Void
     private let editor: SelectionEditor
 
-    private var marqueeDrag: MarqueeDrag?
-    private var start: CGPoint = .zero
+    private var marqueeSelection: MarqueeSelection?
 
     /// Document coordinates; nil when no marquee is shown.
-    private(set) var marquee: CGRect? {
-        didSet { if marquee != oldValue { overlayDidChange() } }
-    }
+    var marquee: CGRect? { marqueeSelection?.rect }
 
     init(
         model: DocumentModel, selection: SelectionModel, magnification: @escaping () -> CGFloat,
@@ -44,11 +35,9 @@ final class SelectInteraction: CanvasInteraction {
 
     var cursor: NSCursor { .arrow }
 
-    var isDragging: Bool { editor.isDragging || marqueeDrag != nil }
+    var isDragging: Bool { editor.isDragging || marqueeSelection != nil }
 
-    var statusGeometry: StatusGeometry? {
-        marquee.map { .box(rect: $0, name: Tool.select.name, thickness: nil) }
-    }
+    var statusGeometry: StatusGeometry? { marqueeSelection?.statusGeometry }
 
     func mouseDown(at point: CGPoint, event: NSEvent) {
         cancel()
@@ -59,10 +48,9 @@ final class SelectInteraction: CanvasInteraction {
         guard let hit = AnnotationHitTest.topmost(
             in: document, at: point, tolerance: Self.hitTolerance / magnification())
         else {
-            let previous = selection.selectedIDs
-            if !shift { selection.clear() }
-            start = point
-            marqueeDrag = MarqueeDrag(base: selection.selectedIDs, previous: previous)
+            marqueeSelection = MarqueeSelection(
+                selection: selection, start: point, mode: shift ? .add : .replace,
+                overlayDidChange: overlayDidChange)
             return
         }
         if event.clickCount == 2, document.annotations.contains(where: { $0.id == hit && $0.isText }) {
@@ -82,14 +70,13 @@ final class SelectInteraction: CanvasInteraction {
 
     func mouseDragged(to point: CGPoint, event: NSEvent) {
         if editor.isDragging { return editor.dragged(to: point, flags: event.modifierFlags) }
-        updateMarquee(to: point)
+        marqueeSelection?.drag(to: point)
     }
 
     func mouseUp(at point: CGPoint, event: NSEvent) {
         editor.end()
-        guard marqueeDrag != nil else { return }
-        marqueeDrag = nil
-        marquee = nil
+        marqueeSelection?.end()
+        marqueeSelection = nil
     }
 
     func flagsChanged(_ event: NSEvent) {
@@ -98,17 +85,7 @@ final class SelectInteraction: CanvasInteraction {
 
     func cancel() {
         editor.cancel()
-        guard let marqueeDrag else { return }
-        self.marqueeDrag = nil
-        marquee = nil
-        selection.select(marqueeDrag.previous)
-    }
-
-    private func updateMarquee(to point: CGPoint) {
-        guard let marqueeDrag, ShapeGeometry.isDrag(from: start, to: point) else { return }
-        let rect = ShapeGeometry.rect(from: start, to: point, square: false)
-        marquee = rect
-        let hits = model.document.annotations.filter { $0.renderBounds.intersects(rect) }.map(\.id)
-        selection.select(marqueeDrag.base + hits)
+        marqueeSelection?.cancel()
+        marqueeSelection = nil
     }
 }

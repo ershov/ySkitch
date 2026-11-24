@@ -127,7 +127,7 @@ All annotations are vector objects, editable until export (flattened only on out
 
 | ID | Req | Src | Stage |
 |---|---|---|---|
-| ED-1 | Select tool; click/marquee select; `⇧`-click multi-select. In every drawing tool except Text and Crop, a click without a drag creates nothing and selects the topmost annotation under the cursor (empty space clears the selection); the tool stays active | S | 1 |
+| ED-1 | Select tool; click/marquee select; `⇧`-click multi-select, `⇧`-marquee adds. A marquee selects annotations whose drawn geometry it touches (stroke incl. thickness; filled area of arrows, text boxes and pixelate), not their bounds. In every tool, a right-drag or `⌃`-drag draws a marquee that adds the touched annotations to the selection (`⌥`: removes them); not during a crop session or text editing; a right-click or `⌃`-click without a drag does nothing. In every drawing tool except Text and Crop, a click without a drag creates nothing and selects the topmost annotation under the cursor (empty space clears the selection); the tool stays active | S | 1 |
 | ED-2 | Move, resize, endpoint drag (lines/arrows). In the drawing tools of ED-1, a press on a handle of the selected annotation or on a selected annotation (topmost under the cursor) moves/resizes it as in the Select tool; a press elsewhere draws | S | 1 |
 | ED-3 | Delete (`⌫`), duplicate (`⌘D`), copy/paste objects between windows; `⌘`-drag on an annotation (Select tool, or a selected annotation in a drawing tool) moves a copy of it (of the whole selection if it is selected) and selects the copy; `Esc` cancels; a `⌘`-click without a drag creates nothing; one undo step | S | 1 |
 | ED-4 | Nudge with arrow keys (1 pt; `⇧` = 20 pt); consecutive nudges are one undo step | S | 1 |
@@ -147,6 +147,7 @@ All annotations are vector objects, editable until export (flattened only on out
 | KEY-6 | Number keys `1`–`8` select palette color; `[` / `]` step the thickness slider down / up | S | 1 |
 | KEY-7 | `Esc` cancels current operation / deselects | S | 1 |
 | KEY-8 | Every function has a menu item showing its shortcut (menus below) | U | 1 |
+| KEY-9 | Right-drag or `⌃`-drag in any tool: marquee adds to the selection; with `⌥` removes from it (ED-1) | U | 1 |
 
 #### Menus
 
@@ -224,7 +225,7 @@ Single keys go to the focused view first: the canvas handles them, and while a t
     - Pen, Highlighter: `Pen · (x1, y1) → (x2, y2) · W×H px · T pt` — bounding box of the stroke points.
     - Text: `Text · (x1, y1) → (x2, y2) · W×H px · 24 pt` — text box; last field = font size.
     - Crop session: `Crop · (x1, y1) → (x2, y2) · W×H px`.
-    - Select marquee: `Select · (x1, y1) → (x2, y2) · W×H px`.
+    - Select marquee (also right-drag / `⌃`-drag marquee): `Select · (x1, y1) → (x2, y2) · W×H px`.
     - Several selected: `3 objects · (x1, y1) → (x2, y2) · W×H px` — union of their geometry boxes.
   - Coordinates: image pixels (points × scale, rounded) relative to the current canvas top-left, y down; negative beyond the top/left edge. Geometry is the model geometry (rect, endpoints, points), not render bounds. Sizes are in pt as on the thickness slider (`4 pt`, `4.5 pt`). Names are the tool names.
 - Title: source file name, else `ySkitch <date> at <time>` (same as the default export file name, DEF-8).
