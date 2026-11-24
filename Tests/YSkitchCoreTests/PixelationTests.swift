@@ -107,4 +107,27 @@ import Testing
         let px = readPixels(image).pixel
         #expect(close(px(0, 0), px(49, 49)))
     }
+
+    @Test(arguments: [CGFloat(1), CGFloat(2)])
+    func fractionalRectCoversWholePixels(scale: CGFloat) {
+        let rect = CGRect(x: 5.5, y: 5.5, width: 20, height: 20)
+        let plain = readPixels(Renderer.flatten(Self.document(scale: scale)))
+        let pixelated = readPixels(Renderer.flatten(Self.document(scale: scale, annotations: [Self.pixelate(rect, block: 4)])))
+        let x0 = Int((rect.minX * scale).rounded(.down)), x1 = Int((rect.maxX * scale).rounded(.up))
+        let y0 = Int((rect.minY * scale).rounded(.down)), y1 = Int((rect.maxY * scale).rounded(.up))
+        let blockPx = Int((4 * scale).rounded())
+        for y in 0..<plain.height {
+            for x in 0..<plain.width {
+                guard (x0..<x1).contains(x), (y0..<y1).contains(y) else {
+                    #expect(plain.pixel(x, y) == pixelated.pixel(x, y))
+                    continue
+                }
+                let bx = x0 + (x - x0) / blockPx * blockPx, by = y0 + (y - y0) / blockPx * blockPx
+                #expect(close(pixelated.pixel(x, y), pixelated.pixel(bx, by)))
+            }
+        }
+        // Border pixels must not keep the original color.
+        #expect(!close(pixelated.pixel(x0, y0 + 5), plain.pixel(x0, y0 + 5)))
+        #expect(!close(pixelated.pixel(x0 + 5, y0), plain.pixel(x0 + 5, y0)))
+    }
 }

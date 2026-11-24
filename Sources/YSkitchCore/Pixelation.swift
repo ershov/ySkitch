@@ -3,11 +3,13 @@ import CoreGraphics
 enum Pixelation {
     /// Pixelates `rect` using everything beneath annotation `index`; independent of the context's zoom.
     static func draw(
-        rect: CGRect, blockSize: CGFloat, document: Document, upTo index: Int, in context: CGContext
+        rect modelRect: CGRect, blockSize: CGFloat, document: Document, upTo index: Int, in context: CGContext
     ) {
         let scale = document.scale
-        let widthPx = Int(ceil(rect.width * scale))
-        let heightPx = Int(ceil(rect.height * scale))
+        // Antialiased clipping on a fractional edge would blend block color with original pixels.
+        let rect = Document.snappedOutward(modelRect, scale: scale)
+        let widthPx = Int((rect.width * scale).rounded())
+        let heightPx = Int((rect.height * scale).rounded())
         guard widthPx > 0, heightPx > 0,
             let offscreen = makeContext(width: widthPx, height: heightPx)
         else { return }
