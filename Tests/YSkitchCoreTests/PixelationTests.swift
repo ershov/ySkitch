@@ -64,14 +64,50 @@ import Testing
         }
     }
 
-    @Test func pixelatesAnnotationsBelowOnly() {
-        let below = Self.rectangle(CGRect(x: 0, y: 0, width: 30, height: 30), thickness: 20)
-        let above = Self.rectangle(CGRect(x: 30, y: 12, width: 15, height: 15), thickness: 2)
-        let image = Renderer.flatten(Self.document(annotations: [below, Self.pixelate(Self.rect, block: 10), above]))
-        let px = readPixels(image).pixel
-        let overlap = px(50, 50)
-        #expect(Int(overlap.r) > Int(overlap.g) + 40 && Int(overlap.r) > Int(overlap.b) + 40)
-        #expect(px(60, 24) == red)
+    private static let pink = Pixel(r: 0xFF, g: 0x2E, b: 0x6C, a: 255)
+
+    private static func arrow() -> Annotation {
+        Annotation(
+            style: AnnotationStyle(color: RGBAColor(hex: 0xFF2E6C), thickness: 6),
+            shape: .arrow(tail: CGPoint(x: 15, y: 20), head: CGPoint(x: 45, y: 20)))
+    }
+
+    @Test func pixelatesBaseImageOnly() {
+        let arrow = Self.arrow()
+        let pixelate = Self.pixelate(Self.rect, block: 10)
+        let alone = readPixels(Renderer.flatten(Self.document(annotations: [pixelate]))).pixel
+        let px = readPixels(Renderer.flatten(Self.document(annotations: [pixelate, arrow])))
+        #expect(px.pixel(60, 40) == Self.pink)
+        let arrowArea = Document.snappedOutward(arrow.renderBounds, scale: 2)
+        for y in 20..<60 {
+            for x in 20..<100 {
+                let point = CGPoint(x: (CGFloat(x) + 0.5) / 2, y: (CGFloat(y) + 0.5) / 2)
+                if !arrowArea.contains(point) { #expect(px.pixel(x, y) == alone(x, y)) }
+            }
+        }
+    }
+
+    @Test func pixelateRendersUnderEarlierAnnotations() {
+        let arrow = Self.arrow()
+        let pixelate = Self.pixelate(Self.rect, block: 10)
+        let arrowFirst = Renderer.flatten(Self.document(annotations: [arrow, pixelate]))
+        let pixelateFirst = Renderer.flatten(Self.document(annotations: [pixelate, arrow]))
+        #expect(arrowFirst.dataProvider?.data == pixelateFirst.dataProvider?.data)
+        #expect(readPixels(arrowFirst).pixel(60, 40) == Self.pink)
+    }
+
+    @Test func laterPixelateIsDrawnOverEarlierAndSamplesBaseImage() {
+        let inner = Self.pixelate(CGRect(x: 10, y: 10, width: 20, height: 20), block: 5)
+        let outer = Self.pixelate(CGRect(x: 0, y: 0, width: 50, height: 50), block: 25)
+        func data(_ annotations: [Annotation]) -> CFData? {
+            Renderer.flatten(Self.document(annotations: annotations)).dataProvider?.data
+        }
+        #expect(data([inner, outer]) == data([outer]))
+        let both = readPixels(Renderer.flatten(Self.document(annotations: [outer, inner]))).pixel
+        let innerAlone = readPixels(Renderer.flatten(Self.document(annotations: [inner]))).pixel
+        for y in 20..<60 {
+            for x in 20..<60 { #expect(both(x, y) == innerAlone(x, y)) }
+        }
     }
 
     @Test func blockSizeInPixels() {
@@ -98,14 +134,6 @@ import Testing
             }
         }
         #expect(Double(differing) >= 0.9 * Double(total))
-    }
-
-    @Test func nestedPixelationBelow() {
-        let inner = Self.pixelate(CGRect(x: 10, y: 10, width: 20, height: 20), block: 5)
-        let outer = Self.pixelate(CGRect(x: 0, y: 0, width: 50, height: 50), block: 25)
-        let image = Renderer.flatten(Self.document(annotations: [inner, outer]))
-        let px = readPixels(image).pixel
-        #expect(close(px(0, 0), px(49, 49)))
     }
 
     @Test(arguments: [CGFloat(1), CGFloat(2)])

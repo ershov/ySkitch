@@ -80,6 +80,31 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
         #expect(AnnotationHitTest.topmost(in: document, at: CGPoint(x: 25, y: 25), tolerance: 0) == bottom.id)
         #expect(AnnotationHitTest.topmost(in: document, at: CGPoint(x: 190, y: 10), tolerance: 0) == nil)
     }
+
+    @Test func visualOrderStacksLayers() {
+        var document = Document(blankSize: CGSize(width: 200, height: 200), scale: 1)
+        let line = annotation(.line(start: .zero, end: CGPoint(x: 10, y: 10)))
+        let pixelate1 = annotation(.pixelate(rect))
+        let highlight1 = annotation(.highlighter(points: [CGPoint(x: 5, y: 5)]))
+        let text = annotation(.text(TextContent(origin: .zero, string: "a")))
+        let pixelate2 = annotation(.pixelate(rect))
+        let highlight2 = annotation(.highlighter(points: [CGPoint(x: 6, y: 6)]))
+        document.annotations = [line, pixelate1, highlight1, text, pixelate2, highlight2]
+        #expect(document.annotationsInVisualOrder.map(\.id) == [
+            pixelate1.id, pixelate2.id, highlight1.id, highlight2.id, line.id, text.id,
+        ])
+    }
+
+    @Test func topmostFollowsVisualOrder() {
+        var document = Document(blankSize: CGSize(width: 200, height: 200), scale: 1)
+        let arrow = annotation(.arrow(tail: CGPoint(x: 20, y: 50), head: CGPoint(x: 120, y: 50)), thickness: 10)
+        let highlight = annotation(.highlighter(points: [CGPoint(x: 60, y: 20), CGPoint(x: 60, y: 80)]), thickness: 10)
+        let pixelate = annotation(.pixelate(CGRect(x: 0, y: 0, width: 150, height: 100)))
+        document.annotations = [arrow, highlight, pixelate]
+        #expect(AnnotationHitTest.topmost(in: document, at: CGPoint(x: 60, y: 50), tolerance: 0) == arrow.id)
+        #expect(AnnotationHitTest.topmost(in: document, at: CGPoint(x: 60, y: 30), tolerance: 0) == highlight.id)
+        #expect(AnnotationHitTest.topmost(in: document, at: CGPoint(x: 140, y: 90), tolerance: 0) == pixelate.id)
+    }
 }
 
 @Suite struct GeometryEditTests {

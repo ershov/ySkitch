@@ -21,9 +21,9 @@ public enum AnnotationHitTest {
         }
     }
 
-    /// The last annotation in drawing order that contains `point`.
+    /// The visually topmost annotation that contains `point`.
     public static func topmost(in document: Document, at point: CGPoint, tolerance: CGFloat) -> UUID? {
-        document.annotations.last { contains($0, point: point, tolerance: tolerance) }?.id
+        document.annotationsInVisualOrder.last { contains($0, point: point, tolerance: tolerance) }?.id
     }
 
     private static func filled(_ path: CGPath, _ point: CGPoint, _ tolerance: CGFloat) -> Bool {

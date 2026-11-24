@@ -13,7 +13,7 @@ public enum AnnotationRenderer {
                 outlineWidth: OutlineStyle.whiteWidth(forLineWidth: style.thickness),
                 in: context)
         case .highlighter:
-            if let stroke = annotation.stroke { drawHighlighter(stroke.path, style: style, in: context) }
+            drawHighlighters([annotation], in: context)
         case .text(let content):
             drawText(content, style: style, in: context)
         case .pixelate:
@@ -38,15 +38,22 @@ public enum AnnotationRenderer {
             outlineWidth: TextStyle.outlineWidth(fontSize: style.thickness), in: context)
     }
 
-    private static func drawHighlighter(_ path: CGPath, style: AnnotationStyle, in context: CGContext) {
+    /// Strokes are opaque within one shared layer, so overlaps never get stronger and the later color wins.
+    public static func drawHighlighters(_ annotations: [Annotation], in context: CGContext) {
+        guard !annotations.isEmpty else { return }
+        context.saveGState()
+        defer { context.restoreGState() }
         context.setAlpha(HighlighterStyle.opacity)
         context.beginTransparencyLayer(auxiliaryInfo: nil)
-        context.setStrokeColor(style.color.cgColor)
-        context.setLineWidth(style.thickness)
         context.setLineCap(.round)
         context.setLineJoin(.round)
-        context.addPath(path)
-        context.strokePath()
+        for annotation in annotations {
+            guard case .highlighter = annotation.shape, let stroke = annotation.stroke else { continue }
+            context.setStrokeColor(annotation.style.color.cgColor)
+            context.setLineWidth(annotation.style.thickness)
+            context.addPath(stroke.path)
+            context.strokePath()
+        }
         context.endTransparencyLayer()
     }
 }

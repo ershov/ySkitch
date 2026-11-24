@@ -114,6 +114,55 @@ import Testing
         #expect(abs(Int(crossing.b) - Int(single.b)) <= 3)
     }
 
+    func render(_ annotations: [Annotation]) -> (CGFloat, CGFloat) -> Pixel {
+        var doc = Document(blankSize: CGSize(width: 100, height: 100), scale: Self.scale)
+        doc.annotations = annotations
+        let p = readPixels(Renderer.flatten(doc))
+        return { x, y in p.pixel(Int(x * Self.scale), Int(y * Self.scale)) }
+    }
+
+    func highlighter(_ color: RGBAColor, from a: CGPoint, to b: CGPoint) -> Annotation {
+        Annotation(style: AnnotationStyle(color: color, thickness: 10), shape: .highlighter(points: line(from: a, to: b)))
+    }
+
+    static let yellow = RGBAColor(hex: 0xFEF500)
+    let horizontal = (CGPoint(x: 20, y: 50), CGPoint(x: 80, y: 50))
+    let vertical = (CGPoint(x: 50, y: 20), CGPoint(x: 50, y: 80))
+
+    @Test func overlappingHighlightersDoNotDarken() {
+        let at = render([
+            highlighter(Self.yellow, from: horizontal.0, to: horizontal.1),
+            highlighter(Self.yellow, from: vertical.0, to: vertical.1),
+        ])
+        #expect(at(50, 50) == at(30, 50))
+        #expect(at(30, 50) != at(10, 10))
+    }
+
+    @Test func laterHighlighterColorWinsOnOverlap() {
+        let at = render([
+            highlighter(Self.yellow, from: horizontal.0, to: horizontal.1),
+            highlighter(Self.pink, from: vertical.0, to: vertical.1),
+        ])
+        #expect(at(50, 50) == at(50, 30))
+        #expect(near(at(50, 50), 255, 171, 196, tolerance: 4))
+    }
+
+    @Test func highlighterRendersUnderEarlierShapes() {
+        let rectangle = Annotation(
+            style: AnnotationStyle(color: RGBAColor(hex: 0x198EFE), thickness: 6),
+            shape: .rectangle(CGRect(x: 30, y: 30, width: 40, height: 40)))
+        let stroke = highlighter(Self.yellow, from: horizontal.0, to: horizontal.1)
+        let rectangleFirst = render([rectangle, stroke])
+        let highlighterFirst = render([stroke, rectangle])
+        for y in stride(from: CGFloat(0), to: 100, by: 0.5) {
+            for x in stride(from: CGFloat(0), to: 100, by: 0.5) where rectangleFirst(x, y) != highlighterFirst(x, y) {
+                Issue.record("pixel \(x), \(y) differs")
+                return
+            }
+        }
+        #expect(near(rectangleFirst(30, 50), 0x19, 0x8E, 0xFE, tolerance: 0))
+    }
+
     @Test func highlighterOverBlackIsVisible() {
         let at = render(.highlighter(points: line(from: CGPoint(x: 20, y: 50), to: CGPoint(x: 80, y: 50))), black: true)
         #expect(near(at(50, 50), 102, 18, 43, tolerance: 4))

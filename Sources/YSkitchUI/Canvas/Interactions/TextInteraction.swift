@@ -14,7 +14,7 @@ final class TextInteraction: CanvasInteraction {
     var cursor: NSCursor { .iBeam }
 
     func mouseDown(at point: CGPoint, event: NSEvent) {
-        if let hit = model.document.annotations.last(where: { $0.isText && AnnotationHitTest.contains($0, point: point, tolerance: 0) }) {
+        if let hit = model.document.annotationsInVisualOrder.last(where: { $0.isText && AnnotationHitTest.contains($0, point: point, tolerance: 0) }) {
             editor.beginEditing(annotationID: hit.id, at: point)
         } else {
             editor.beginNew(at: point)

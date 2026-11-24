@@ -6,7 +6,7 @@ public struct Document: Equatable, Sendable {
     public var imageRect: CGRect
     /// Output pixels per point.
     public var scale: CGFloat
-    /// Drawing order, last on top.
+    /// Document order; rendered per `RenderLayer`, last on top within a layer.
     public var annotations: [Annotation] = []
     /// Output area; kept in sync with the annotations by `updateCanvas(allowShrink:)`.
     public private(set) var canvasRect: CGRect
@@ -70,5 +70,35 @@ public struct Document: Equatable, Sendable {
         let maxX = (rect.maxX * scale - pixelTolerance).rounded(.up) / scale
         let maxY = (rect.maxY * scale - pixelTolerance).rounded(.up) / scale
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+}
+
+/// Rendering layers, bottom to top; within a layer, annotations keep document order.
+public enum RenderLayer: CaseIterable, Sendable {
+    /// Samples the base image only.
+    case pixelate
+    /// All highlighter strokes share one semi-transparent layer.
+    case highlight
+    case other
+}
+
+extension Annotation {
+    public var renderLayer: RenderLayer {
+        switch shape {
+        case .pixelate: .pixelate
+        case .highlighter: .highlight
+        case .rectangle, .roundedRectangle, .ellipse, .line, .arrow, .pen, .text: .other
+        }
+    }
+}
+
+extension Document {
+    public func annotations(in layer: RenderLayer) -> [Annotation] {
+        annotations.filter { $0.renderLayer == layer }
+    }
+
+    /// Bottom to top, as rendered; hit testing picks the last match.
+    public var annotationsInVisualOrder: [Annotation] {
+        RenderLayer.allCases.flatMap { annotations(in: $0) }
     }
 }

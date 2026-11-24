@@ -1,10 +1,8 @@
 import CoreGraphics
 
 enum Pixelation {
-    /// Pixelates `rect` using everything beneath annotation `index`; independent of the context's zoom.
-    static func draw(
-        rect modelRect: CGRect, blockSize: CGFloat, document: Document, upTo index: Int, in context: CGContext
-    ) {
+    /// Pixelates `rect` of the base image only; independent of the context's zoom.
+    static func draw(rect modelRect: CGRect, blockSize: CGFloat, document: Document, in context: CGContext) {
         let scale = document.scale
         // Antialiased clipping on a fractional edge would blend block color with original pixels.
         let rect = Document.snappedOutward(modelRect, scale: scale)
@@ -20,7 +18,7 @@ enum Pixelation {
         offscreen.translateBy(x: 0, y: CGFloat(heightPx))
         offscreen.scaleBy(x: scale, y: -scale)
         offscreen.translateBy(x: -rect.minX, y: -rect.minY)
-        Renderer.draw(document, upTo: index, in: offscreen)
+        Renderer.drawBackground(document, in: offscreen)
         guard let source = offscreen.makeImage() else { return }
 
         let blockPx = max(1, Int((blockSize * scale).rounded()))
