@@ -319,11 +319,13 @@ final class CanvasView: NSView, NSMenuItemValidation {
         if let interaction, interaction.tool == tool { return interaction.handler }
         interaction?.handler.cancel()
         interaction = nil
+        let clickSelector = ClickSelector(
+            selection: selection, magnification: { [weak self] in self?.enclosingScrollView?.magnification ?? 1 })
         let handler: any CanvasInteraction = switch tool {
         case .rectangle, .roundedRectangle, .ellipse, .pixelate:
-            ShapeDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
+            ShapeDrawingInteraction(tool: tool, model: model, toolbar: toolbar, clickSelector: clickSelector)
         case .line, .arrow:
-            LineDrawingInteraction(tool: tool, model: model, toolbar: toolbar)
+            LineDrawingInteraction(tool: tool, model: model, toolbar: toolbar, clickSelector: clickSelector)
         case .select:
             SelectInteraction(
                 model: model, selection: selection,
@@ -334,7 +336,7 @@ final class CanvasView: NSView, NSMenuItemValidation {
             TextInteraction(model: model, editor: textEditor)
         case .pen, .highlighter:
             FreehandDrawingInteraction(
-                tool: tool, model: model, toolbar: toolbar,
+                tool: tool, model: model, toolbar: toolbar, clickSelector: clickSelector,
                 magnification: { [weak self] in self?.enclosingScrollView?.magnification ?? 1 })
         case .crop:
             CropInteraction(

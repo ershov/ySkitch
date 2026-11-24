@@ -7,15 +7,20 @@ final class FreehandDrawingInteraction: CanvasInteraction {
     private let toolbar: ToolbarModel
     private let tool: Tool
     private let magnification: () -> CGFloat
+    private let clickSelector: ClickSelector
 
     private var points: [CGPoint]?
     private var annotationID: UUID?
 
-    init(tool: Tool, model: DocumentModel, toolbar: ToolbarModel, magnification: @escaping () -> CGFloat) {
+    init(
+        tool: Tool, model: DocumentModel, toolbar: ToolbarModel, clickSelector: ClickSelector,
+        magnification: @escaping () -> CGFloat
+    ) {
         self.tool = tool
         self.model = model
         self.toolbar = toolbar
         self.magnification = magnification
+        self.clickSelector = clickSelector
     }
 
     var cursor: NSCursor { .crosshair }
@@ -42,9 +47,17 @@ final class FreehandDrawingInteraction: CanvasInteraction {
     func mouseUp(at point: CGPoint, event: NSEvent) {
         guard let last = points?.last else { return }
         if point != last { append(point) }
+        let start = points?.first ?? point
+        let isDrag = points?.contains { ShapeGeometry.isDrag(from: start, to: $0) } ?? false
         points = nil
         annotationID = nil
-        model.endGesture(tool == .pen ? "Draw" : "Highlight")
+        if isDrag {
+            model.endGesture(tool == .pen ? "Draw" : "Highlight")
+            clickSelector.selection.clear()
+        } else {
+            model.cancelGesture()
+            clickSelector.click(at: start)
+        }
     }
 
     func flagsChanged(_ event: NSEvent) {}

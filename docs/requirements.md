@@ -126,7 +126,7 @@ All annotations are vector objects, editable until export (flattened only on out
 
 | ID | Req | Src | Stage |
 |---|---|---|---|
-| ED-1 | Select tool; click/marquee select; `⇧`-click multi-select | S | 1 |
+| ED-1 | Select tool; click/marquee select; `⇧`-click multi-select. In every drawing tool except Text and Crop, a click without a drag creates nothing and selects the topmost annotation under the cursor (empty space clears the selection); the tool stays active | S | 1 |
 | ED-2 | Move, resize, endpoint drag (lines/arrows) | S | 1 |
 | ED-3 | Delete (`⌫`), duplicate (`⌘D`), copy/paste objects between windows | S | 1 |
 | ED-4 | Nudge with arrow keys (1 pt; `⇧` = 10 pt) | S | 2 |

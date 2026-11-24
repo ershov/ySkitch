@@ -259,12 +259,89 @@ struct FreehandDrawingTests {
         #expect(model.undoManager.undoActionName == "Highlight")
     }
 
-    @Test func clickCreatesSinglePointDot() {
-        let controller = makeController(tool: .pen)
-        defer { controller.close() }
-        stroke(controller, through: [CGPoint(x: 30, y: 30)])
-        let model = controller.canvasView.model
-        #expect(model.document.annotations.count == 1)
-        #expect(model.document.annotations[0].shape == .pen(points: [CGPoint(x: 30, y: 30)]))
+    @Test func clickCreatesNothing() {
+        for tool in [Tool.pen, .highlighter] {
+            let controller = makeController(tool: tool)
+            defer { controller.close() }
+            stroke(controller, through: [CGPoint(x: 30, y: 30)])
+            #expect(controller.canvasView.model.document.annotations.isEmpty)
+            #expect(!controller.canvasView.model.undoManager.canUndo)
+        }
+    }
+}
+
+@MainActor
+struct ClickSelectsTests {
+    private let target = Annotation(
+        style: AnnotationStyle(color: RGBAColor(hex: 0xFF2500), thickness: 4),
+        shape: .rectangle(CGRect(x: 100, y: 100, width: 80, height: 60)))
+
+    private func makeController(tool: Tool) -> DocumentWindowController {
+        var document = Document(blankSize: CGSize(width: 400, height: 300), scale: 1)
+        document.annotations = [target]
+        let settings = ToolSettings(preferences: Preferences(store: InMemoryPreferencesStore()))
+        let controller = DocumentWindowController(document: document, title: "Test", toolSettings: settings)
+        controller.canvasView.toolbar.activeTool = tool
+        return controller
+    }
+
+    private func event(_ type: NSEvent.EventType, _ point: CGPoint, in view: NSView) -> NSEvent {
+        NSEvent.mouseEvent(
+            with: type, location: view.convert(point, to: nil), modifierFlags: [], timestamp: 0,
+            windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: 1,
+            pressure: 1)!
+    }
+
+    private func click(_ controller: DocumentWindowController, _ point: CGPoint) {
+        let view = controller.canvasView
+        view.mouseDown(with: event(.leftMouseDown, point, in: view))
+        view.mouseUp(with: event(.leftMouseUp, point, in: view))
+    }
+
+    private func drag(_ controller: DocumentWindowController, from a: CGPoint, to b: CGPoint) {
+        let view = controller.canvasView
+        view.mouseDown(with: event(.leftMouseDown, a, in: view))
+        view.mouseDragged(with: event(.leftMouseDragged, b, in: view))
+        view.mouseUp(with: event(.leftMouseUp, b, in: view))
+    }
+
+    private static let tools: [Tool] = [
+        .arrow, .line, .rectangle, .roundedRectangle, .ellipse, .pen, .highlighter, .pixelate,
+    ]
+
+    @Test func clickOnAnnotationSelectsIt() {
+        for tool in Self.tools {
+            let controller = makeController(tool: tool)
+            defer { controller.close() }
+            click(controller, CGPoint(x: 100, y: 130))
+            #expect(controller.selection.selectedIDs == [target.id], "\(tool)")
+            #expect(controller.model.document.annotations == [target], "\(tool)")
+            #expect(!controller.model.undoManager.canUndo, "\(tool)")
+            #expect(controller.toolbar.activeTool == tool)
+        }
+    }
+
+    @Test func clickOnEmptySpaceClearsSelection() {
+        for tool in Self.tools {
+            let controller = makeController(tool: tool)
+            defer { controller.close() }
+            controller.selection.select([target.id])
+            click(controller, CGPoint(x: 300, y: 250))
+            #expect(controller.selection.isEmpty, "\(tool)")
+            #expect(controller.model.document.annotations == [target], "\(tool)")
+            #expect(!controller.model.undoManager.canUndo, "\(tool)")
+        }
+    }
+
+    @Test func dragDrawsAndClearsSelection() {
+        for tool in Self.tools {
+            let controller = makeController(tool: tool)
+            defer { controller.close() }
+            click(controller, CGPoint(x: 100, y: 130))
+            drag(controller, from: CGPoint(x: 200, y: 200), to: CGPoint(x: 260, y: 250))
+            #expect(controller.model.document.annotations.count == 2, "\(tool)")
+            #expect(controller.model.document.annotations[0] == target, "\(tool)")
+            #expect(controller.selection.isEmpty, "\(tool)")
+        }
     }
 }

@@ -6,15 +6,17 @@ final class ShapeDrawingInteraction: CanvasInteraction {
     private let model: DocumentModel
     private let toolbar: ToolbarModel
     private let tool: Tool
+    private let clickSelector: ClickSelector
 
     private var start: CGPoint?
     private var last: CGPoint = .zero
     private var annotationID: UUID?
 
-    init(tool: Tool, model: DocumentModel, toolbar: ToolbarModel) {
+    init(tool: Tool, model: DocumentModel, toolbar: ToolbarModel, clickSelector: ClickSelector) {
         self.tool = tool
         self.model = model
         self.toolbar = toolbar
+        self.clickSelector = clickSelector
     }
 
     var cursor: NSCursor { .crosshair }
@@ -44,8 +46,10 @@ final class ShapeDrawingInteraction: CanvasInteraction {
         annotationID = nil
         if ShapeGeometry.isDrag(from: start, to: point) {
             model.endGesture(actionName)
+            clickSelector.selection.clear()
         } else {
             model.cancelGesture()
+            clickSelector.click(at: start)
         }
     }
 

@@ -6,15 +6,17 @@ final class LineDrawingInteraction: CanvasInteraction {
     private let model: DocumentModel
     private let toolbar: ToolbarModel
     private let tool: Tool
+    private let clickSelector: ClickSelector
 
     private var start: CGPoint?
     private var last: CGPoint = .zero
     private var annotationID: UUID?
 
-    init(tool: Tool, model: DocumentModel, toolbar: ToolbarModel) {
+    init(tool: Tool, model: DocumentModel, toolbar: ToolbarModel, clickSelector: ClickSelector) {
         self.tool = tool
         self.model = model
         self.toolbar = toolbar
+        self.clickSelector = clickSelector
     }
 
     var cursor: NSCursor { .crosshair }
@@ -45,8 +47,10 @@ final class LineDrawingInteraction: CanvasInteraction {
         let end = endPoint(from: start, flags: event.modifierFlags)
         if hypot(end.x - start.x, end.y - start.y) < ShapeGeometry.minimumDragDistance {
             model.cancelGesture()
+            clickSelector.click(at: start)
         } else {
             model.endGesture(tool == .arrow ? "Draw Arrow" : "Draw Line")
+            clickSelector.selection.clear()
         }
     }
 
