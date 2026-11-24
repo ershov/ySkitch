@@ -30,7 +30,9 @@ public enum Renderer {
         context.saveGState()
         defer { context.restoreGState() }
         context.setFillColor(CGColor(gray: 1, alpha: 1))
-        context.fill(document.canvasRect)
+        // A white edge partially covering a device pixel would bleed through the image's antialiased edge there.
+        context.fill(PixelAlignment.inwardSnapped(
+            document.canvasRect, userToDevice: context.userSpaceToDeviceSpaceTransform))
         guard let base = document.base else { return }
         let rect = document.imageRect
         context.clip(to: document.baseRect)

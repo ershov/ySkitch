@@ -35,7 +35,8 @@ final class CenteringClipView: NSClipView {
         shadow.shadowBlurRadius = CanvasStyle.shadowBlur
         shadow.shadowOffset = CanvasStyle.shadowOffset
         shadow.set()
-        NSColor.white.setFill()
+        // Shadow source only; white here would bleed through the canvas's antialiased edge.
+        backgroundColor.setFill()
         documentFrame.fill()
     }
 
