@@ -50,7 +50,9 @@ struct ToolbarTests {
 
     @Test func symbolsResolve() {
         for tool in Tool.allCases {
-            #expect(NSImage(systemSymbolName: tool.symbolName, accessibilityDescription: nil) != nil, "\(tool)")
+            if case .symbol(let name) = ToolIcon.icon(for: tool) {
+                #expect(NSImage(systemSymbolName: name, accessibilityDescription: nil) != nil, "\(tool)")
+            }
         }
     }
 

@@ -1,4 +1,5 @@
 import AppKit
+import CoreText
 import SwiftUI
 import YSkitchCore
 
@@ -93,6 +94,28 @@ private struct KeyLabel: View {
     }
 }
 
+private struct ToolIconView: View {
+    let tool: Tool
+
+    var body: some View {
+        switch ToolIcon.icon(for: tool) {
+        case .symbol(let name):
+            Image(systemName: name).font(.system(size: 21))
+        case .path(let path):
+            Path(path).stroke(
+                style: StrokeStyle(
+                    lineWidth: ToolIcon.stroke, lineCap: .round,
+                    lineJoin: ToolIcon.lineJoin(for: tool)))
+        case .text:
+            let font = TextStyle.font(size: 17)
+            // Line box is centered by layout; shift so the cap height is centered instead.
+            let shift = (CTFontGetAscent(font) + CTFontGetDescent(font)) / 2
+                - (CTFontGetAscent(font) - CTFontGetCapHeight(font) / 2)
+            Text("Aa").font(Font(font)).offset(y: shift)
+        }
+    }
+}
+
 private struct ToolButton: View {
     let tool: Tool
     let model: ToolbarModel
@@ -102,9 +125,8 @@ private struct ToolButton: View {
         Button { model.activeTool = tool } label: {
             HStack(spacing: 2) {
                 KeyLabel(text: String(tool.key))
-                Image(systemName: tool.symbolName)
-                    .font(.system(size: 21))
-                    .frame(width: 24)
+                ToolIconView(tool: tool)
+                    .frame(width: ToolIcon.boxSize.width, height: ToolIcon.boxSize.height)
                     .foregroundStyle(isActive ? Color.accentColor : Color.primary)
             }
             .frame(width: ToolbarView.toolButtonWidth, height: ToolbarView.rowHeight)

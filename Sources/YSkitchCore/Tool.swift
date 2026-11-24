@@ -45,22 +45,6 @@ public enum Tool: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    public var symbolName: String {
-        switch self {
-        case .select: "cursorarrow"
-        case .text: "textformat"
-        case .arrow: "arrow.up.right"
-        case .line: "line.diagonal"
-        case .rectangle: "rectangle"
-        case .roundedRectangle: "app"
-        case .ellipse: "circle"
-        case .pen: "pencil.tip"
-        case .highlighter: "highlighter"
-        case .pixelate: "checkerboard.rectangle"
-        case .crop: "crop"
-        }
-    }
-
     public var usesColor: Bool {
         switch self {
         case .select, .pixelate, .crop: false
