@@ -45,3 +45,47 @@ struct StatusBarTests {
         #expect(image.height == 10)
     }
 }
+
+@MainActor
+struct MinimumWindowSizeTests {
+    private func makeController(size: CGSize) -> DocumentWindowController {
+        DocumentWindowController(
+            document: Document(blankSize: size, scale: 2), title: "Test", toolSettings: .inMemory())
+    }
+
+    @Test func minimumCoversToolbarAndStatusBar() {
+        let controller = makeController(size: CGSize(width: 800, height: 600))
+        defer { controller.close() }
+        let minimum = controller.window!.contentMinSize
+
+        #expect(minimum.height >= ToolbarView.toolsColumnHeight + 2 * ToolbarView.padding + StatusBarView.height)
+        #expect(minimum.width >= ToolbarView.width + DocumentWindowController.minimumCanvasWidth)
+        #expect(minimum.width >= controller.statusBar.minimumWidth)
+    }
+
+    @Test func tinyImageOpensAtMinimum() {
+        let controller = makeController(size: CGSize(width: 10, height: 10))
+        defer { controller.close() }
+        let window = controller.window!
+        let content = window.contentRect(forFrameRect: window.frame).size
+
+        #expect(content.width >= window.contentMinSize.width)
+        #expect(content.height >= window.contentMinSize.height)
+    }
+
+    @Test func statusBarSubviewsDoNotOverlapAtMinimumWidth() {
+        let statusBar = StatusBarView()
+        statusBar.update(canvasSize: CGSize(width: 10, height: 10), scale: 2)
+        statusBar.update(magnification: 1)
+        statusBar.frame = NSRect(x: 0, y: 0, width: statusBar.minimumWidth, height: StatusBarView.height)
+        statusBar.layoutSubtreeIfNeeded()
+
+        let handle = statusBar.dragHandle.frame
+        let label = statusBar.sizeLabel.frame
+        let controls = statusBar.zoomInButton.frame.union(statusBar.actualSizeButton.frame)
+        let controlsInBar = statusBar.convert(controls, from: statusBar.actualSizeButton.superview)
+        #expect(label.maxX <= handle.minX)
+        #expect(controlsInBar.minX >= handle.maxX)
+        #expect(controlsInBar.maxX <= statusBar.bounds.maxX)
+    }
+}

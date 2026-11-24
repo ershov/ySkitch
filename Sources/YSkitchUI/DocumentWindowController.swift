@@ -18,6 +18,13 @@ extension Annotation {
 @MainActor
 final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMenuItemValidation {
     static let chromeSize = CGSize(width: ToolbarView.width, height: StatusBarView.height)
+    static let minimumCanvasWidth: CGFloat = 200
+
+    static func minimumContentSize(statusBar: StatusBarView) -> CGSize {
+        CGSize(
+            width: max(ToolbarView.width + minimumCanvasWidth, statusBar.minimumWidth),
+            height: ToolbarView.minimumHeight + StatusBarView.height)
+    }
 
     private(set) var defaultFileName: String
     let model: DocumentModel
@@ -42,8 +49,10 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         canvasView = CanvasView(model: model, toolbar: toolbar, selection: selection)
 
         let visible = NSScreen.main?.visibleFrame.size ?? CGSize(width: 1440, height: 900)
+        let minimumSize = Self.minimumContentSize(statusBar: statusBar)
         let contentSize = WindowSizing.contentSize(
-            documentSize: model.document.canvasRect.size, chrome: Self.chromeSize, visibleFrame: visible)
+            documentSize: model.document.canvasRect.size, chrome: Self.chromeSize, visibleFrame: visible,
+            minimum: minimumSize)
         scrollView = CanvasScrollView(frame: NSRect(origin: .zero, size: contentSize))
         scrollView.documentView = canvasView
 
@@ -54,6 +63,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
             defer: false
         )
         window.title = title
+        window.contentMinSize = minimumSize
         window.isReleasedWhenClosed = false
         let toolbarView = ToolbarHostingView(rootView: ToolbarView(model: toolbar))
         toolbarView.sizingOptions = []

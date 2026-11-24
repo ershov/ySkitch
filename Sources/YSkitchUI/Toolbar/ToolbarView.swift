@@ -21,6 +21,8 @@ struct ToolbarView: View {
         return CGFloat(rows) * rowHeight + CGFloat(Tool.groups.count - 1) * groupGap
     }
 
+    static var minimumHeight: CGFloat { padding + toolsColumnHeight + padding }
+
     let model: ToolbarModel
 
     var body: some View {

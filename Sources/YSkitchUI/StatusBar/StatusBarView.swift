@@ -19,12 +19,16 @@ final class StatusBarView: NSView {
     var onZoomIn: (() -> Void)?
 
     private let separator = NSView()
+    private let controls: NSStackView
+    private static let inset: CGFloat = 14
+    private static let handleGap: CGFloat = 8
 
     init() {
         actualSizeButton = NSButton(title: "1:1", target: nil, action: nil)
         fitButton = NSButton(title: "Fit", target: nil, action: nil)
         zoomOutButton = NSButton(title: "−", target: nil, action: nil)
         zoomInButton = NSButton(title: "+", target: nil, action: nil)
+        controls = NSStackView(views: [actualSizeButton, fitButton, zoomOutButton, zoomLabel, zoomInButton])
         super.init(frame: .zero)
 
         configure(actualSizeButton, #selector(actualSize), "Actual Size (⌘0)")
@@ -40,7 +44,6 @@ final class StatusBarView: NSView {
         zoomLabel.textColor = .secondaryLabelColor
         zoomLabel.alignment = .center
 
-        let controls = NSStackView(views: [actualSizeButton, fitButton, zoomOutButton, zoomLabel, zoomInButton])
         controls.spacing = 6
         for view in [sizeLabel, dragHandle, controls, separator] {
             view.translatesAutoresizingMaskIntoConstraints = false
@@ -55,19 +58,24 @@ final class StatusBarView: NSView {
             separator.leadingAnchor.constraint(equalTo: leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: trailingAnchor),
             separator.heightAnchor.constraint(equalToConstant: 1),
-            sizeLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            sizeLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.inset),
             sizeLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
             dragHandle.centerXAnchor.constraint(equalTo: centerXAnchor),
             dragHandle.centerYAnchor.constraint(equalTo: centerYAnchor),
-            sizeLabel.trailingAnchor.constraint(lessThanOrEqualTo: dragHandle.leadingAnchor, constant: -8),
-            controls.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            sizeLabel.trailingAnchor.constraint(lessThanOrEqualTo: dragHandle.leadingAnchor, constant: -Self.handleGap),
+            controls.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Self.inset),
             controls.centerYAnchor.constraint(equalTo: centerYAnchor),
-            controls.leadingAnchor.constraint(greaterThanOrEqualTo: dragHandle.trailingAnchor, constant: 8),
+            controls.leadingAnchor.constraint(greaterThanOrEqualTo: dragHandle.trailingAnchor, constant: Self.handleGap),
         ])
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    /// The drag handle is centered, so both halves must fit the controls beside it.
+    var minimumWidth: CGFloat {
+        2 * (DragHandleView.size.width / 2 + Self.handleGap + controls.fittingSize.width + Self.inset)
+    }
 
     override var wantsUpdateLayer: Bool { true }
 
