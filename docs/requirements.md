@@ -149,37 +149,42 @@ All annotations are vector objects, editable until export (flattened only on out
 ## 6. UI
 
 - Left-side toolbar, Skitch-style, in two columns: tools · colors with the thickness slider below them. No column headings.
-- Every toolbar item shows its keyboard key next to it (e.g. small `A` beside the arrow icon). Icons only, no tool names.
+- Every toolbar item shows its keyboard key right next to it, bottom-aligned with the icon or swatch (e.g. a small `A` at the bottom right of the arrow icon). Icons only, no tool names.
 - With an object selected, color/thickness controls reflect and edit it.
+- Controls that do not apply to the current tool (colors, thickness slider) are dimmed and disabled, never hidden.
 - Icons: SF Symbols or code-drawn; no external assets.
+  - Arrow, Line, Rect, Rounded rect, Ellipse: code-drawn with a 3.4 pt stroke (twice the SF Symbol regular stroke); the rectangle has square corners.
+  - Text: "Aa" in the text annotation font (bold system font).
+  - Other tools: SF Symbols.
 - Canvas surround color is an internal constant `CanvasStyle.surroundColor` (neutral grey).
+- Design reference: `docs/toolbar-design.png` (light mode, 1× points).
 - **No UI is implemented or changed without the user confirming the sketch first.**
 
 ### 6.1 Document window
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│ ● ● ●                        Screenshot 2026-11-24 at 10.15                             │
-├───────────────┬─────────────────────────────────────────────────────────────────────────┤
-│ V ➤    1 ●    │                                                                         │
-│        2 ●    │              ┌──────────────────────────────────────────────┐           │
-│ T Aa   3 ●    │              │                                              │           │
-│        4 ●    │              │                                              │           │
-│ A ↗    5 ●    │              │                                              │           │
-│ L ╱    6 ◉    │              │                                              │           │
-│ R ▭    7 ○    │              │             image + annotations              │           │
-│ U ▢    8 ●    │              │                (white canvas)                │           │
-│ O ◯      [    │              │                                              │           │
-│          ╷    │              │                                              │           │
-│ P ✎      │    │              │                                              │           │
-│ H ▬      ┃    │              │                                              │           │
-│          ●    │              └──────────────────────────────────────────────┘           │
-│ X ▦      ┃    │                                                                         │
-│          █    │               (canvas surround: CanvasStyle.surroundColor)              │
-│ C ⌗      ]    │                                                                         │
-├───────────────┴─────────────────────────────────────────────────────────────────────────┤
-│ 2880×1800 px · 1440×900 pt · @2x       [⠿ Drag]                   1:1  Fit   −  100%  + │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│ ● ● ●                        Screenshot 2026-11-24 at 10.15                              │
+├──────────────┬───────────────────────────────────────────────────────────────────────────┤
+│ ➤V     ●1    │                                                                           │
+│        ●2    │              ┌──────────────────────────────────────────────┐             │
+│ AaT    ●3    │              │                                              │             │
+│        ●4    │              │                                              │             │
+│ ↗A     ●5    │              │                                              │             │
+│ ╱L     ◉6    │              │                                              │             │
+│ ▭R     ○7    │              │             image + annotations              │             │
+│ ▢U     ●8    │              │                (white canvas)                │             │
+│ ◯O           │              │                                              │             │
+│         ╷    │              │                                              │             │
+│ ✎P      │    │              │                                              │             │
+│ ▬H     ━●━   │              │                                              │             │
+│         ┃    │              └──────────────────────────────────────────────┘             │
+│ ▦X      ┃    │                                                                           │
+│        ███   │               (canvas surround: CanvasStyle.surroundColor)                │
+│ ⌗C     ███   │                                                                           │
+├──────────────┴───────────────────────────────────────────────────────────────────────────┤
+│ 2880×1800 px · 1440×900 pt · @2x        [⠿ Drag]                    1:1  Fit   −  100%  + │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 - **Tools column**, grouped with extra spacing between groups:
@@ -191,10 +196,24 @@ All annotations are vector objects, editable until export (flattened only on out
   6. Crop (`C`)
 
   Later tools join the nearest group: step markers, stamps, callouts → after Text; arrow variants → shapes group.
-- **Color column**: 8 palette swatches, keys `1`–`8`, selected one ringed (`◉`); `+` (custom color) comes in Stage 2.
-- **Thickness slider**: directly below the swatches in the same column, horizontally centered under them; it extends down so the color column ends level with the last tool row. The track is a wedge — thin at the `[` end (top, thinner) and thick at the `]` end (bottom, thicker). The thumb doubles as the size preview: a dot of the current thickness in the current color (clamped to the column width); for Text it shows "Aa", for Pixelate a small mosaic.
+- **Color column**: 8 palette swatches, keys `1`–`8`, selected one ringed (`◉`); `+` (custom color) comes in Stage 2. Swatch: colored circle with a 4 pt white outline and a thin dark outer edge.
+- **Thickness slider**: below the swatches after a spacer, centered in the whole color column; it extends down so the color column ends level with the last tool row. No `[` / `]` labels. See §6.2.
 - **Status bar**: left — image size (px, pt, scale); center — drag handle (OUT-4); right, in order — `1:1` (actual size, `⌘0`), `Fit` (`⌘9`), zoom `−` / percentage / `+`.
 - Title: source file name, else `ySkitch <date> at <time>` (same as the default export file name, DEF-8).
+
+**Dimensions** (points):
+
+| Item | Size |
+|---|---|
+| Toolbar width | 140 (10 side padding, 10 top padding) |
+| Tool / swatch row height | 36; group gap 14 |
+| Tool button (highlight) width | 48 |
+| Tool icon | 21 pt symbol in a 24 pt box; key label 12 pt monospaced, 1 pt after the icon |
+| Column gap (tools → colors) | 18 |
+| Color column width | 54 |
+| Swatch | 27 circle in a 33 frame (selection ring at the frame edge) |
+| Palette → slider spacer | 20 |
+| Status bar | 40 high; 13 pt text; regular-size buttons; drag handle 110×26 |
 
 ### 6.2 Thickness slider
 
@@ -206,9 +225,20 @@ All annotations are vector objects, editable until export (flattened only on out
 | Pixelate | Block size | 2–40 pt | 10 pt |
 | Blur (later) | Radius | 2–40 pt | 10 pt |
 
-- Logarithmic mapping, so small sizes get finer control.
+- Logarithmic mapping, so small sizes get finer control. Top = minimum, bottom = maximum.
 - `[` / `]` move the slider by 1/20 of its range (logarithmic steps).
 - Ranges and defaults are named constants in code.
+- The track is a true size scale: at each slider position its drawn width equals the value at that position (clamped at the column width), so its outline is an exponential curve.
+- Layers, bottom to top:
+  1. Width curve fill (light grey).
+  2. Indicator line at the current position across the full slider width; same stroke as the shape icons (3.4 pt), label color with a thin white halo.
+  3. Sample at real size, clipped to the slider bounds, with a white ring and a thin dark outer edge (like the swatches):
+     - stroke tools, Pen: circle, diameter = thickness, current color;
+     - Marker: circle, diameter = thickness, current color at highlighter opacity;
+     - Text: rounded square, side = font size, filled with the current color, a bold "A" (black or white for contrast) on it, the "A" crossbar on the indicator line;
+     - Pixelate: square, side = block size, system foreground (label) color.
+  4. Width curve outline.
+- Big samples cover the indicator line; for small sizes the line shows the position.
 
 ### 6.3 Palette
 
