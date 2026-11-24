@@ -1,4 +1,5 @@
 import AppKit
+import YSkitchCore
 
 @MainActor
 final class DragHandleView: NSView, NSDraggingSource {
@@ -92,10 +93,7 @@ final class DragHandleView: NSView, NSDraggingSource {
     }
 
     static func makePasteboardItem(png: Data, fileName: String) throws -> NSPasteboardItem {
-        let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ySkitch-drag", isDirectory: true)
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let directory = try DragTempFiles.makeDirectory()
         let url = directory.appendingPathComponent(fileName).appendingPathExtension("png")
         try png.write(to: url, options: .atomic)
         let item = NSPasteboardItem()

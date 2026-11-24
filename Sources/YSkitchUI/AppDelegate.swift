@@ -1,4 +1,5 @@
 import AppKit
+import YSkitchCore
 import UniformTypeIdentifiers
 
 @MainActor
@@ -11,11 +12,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        DragTempFiles.removeAll()
         MainMenu.install()
         DispatchQueue.main.async { [registry] in
             if registry.controllers.isEmpty { registry.openFromPasteboard(.general) }
         }
         NSApp.activate()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        DragTempFiles.removeAll()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
