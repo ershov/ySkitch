@@ -154,7 +154,8 @@ private struct SwatchButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        let inset = (ToolbarView.swatchFrame - ToolbarView.swatchDiameter) / 2
+        return Button(action: action) {
             HStack(alignment: .lastTextBaseline, spacing: ToolbarView.keySpacing) {
                 ZStack {
                     Circle().strokeBorder(Color.primary, lineWidth: 1.5).opacity(isSelected ? 1 : 0)
@@ -164,7 +165,7 @@ private struct SwatchButton: View {
                         .frame(width: ToolbarView.swatchDiameter, height: ToolbarView.swatchDiameter)
                 }
                 .frame(width: ToolbarView.swatchFrame, height: ToolbarView.swatchFrame)
-                .alignmentGuide(.lastTextBaseline) { $0[.bottom] - (ToolbarView.swatchFrame - ToolbarView.swatchDiameter) / 2 }
+                .alignmentGuide(.lastTextBaseline) { $0[.bottom] - inset }
                 KeyLabel(text: "\(index + 1)")
             }
             .frame(width: ToolbarView.colorColumnWidth, height: ToolbarView.rowHeight)
