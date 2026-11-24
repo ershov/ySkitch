@@ -290,6 +290,7 @@ No Settings UI. Everything uses a sensible default and remembers the last value 
 | DEF-11 | Highlighter opacity | 40% | — |
 | DEF-12 | Double outline | Always on | — |
 | DEF-13 | Palette | Fixed, §6.3 | — |
+| DEF-14 | Style edits of a selection (color, thickness; every input method) | Each edited annotation's resulting color (color-using tools only) and clamped thickness become its tool's default; move, resize, nudge, delete do not | Per tool |
 
 ## 8. Non-functional requirements
 

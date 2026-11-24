@@ -236,7 +236,8 @@ struct SelectionTests {
         #expect(model.document.annotations[1].style.color == Self.style.color)
         #expect(toolbar.displayedStyle.color == Palette.colors[4])
         #expect(model.undoManager.undoActionName == "Change Color")
-        #expect(settings.style(for: .rectangle) == ToolStyle.defaultStyle(for: .rectangle))
+        #expect(settings.style(for: .rectangle).color == Palette.colors[4])
+        #expect(settings.style(for: .pixelate) == ToolStyle.defaultStyle(for: .pixelate))
         #expect(settings.style(for: .select) == ToolStyle.defaultStyle(for: .select))
         model.undoManager.undo()
         #expect(model.document.annotations == [a, pixelate])
@@ -265,7 +266,61 @@ struct SelectionTests {
         model.undoManager.undo()
         #expect(model.document.annotations[0].style.thickness == stepped)
         #expect(!model.undoManager.canUndo)
+        #expect(settings.style(for: .rectangle).thickness == 16)
+    }
+
+    @Test func colorEditOfArrowSetsToolDefault() {
+        let arrow = Annotation(style: Self.style, shape: .arrow(tail: CGPoint(x: 20, y: 20), head: CGPoint(x: 100, y: 80)))
+        let controller = makeController([arrow])
+        defer { controller.close() }
+        controller.selection.select([arrow.id])
+        controller.toolbar.selectColor(index: 3)
+        #expect(settings.style(for: .arrow).color == Palette.colors[3])
         #expect(settings.style(for: .rectangle) == ToolStyle.defaultStyle(for: .rectangle))
+    }
+
+    @Test func thicknessEditOfMixedSelectionSetsEachToolDefault() {
+        let arrow = Annotation(style: Self.style, shape: .arrow(tail: CGPoint(x: 20, y: 20), head: CGPoint(x: 100, y: 80)))
+        let rect = rectangle(CGRect(x: 150, y: 20, width: 60, height: 40))
+        let pixelate = Annotation(
+            style: AnnotationStyle(color: Self.style.color, thickness: 10),
+            shape: .pixelate(CGRect(x: 250, y: 20, width: 60, height: 40)))
+        let controller = makeController([arrow, rect, pixelate])
+        defer { controller.close() }
+        controller.selection.select([arrow.id, rect.id])
+        controller.toolbar.setThickness(12)
+        #expect(settings.style(for: .arrow).thickness == 12)
+        #expect(settings.style(for: .rectangle).thickness == 12)
+        #expect(settings.style(for: .pixelate) == ToolStyle.defaultStyle(for: .pixelate))
+
+        controller.selection.select([pixelate.id])
+        controller.toolbar.stepThickness(by: 1)
+        let size = controller.model.document.annotations[2].style.thickness
+        #expect(size > 10)
+        #expect(settings.style(for: .pixelate).thickness == size)
+        #expect(settings.style(for: .arrow).thickness == 12)
+    }
+
+    @Test func sliderDragUpdatesDefaultsContinuously() {
+        let rect = rectangle(CGRect(x: 20, y: 20, width: 60, height: 40))
+        let controller = makeController([rect])
+        defer { controller.close() }
+        controller.selection.select([rect.id])
+        controller.toolbar.beginThicknessDrag()
+        controller.toolbar.setThickness(9)
+        #expect(settings.style(for: .rectangle).thickness == 9)
+        controller.toolbar.endThicknessDrag()
+        #expect(settings.style(for: .rectangle).thickness == 9)
+    }
+
+    @Test func movingSelectionLeavesDefaultsUnchanged() {
+        let rect = rectangle(CGRect(x: 20, y: 20, width: 60, height: 40))
+        let controller = makeController([rect])
+        defer { controller.close() }
+        controller.selection.select([rect.id])
+        drag(controller, from: CGPoint(x: 20, y: 40), to: CGPoint(x: 60, y: 80))
+        #expect(controller.model.document.annotations[0] != rect)
+        #expect(settings.styles == ToolSettings(preferences: Preferences(store: InMemoryPreferencesStore())).styles)
     }
 
     @Test func sliderCellReportsTracking() {

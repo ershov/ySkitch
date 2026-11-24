@@ -211,6 +211,7 @@ struct TextToolTests {
         view.commitTextEditing()
         let edited = view.model.document.annotations[0]
         #expect(edited.style.thickness == 60)
+        #expect(view.toolbar.settings.style(for: .text).thickness == 60)
         #expect(edited.extendsCanvas)
         #expect(view.model.document.canvasRect.contains(edited.renderBounds))
     }

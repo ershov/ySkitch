@@ -41,19 +41,40 @@ final class ToolbarModel {
 
     func selectColor(index: Int) {
         guard Palette.colors.indices.contains(index), styleTool.usesColor else { return }
-        if let selection, selectionStyle != nil { return selection.setColor(Palette.colors[index]) }
+        if let selection, selectionStyle != nil {
+            selection.setColor(Palette.colors[index])
+            adoptSelectionStyles(color: true, thickness: false)
+            return
+        }
         settings.setColor(Palette.colors[index], for: activeTool)
     }
 
     func setThickness(_ thickness: CGFloat) {
-        if let selection, selectionStyle != nil { return selection.setThickness(thickness) }
+        if let selection, selectionStyle != nil {
+            selection.setThickness(thickness)
+            adoptSelectionStyles(color: false, thickness: true)
+            return
+        }
         settings.setThickness(thickness, for: activeTool)
     }
 
     func stepThickness(by steps: Int) {
-        if let selection, selectionStyle != nil { return selection.stepThickness(by: steps) }
+        if let selection, selectionStyle != nil {
+            selection.stepThickness(by: steps)
+            adoptSelectionStyles(color: false, thickness: true)
+            return
+        }
         guard let range = activeTool.thicknessRange else { return }
         setThickness(ThicknessScale.stepped(currentStyle.thickness, in: range, by: steps))
+    }
+
+    /// Makes the edited selection's styles the defaults of their tools (applied on every edit, including each slider step).
+    private func adoptSelectionStyles(color: Bool, thickness: Bool) {
+        for annotation in selection?.selectedAnnotations ?? [] {
+            let tool = annotation.shape.tool
+            if color, tool.usesColor { settings.setColor(annotation.style.color, for: tool) }
+            if thickness { settings.setThickness(annotation.style.thickness, for: tool) }
+        }
     }
 
     /// Brackets a slider drag so a selection edit is one undo step.
