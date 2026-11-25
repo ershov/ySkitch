@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.6 · 2026-11-25
+Status: final v1.7 · 2026-11-25
 
 ## 1. Purpose
 
@@ -238,7 +238,7 @@ Exit codes: 0 success · 1 file problems or the app didn't respond · 2 usage er
 
   Later tools join the nearest group: step markers, stamps, callouts → after Text; arrow variants → shapes group.
 - **Color column**: 8 palette swatches, keys `1`–`8`, selected one ringed (`◉`); `+` (custom color) comes in Stage 2. Swatch: colored circle with a 4 pt white outline and a thin dark outer edge.
-- **Thickness slider**: below the swatches after a spacer, centered in the whole color column; it extends down so the color column ends level with the last tool row. No `[` / `]` labels. See §6.2.
+- **Thickness slider**: below the swatches after a spacer, centered in the whole color column; its bottom is level with the last tool row, the spacer absorbs the difference. No `[` / `]` labels. See §6.2.
 - **Status bar**: left — image size (`2880×1800 px · 1440×900 pt`) or element info (below), then the output scale pop-up (IMG-7): borderless, label font, `@1x` / `@2x` / `@3x` with the current one checked; always visible, the label truncates before it; center — drag handle (OUT-4); while the thickness slider is dragged, left shows its value instead (§6.2); right, in order — `1:1` (actual size, `⌘0`), `Fit` (`⌘9`), zoom `−` / percentage / `+`.
   - **Element info** replaces the image size while an element is drawn, moved, resized, nudged or selected, and while a text is edited, a crop session is open or a selection marquee is dragged; it updates live. Priority: element being drawn (or crop rect / marquee), else edited text, else selection, else image size.
   - Fields are `·` separated integers; `px` = image pixels:
@@ -264,7 +264,9 @@ Exit codes: 0 success · 1 file problems or the app didn't respond · 2 usage er
 | Column gap (tools → colors) | 18 |
 | Color column width | 54 |
 | Swatch | 27 circle in a 33 frame (selection ring at the frame edge) |
-| Palette → slider spacer | 20 |
+| Palette → slider spacer | derived: tool rows height − swatches − slider height (8 today), at least 4; below that the color column grows |
+| Slider travel | 138 (sample centers, minimum to maximum), the same for every tool |
+| Slider paddings | top 27, bottom 5: the largest half end-sample over all tools (§6.2); slider height = top + travel + bottom = 170 |
 | Status bar | 40 high; 13 pt text; regular-size buttons; drag handle 110×26 |
 
 ### 6.2 Thickness slider
@@ -282,6 +284,8 @@ Exit codes: 0 success · 1 file problems or the app didn't respond · 2 usage er
 - With several objects selected, the slider position applies per object: each gets the value at that position in its own tool's range (e.g. top of the range: arrow 40 pt, text 120 pt).
 - `[` / `]` move the slider by 1/20 of its range (logarithmic steps).
 - Ranges and defaults are named constants in code.
+- Travel is fixed for all tools, so the same y is the same position for every tool. The wedge spans the travel only; the paddings above and below stay empty except for the sample, but are part of the control: clicks and drags there clamp to the ends.
+- Paddings are the largest half end-sample over all tools with a range (width clamped at the column width): top from the maxima, bottom from the minima. Adding a tool may increase paddings, never changes travel.
 - The track is a true size scale: at each slider position its drawn width equals the value at that position (clamped at the column width), so its outline is an exponential curve.
 - Layers, bottom to top:
   1. Width curve fill (light grey).

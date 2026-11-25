@@ -13,13 +13,24 @@ struct ToolbarView: View {
     static let swatchFrame: CGFloat = 33
     static let swatchDiameter: CGFloat = 27
     static let keySpacing: CGFloat = 1
-    static let sliderSpacing: CGFloat = 20
+    static let minimumSliderSpacing: CGFloat = 4
     static let dimmedOpacity: CGFloat = 0.35
 
-    static var toolsColumnHeight: CGFloat {
+    static var toolRowsHeight: CGFloat {
         let rows = Tool.groups.reduce(0) { $0 + $1.count }
         return CGFloat(rows) * rowHeight + CGFloat(Tool.groups.count - 1) * groupGap
     }
+
+    static var swatchesHeight: CGFloat { CGFloat(Palette.colors.count) * rowHeight }
+
+    static var sliderHeight: CGFloat { ThicknessSliderGeometry.height(trackWidth: colorColumnWidth) }
+
+    /// The slider's bottom is level with the last tool row; the spacer absorbs the difference.
+    static var sliderSpacing: CGFloat {
+        max(toolRowsHeight - swatchesHeight - sliderHeight, minimumSliderSpacing)
+    }
+
+    static var toolsColumnHeight: CGFloat { max(toolRowsHeight, swatchesHeight + sliderSpacing + sliderHeight) }
 
     static var minimumHeight: CGFloat { padding + toolsColumnHeight + padding }
 
@@ -78,7 +89,7 @@ struct ToolbarView: View {
             tool: tool, style: model.displayedStyle, range: range,
             onDragBegin: { model.beginThicknessDrag() }, onDragEnd: { model.endThicknessDrag() }
         ) { model.setThickness(atPosition: $0) }
-            .frame(maxHeight: .infinity)
+            .frame(height: Self.sliderHeight)
             .help("Size")
             .disabled(tool.thicknessRange == nil)
             .opacity(tool.thicknessRange == nil ? Self.dimmedOpacity : 1)

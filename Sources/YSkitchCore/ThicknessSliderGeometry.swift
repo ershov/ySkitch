@@ -1,8 +1,11 @@
 import CoreGraphics
 
 /// Layout of the thickness slider in top-down coordinates: position 1 (maximum) at the top.
-/// Widths are true sizes, clamped at the track width.
+/// Widths are true sizes, clamped at the track width. Travel and paddings are the same for every tool.
 public struct ThicknessSliderGeometry: Sendable {
+    /// Distance between the sample centers at the minimum and the maximum.
+    public static let travel: CGFloat = 138
+
     public var track: CGRect
     public var range: ClosedRange<CGFloat>
 
@@ -11,18 +14,35 @@ public struct ThicknessSliderGeometry: Sendable {
         self.range = range
     }
 
-    public func width(_ value: CGFloat) -> CGFloat { min(value, track.width) }
+    public func width(_ value: CGFloat) -> CGFloat { Self.width(value, trackWidth: track.width) }
+
+    static func width(_ value: CGFloat, trackWidth: CGFloat) -> CGFloat { min(value, trackWidth) }
+
+    /// Largest half sample at the maximum over all tools.
+    public static func topPadding(trackWidth: CGFloat) -> CGFloat {
+        Tool.allCases.compactMap(\.thicknessRange)
+            .map { width($0.upperBound, trackWidth: trackWidth) / 2 }.max() ?? 0
+    }
+
+    /// Largest half sample at the minimum over all tools.
+    public static func bottomPadding(trackWidth: CGFloat) -> CGFloat {
+        Tool.allCases.compactMap(\.thicknessRange)
+            .map { width($0.lowerBound, trackWidth: trackWidth) / 2 }.max() ?? 0
+    }
+
+    public static func height(trackWidth: CGFloat) -> CGFloat {
+        topPadding(trackWidth: trackWidth) + travel + bottomPadding(trackWidth: trackWidth)
+    }
 
     /// Sample centers at the ends of travel.
-    public var top: CGFloat { track.minY + width(range.upperBound) / 2 }
-    public var bottom: CGFloat { max(track.maxY - width(range.lowerBound) / 2, top) }
+    public var top: CGFloat { track.minY + Self.topPadding(trackWidth: track.width) }
+    public var bottom: CGFloat { top + Self.travel }
 
     public func y(at position: Double) -> CGFloat {
         bottom - (bottom - top) * CGFloat(min(max(position, 0), 1))
     }
 
     public func position(atY y: CGFloat) -> Double {
-        guard bottom > top else { return 0 }
         return Double(min(max((bottom - y) / (bottom - top), 0), 1))
     }
 

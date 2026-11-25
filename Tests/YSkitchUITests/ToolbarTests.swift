@@ -90,7 +90,7 @@ struct ToolbarTests {
     }
 
     @Test func knobIsRealSizeSample() throws {
-        let slider = NSSlider(frame: NSRect(x: 0, y: 0, width: 54, height: 158))
+        let slider = NSSlider(frame: NSRect(x: 0, y: 0, width: 54, height: 170))
         let cell = WedgeSliderCell()
         slider.cell = cell
         slider.minValue = 0
@@ -110,8 +110,8 @@ struct ToolbarTests {
         #expect(large.midX == small.midX)
 
         slider.doubleValue = 0
-        #expect(cell.knobRect(flipped: true) == NSRect(x: 7, y: 0, width: 40, height: 40))
-        #expect(cell.knobRect(flipped: false) == NSRect(x: 7, y: 118, width: 40, height: 40))
+        #expect(cell.knobRect(flipped: true) == NSRect(x: 7, y: 7, width: 40, height: 40))
+        #expect(cell.knobRect(flipped: false) == NSRect(x: 7, y: 123, width: 40, height: 40))
 
         cell.tool = .text
         cell.range = Tool.fontSizeRange
