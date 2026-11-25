@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.5 · 2026-11-25
+Status: final v1.6 · 2026-11-25
 
 ## 1. Purpose
 
@@ -216,13 +216,13 @@ Exit codes: 0 success · 1 file problems or the app didn't respond · 2 usage er
 │ ▭R     ○7    │              │             image + annotations              │             │
 │ ▢U     ●8    │              │                (white canvas)                │             │
 │ ◯O           │              │                                              │             │
-│         ╷    │              │                                              │             │
-│ ✎P      │    │              │                                              │             │
-│ ▬H     ━●━   │              │                                              │             │
+│        ███   │              │                                              │             │
+│ ✎P     ███   │              │                                              │             │
+│ ▬H      ┃    │              │                                              │             │
 │         ┃    │              └──────────────────────────────────────────────┘             │
-│ ▦X      ┃    │                                                                           │
-│        ███   │               (canvas surround: CanvasStyle.surroundColor)                │
-│ ⌗C     ███   │                                                                           │
+│ ▦X     ━●━   │                                                                           │
+│         │    │               (canvas surround: CanvasStyle.surroundColor)                │
+│ ⌗C      ╷    │                                                                           │
 ├──────────────┴───────────────────────────────────────────────────────────────────────────┤
 │ 2880×1800 px · 1440×900 pt  @2x ⌄       [⠿ Drag]                    1:1  Fit   −  100%  + │
 └──────────────────────────────────────────────────────────────────────────────────────────┘
@@ -278,7 +278,7 @@ Exit codes: 0 success · 1 file problems or the app didn't respond · 2 usage er
 | Blur (later) | Radius | 2–40 pt | 10 pt |
 
 - While the slider is dragged (mouse-down to mouse-up, not `[` / `]`), the status bar's left label shows `<Tool> · <Meaning> <value> pt` (e.g. `Arrow · Width 12 pt`, `Text · Font size 36 pt`), updating live, for the shown style tool (the selection's tool when editing a selection); afterwards it returns to the normal content.
-- Logarithmic mapping, so small sizes get finer control. Top = minimum, bottom = maximum.
+- Logarithmic mapping, so small sizes get finer control. Top = maximum, bottom = minimum.
 - With several objects selected, the slider position applies per object: each gets the value at that position in its own tool's range (e.g. top of the range: arrow 40 pt, text 120 pt).
 - `[` / `]` move the slider by 1/20 of its range (logarithmic steps).
 - Ranges and defaults are named constants in code.
@@ -289,7 +289,7 @@ Exit codes: 0 success · 1 file problems or the app didn't respond · 2 usage er
   3. Sample at real size, clipped to the slider bounds, with a white ring and a thin dark outer edge (like the swatches):
      - stroke tools, Pen: circle, diameter = thickness, current color;
      - Marker: circle, diameter = thickness, current color at highlighter opacity;
-     - Text: rounded square, side = font size, filled with the current color, a bold "A" (black or white for contrast) on it, the "A" crossbar on the indicator line;
+     - Text: rounded square, side = font size, filled with the current color, a bold lowercase "a" (black or white for contrast) on it, centered on the indicator line;
      - Pixelate: square, side = block size, system foreground (label) color.
   4. Width curve outline.
 - Big samples cover the indicator line; for small sizes the line shows the position.

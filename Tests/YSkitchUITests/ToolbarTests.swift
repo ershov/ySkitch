@@ -106,16 +106,16 @@ struct ToolbarTests {
         #expect(cell.thickness == 16)
         #expect(small.width == 2)
         #expect(large.width == 16)
-        #expect(large.midY > small.midY)
+        #expect(large.midY < small.midY)
         #expect(large.midX == small.midX)
 
         slider.doubleValue = 0
-        #expect(cell.knobRect(flipped: true) == NSRect(x: 7, y: 118, width: 40, height: 40))
-        #expect(cell.knobRect(flipped: false) == NSRect(x: 7, y: 0, width: 40, height: 40))
+        #expect(cell.knobRect(flipped: true) == NSRect(x: 7, y: 0, width: 40, height: 40))
+        #expect(cell.knobRect(flipped: false) == NSRect(x: 7, y: 118, width: 40, height: 40))
 
         cell.tool = .text
         cell.range = Tool.fontSizeRange
-        #expect(cell.knobRect(flipped: true) == NSRect(x: 0, y: 71, width: 54, height: 87))
+        #expect(cell.knobRect(flipped: true) == NSRect(x: 0, y: 0, width: 54, height: 87))
     }
 
     @Test func sliderDimmedWithoutThickness() throws {

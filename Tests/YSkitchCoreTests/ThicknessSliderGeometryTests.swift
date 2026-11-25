@@ -7,14 +7,14 @@ import YSkitchCore
 
     @Test func travelEnds() {
         let stroke = ThicknessSliderGeometry(track: track, range: 1...40)
-        #expect(stroke.top == 0.5)
-        #expect(stroke.bottom == 138)
-        #expect(stroke.y(at: 0) == stroke.top)
-        #expect(stroke.y(at: 1) == stroke.bottom)
+        #expect(stroke.top == 20)
+        #expect(stroke.bottom == 157.5)
+        #expect(stroke.y(at: 0) == stroke.bottom)
+        #expect(stroke.y(at: 1) == stroke.top)
 
         let text = ThicknessSliderGeometry(track: track, range: 10...120)
-        #expect(text.top == 5)
-        #expect(text.bottom == 131)
+        #expect(text.top == 27)
+        #expect(text.bottom == 153)
     }
 
     @Test func positionRoundTrips() {
@@ -22,8 +22,8 @@ import YSkitchCore
         for position in [0, 0.25, 0.5, 1] {
             #expect(abs(geometry.position(atY: geometry.y(at: position)) - position) < 1e-9)
         }
-        #expect(geometry.position(atY: -100) == 0)
-        #expect(geometry.position(atY: 1000) == 1)
+        #expect(geometry.position(atY: -100) == 1)
+        #expect(geometry.position(atY: 1000) == 0)
     }
 
     @Test func wedgeWidthIsValue() {
@@ -49,10 +49,10 @@ import YSkitchCore
     @Test func sampleRect() {
         let geometry = ThicknessSliderGeometry(track: track, range: 1...40)
         let min = geometry.sampleRect(value: 1, at: 0)
-        #expect(min == CGRect(x: 26.5, y: 0, width: 1, height: 1))
+        #expect(min == CGRect(x: 26.5, y: 157, width: 1, height: 1))
+        #expect(min.maxY == track.maxY)
         let max = geometry.sampleRect(value: 40, at: 1)
-        #expect(max == CGRect(x: 7, y: 118, width: 40, height: 40))
-        #expect(max.maxY == track.maxY)
+        #expect(max == CGRect(x: 7, y: 0, width: 40, height: 40))
     }
 
     @Test func exactValueIsUnrounded() {

@@ -1,6 +1,6 @@
 import CoreGraphics
 
-/// Layout of the thickness slider in top-down coordinates: position 0 (minimum) at the top.
+/// Layout of the thickness slider in top-down coordinates: position 1 (maximum) at the top.
 /// Widths are true sizes, clamped at the track width.
 public struct ThicknessSliderGeometry: Sendable {
     public var track: CGRect
@@ -14,16 +14,16 @@ public struct ThicknessSliderGeometry: Sendable {
     public func width(_ value: CGFloat) -> CGFloat { min(value, track.width) }
 
     /// Sample centers at the ends of travel.
-    public var top: CGFloat { track.minY + width(range.lowerBound) / 2 }
-    public var bottom: CGFloat { max(track.maxY - width(range.upperBound) / 2, top) }
+    public var top: CGFloat { track.minY + width(range.upperBound) / 2 }
+    public var bottom: CGFloat { max(track.maxY - width(range.lowerBound) / 2, top) }
 
     public func y(at position: Double) -> CGFloat {
-        top + (bottom - top) * CGFloat(min(max(position, 0), 1))
+        bottom - (bottom - top) * CGFloat(min(max(position, 0), 1))
     }
 
     public func position(atY y: CGFloat) -> Double {
         guard bottom > top else { return 0 }
-        return Double(min(max((y - top) / (bottom - top), 0), 1))
+        return Double(min(max((bottom - y) / (bottom - top), 0), 1))
     }
 
     public func halfWidth(at position: Double) -> CGFloat {

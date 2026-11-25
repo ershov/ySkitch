@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import YSkitchCore
 
-/// Vertical; the top is the minimum.
+/// Vertical; the top is the maximum.
 struct ThicknessSlider: NSViewRepresentable {
     let tool: Tool
     let style: ToolStyle
@@ -66,7 +66,7 @@ struct ThicknessSlider: NSViewRepresentable {
 }
 
 /// Draws the track as a true size scale with a real-size sample of the current value.
-/// `doubleValue` 1 is the top (minimum thickness).
+/// `doubleValue` is only state; the geometry maps positions to y.
 final class WedgeSliderCell: NSSliderCell {
     var tool: Tool = .arrow
     var color: RGBAColor = Palette.defaultColor
@@ -75,7 +75,7 @@ final class WedgeSliderCell: NSSliderCell {
     var onTrackingEnd: (() -> Void)?
     private var dragOffset: CGFloat = 0
 
-    /// 0 at the top (minimum), 1 at the bottom (maximum).
+    /// 0 = minimum (bottom), 1 = maximum (top).
     var position: Double { 1 - normalizedValue }
 
     var thickness: CGFloat { ThicknessScale.value(at: position, in: range) }
@@ -175,7 +175,7 @@ final class WedgeSliderCell: NSSliderCell {
         outer.stroke()
     }
 
-    /// The crossbar of the "A" lies on the indicator line.
+    /// The glyph's ink is centered on the track and on the indicator line.
     private func drawLetter(in rect: NSRect, lineY: CGFloat) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         let font = TextStyle.font(size: rect.height * 0.8)
@@ -183,11 +183,11 @@ final class WedgeSliderCell: NSSliderCell {
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font, .foregroundColor: luminance > 0.6 ? NSColor.black : NSColor.white,
         ]
-        let line = CTLineCreateWithAttributedString(NSAttributedString(string: "A", attributes: attributes))
-        let width = CTLineGetTypographicBounds(line, nil, nil, nil)
+        let line = CTLineCreateWithAttributedString(NSAttributedString(string: "a", attributes: attributes))
+        let ink = CTLineGetBoundsWithOptions(line, .useGlyphPathBounds)
         context.saveGState()
         context.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
-        context.textPosition = CGPoint(x: rect.midX - width / 2, y: lineY + CTFontGetCapHeight(font) * 0.3)
+        context.textPosition = CGPoint(x: rect.midX - ink.midX, y: lineY + ink.midY)
         CTLineDraw(line, context)
         context.restoreGState()
     }
