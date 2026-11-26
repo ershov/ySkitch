@@ -14,15 +14,12 @@ struct CanvasSurroundTests {
         let window = try #require(controller.window)
         window.appearance = NSAppearance(named: appearance)
         window.setContentSize(NSSize(width: 900, height: 560))
-        let content = try #require(window.contentView)
-        content.layoutSubtreeIfNeeded()
-        let clip = try #require(controller.canvasView.superview as? CenteringClipView)
-        let rep = try #require(content.bitmapImageRepForCachingDisplay(in: content.bounds))
-        content.cacheDisplay(in: content.bounds, to: rep)
-        let corner = NSPoint(x: clip.frame.minX + 2, y: clip.frame.minY + 2)
-        let origin = content.convert(corner, from: clip.superview)
-        let y = Int(content.bounds.height - origin.y)
-        return try #require(rep.colorAt(x: Int(origin.x), y: y)?.usingColorSpace(.sRGB))
+        window.contentView?.layoutSubtreeIfNeeded()
+        // Caching the window content returns stale layer contents for the surround in light mode.
+        let view = controller.scrollView
+        let rep = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+        view.cacheDisplay(in: view.bounds, to: rep)
+        return try #require(rep.colorAt(x: 2, y: 2)?.usingColorSpace(.sRGB))
     }
 
     @Test func surroundFollowsAppearance() throws {
