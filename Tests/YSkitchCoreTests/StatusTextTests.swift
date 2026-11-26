@@ -97,6 +97,17 @@ struct StatusTextTests {
         #expect(text(.highlighter(points: points), thickness: 20) == "Highlighter · (5, 10) → (30, 40) · 25×30 px · 20 pt")
     }
 
+    @Test func straightStrokeShowsSegment() {
+        let points = [CGPoint(x: 0, y: 0), CGPoint(x: 30, y: -40)]
+        #expect(text(.pen(points: points)) == "Pen · (0, 0) → (30, -40) · 50 px · 53° · 4 pt")
+        #expect(text(.highlighter(points: points), thickness: 20) == "Highlighter · (0, 0) → (30, -40) · 50 px · 53° · 20 pt")
+    }
+
+    @Test func dotShowsBox() {
+        let point = CGPoint(x: 30, y: 40)
+        #expect(text(.pen(points: [point, point]), thickness: 10) == "Pen · (30, 40) → (30, 40) · 0×0 px · 10 pt")
+    }
+
     @Test func textUsesLayoutBoxAndFontSize() {
         let content = TextContent(origin: CGPoint(x: 10, y: 20), string: "Hi")
         let size = TextLayout.layout(string: "Hi", fontSize: 24).size
