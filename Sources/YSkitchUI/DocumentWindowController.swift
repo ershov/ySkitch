@@ -91,6 +91,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         statusBar.onFit = { [weak scrollView] in scrollView?.setFitMode($0) }
         statusBar.onZoomOut = { [weak scrollView] in scrollView?.zoomOut() }
         statusBar.onZoomIn = { [weak scrollView] in scrollView?.zoomIn() }
+        statusBar.onZoomTo = { [weak scrollView] in scrollView?.zoom(to: $0) }
         statusBar.onScaleChange = { [weak self] in
             // The pop-up doesn't take focus, so an open text edit would otherwise block the change.
             self?.canvasView.commitTextEditing()

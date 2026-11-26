@@ -118,6 +118,11 @@ final class CanvasScrollView: NSScrollView {
         setMagnification(Zoom.stepDown(from: magnification), centeredAt: visibleCenter)
     }
 
+    func zoom(to magnification: CGFloat) {
+        isFitMode = false
+        setMagnification(magnification, centeredAt: visibleCenter)
+    }
+
     func zoomToActualSize() {
         isFitMode = false
         setMagnification(1, centeredAt: visibleCenter)

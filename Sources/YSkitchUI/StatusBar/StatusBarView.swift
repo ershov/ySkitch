@@ -12,12 +12,13 @@ final class StatusBarView: NSView {
     let zoomInButton: NSButton
     let infoLabel = NSTextField(labelWithString: "")
     let scaleButton = NSPopUpButton(frame: .zero, pullsDown: false)
-    let zoomLabel = NSTextField(labelWithString: "")
+    let zoomButton = ZoomButton()
 
     var onActualSize: (() -> Void)?
     var onFit: ((Bool) -> Void)?
     var onZoomOut: (() -> Void)?
     var onZoomIn: (() -> Void)?
+    var onZoomTo: ((CGFloat) -> Void)?
     var onScaleChange: ((CGFloat) -> Void)?
 
     private let separator = NSView()
@@ -26,13 +27,15 @@ final class StatusBarView: NSView {
     private static let handleGap: CGFloat = 8
     private static let labelGap: CGFloat = 4
     private var shownScale: CGFloat?
+    private var shownMagnification: CGFloat = 1
+    private var zoomPanel: ZoomSliderPanel?
 
     init() {
         actualSizeButton = NSButton(title: "1:1", target: nil, action: nil)
         fitButton = NSButton(title: "Fit", target: nil, action: nil)
         zoomOutButton = NSButton(title: "−", target: nil, action: nil)
         zoomInButton = NSButton(title: "+", target: nil, action: nil)
-        controls = NSStackView(views: [actualSizeButton, fitButton, zoomOutButton, zoomLabel, zoomInButton])
+        controls = NSStackView(views: [actualSizeButton, fitButton, zoomOutButton, zoomButton, zoomInButton])
         super.init(frame: .zero)
 
         configure(actualSizeButton, #selector(actualSize), "Actual Size (⌘0). Two-finger double-tap toggles Fit / 100 %")
@@ -53,9 +56,9 @@ final class StatusBarView: NSView {
         scaleButton.action = #selector(scaleSelected)
         scaleButton.setContentCompressionResistancePriority(.required, for: .horizontal)
         scaleButton.setContentHuggingPriority(.required, for: .horizontal)
-        zoomLabel.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-        zoomLabel.textColor = .secondaryLabelColor
-        zoomLabel.alignment = .center
+        configure(zoomButton, nil, "Zoom — double-click the slider for 100 %")
+        zoomButton.showsBorderOnlyWhileMouseInside = true
+        zoomButton.onPress = { [weak self] in self?.openZoomSlider($0) }
 
         controls.spacing = 6
         for view in [infoLabel, scaleButton, dragHandle, controls, separator] {
@@ -66,7 +69,7 @@ final class StatusBarView: NSView {
 
         NSLayoutConstraint.activate([
             heightAnchor.constraint(equalToConstant: Self.height),
-            zoomLabel.widthAnchor.constraint(equalToConstant: 52),
+            zoomButton.widthAnchor.constraint(equalToConstant: 52),
             separator.topAnchor.constraint(equalTo: topAnchor),
             separator.leadingAnchor.constraint(equalTo: leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: trailingAnchor),
@@ -123,10 +126,26 @@ final class StatusBarView: NSView {
     }
 
     func update(magnification: CGFloat) {
-        zoomLabel.stringValue = StatusText.zoom(magnification)
+        shownMagnification = magnification
+        zoomButton.attributedTitle = NSAttributedString(
+            string: StatusText.zoom(magnification),
+            attributes: [
+                .font: NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular),
+                .foregroundColor: NSColor.secondaryLabelColor,
+            ])
     }
 
-    private func configure(_ button: NSButton, _ action: Selector, _ toolTip: String) {
+    private func openZoomSlider(_ event: NSEvent) {
+        guard let window, zoomPanel == nil else { return }
+        let panel = ZoomSliderPanel(magnification: shownMagnification)
+        panel.onZoom = { [weak self] in self?.onZoomTo?($0) }
+        panel.onDismiss = { [weak self] in self?.zoomPanel = nil }
+        zoomPanel = panel
+        panel.present(over: zoomButton, in: window)
+        panel.track(with: event)
+    }
+
+    private func configure(_ button: NSButton, _ action: Selector?, _ toolTip: String) {
         button.target = self
         button.action = action
         button.bezelStyle = .accessoryBarAction
@@ -146,4 +165,20 @@ final class StatusBarView: NSView {
         // A refused change keeps the document's scale selected.
         selectShownScale()
     }
+}
+
+/// Reports the press instead of firing an action, so the slider can track the same mouse gesture.
+@MainActor
+final class ZoomButton: NSButton {
+    var onPress: ((NSEvent) -> Void)?
+
+    init() {
+        super.init(frame: .zero)
+        title = ""
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    override func mouseDown(with event: NSEvent) { onPress?(event) }
 }

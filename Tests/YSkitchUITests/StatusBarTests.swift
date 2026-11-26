@@ -28,7 +28,33 @@ struct StatusBarTests {
 
         let after = controller.scrollView.magnification
         #expect(after > before)
-        #expect(controller.statusBar.zoomLabel.stringValue == StatusText.zoom(after))
+        #expect(controller.statusBar.zoomButton.attributedTitle.string == StatusText.zoom(after))
+    }
+
+    @Test func zoomSliderZoomsAndTurnsFitModeOff() {
+        let controller = makeController()
+        defer { controller.close() }
+        #expect(controller.scrollView.isFitMode)
+        let panel = ZoomSliderPanel(magnification: controller.scrollView.magnification)
+        panel.onZoom = { [weak controller] in controller?.statusBar.onZoomTo?($0) }
+
+        panel.setPosition(1)
+
+        #expect(abs(controller.scrollView.magnification - 5) < 1e-6)
+        #expect(!controller.scrollView.isFitMode)
+        #expect(panel.position == 1)
+        #expect(controller.statusBar.zoomButton.attributedTitle.string == StatusText.zoom(controller.scrollView.magnification))
+
+        panel.resetToActualSize()
+
+        #expect(controller.scrollView.magnification == 1)
+        #expect(panel.position == 0.5)
+    }
+
+    @Test func zoomSliderPinsOutOfRangeZoom() {
+        let panel = ZoomSliderPanel(magnification: 16)
+        #expect(panel.position == 1)
+        #expect(panel.shownMagnification == 16)
     }
 
     @Test func pasteboardItemCarriesFileAndPNG() throws {
