@@ -8,25 +8,29 @@ import Testing
     static let edgeX: CGFloat = 40
     static let rowY: CGFloat = 70
 
-    func render(black: Bool) -> (CGFloat) -> Pixel {
-        var doc: Document
-        if black {
-            let px = 200
-            let cg = makeImage(
-                width: px, height: px,
-                pixels: Array(repeating: Pixel(r: 0, g: 0, b: 0, a: 255), count: px * px))
-            doc = Document(image: BaseImage(cgImage: cg, scale: Self.scale))
+    func render(black: Bool, outlined: Bool = true) -> (CGFloat) -> Pixel {
+        let px = Int(100 * Self.scale)
+        let context = CGContext(
+            data: nil, width: px, height: px, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        context.scaleBy(x: Self.scale, y: Self.scale)
+        context.setFillColor(CGColor(gray: black ? 0 : 1, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: 100, height: 100))
+        let annotation = Annotation(
+            style: AnnotationStyle(color: RGBAColor(hex: 0xFF2E6C), thickness: Self.thickness),
+            shape: .rectangle(CGRect(x: Self.edgeX, y: 40, width: 40, height: 40)))
+        if outlined {
+            let stroke = annotation.stroke!
+            OutlinedDrawing.stroke(
+                stroke.path, lineWidth: Self.thickness, color: annotation.style.color.cgColor,
+                lineCap: stroke.cap, lineJoin: stroke.join, in: context)
         } else {
-            doc = Document(blankSize: CGSize(width: 100, height: 100), scale: Self.scale)
+            AnnotationRenderer.draw(annotation, in: context)
         }
-        doc.annotations = [
-            Annotation(
-                style: AnnotationStyle(color: RGBAColor(hex: 0xFF2E6C), thickness: Self.thickness),
-                shape: .rectangle(CGRect(x: Self.edgeX, y: 40, width: 40, height: 40)))
-        ]
-        let p = readPixels(Renderer.flatten(doc))
+        let p = readPixels(context.makeImage()!)
         return { offset in
-            p.pixel(Int((Self.edgeX + offset) * Self.scale), Int(Self.rowY * Self.scale))
+            p.pixel(Int((Self.edgeX + offset) * Self.scale), Int((100 - Self.rowY) * Self.scale))
         }
     }
 
@@ -59,5 +63,16 @@ import Testing
     @Test func whiteWidthMinimum() {
         #expect(OutlineStyle.whiteWidth(forLineWidth: 2) == 1)
         #expect(OutlineStyle.whiteWidth(forLineWidth: 8) == 2)
+    }
+
+    @Test func shapesArePlainByDefault() {
+        #expect(!OutlineStyle.outlinesShapes)
+        let at = render(black: false, outlined: false)
+        let half = Self.thickness / 2
+        #expect(isPink(at(0)))
+        for offset in [-(half + 0.5), -(half + 1.5), -(half + 3), -(half + 5)] {
+            let p = at(offset)
+            #expect(p.r == 255 && p.g == 255 && p.b == 255)
+        }
     }
 }

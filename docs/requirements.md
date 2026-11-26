@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.15 · 2026-11-26
+Status: final v1.16 · 2026-11-26
 
 ## 1. Purpose
 
@@ -28,7 +28,7 @@ Out of scope (for now): screen capture, global hotkeys, menu-bar/background proc
 | IMG-1 | Retina-aware: a document has pixel size + scale factor (1×, 2×, …). Scale is taken from the source (clipboard `NSImage` rep size vs pixel size, PNG `pHYs`/DPI; macOS screenshots carry 144 DPI = 2×). Falls back to 1× when unknown | U | 1 |
 | IMG-2 | Annotation geometry, thickness and font sizes are in points; rendered at the document's scale so a 2× screenshot gets crisp 2× strokes | U | 1 |
 | IMG-3 | Always opaque, white background. Transparent/semi-transparent source pixels are composited onto white on import. Output never contains transparent pixels | U | 1 |
-| IMG-4 | Canvas = image rect (or crop rect, which may extend beyond the image) ∪ bounds (incl. outline) of annotations that extend the canvas. An annotation extends the canvas once it is drawn or edited (moved, resized, restyled); cropping resets this for all existing annotations. Extends in any direction while drawing/dragging; area without image pixels is white. Shrinks only on mouse-up, never smaller than the image/crop rect. Annotation parts outside the canvas are not rendered | U | 1 |
+| IMG-4 | Canvas = image rect (or crop rect, which may extend beyond the image) ∪ bounds (incl. outline, where drawn) of annotations that extend the canvas. An annotation extends the canvas once it is drawn or edited (moved, resized, restyled); cropping resets this for all existing annotations. Extends in any direction while drawing/dragging; area without image pixels is white. Shrinks only on mouse-up, never smaller than the image/crop rect. Annotation parts outside the canvas are not rendered | U | 1 |
 | IMG-5 | Export and clipboard output preserve scale: pixel data at the output scale (IMG-7), point size set so pasted images appear at the correct size in other apps | U | 1 |
 | IMG-6 | Rendering order, bottom to top: (1) base image, clipped to the crop, white elsewhere; (2) all pixelates in document order, each sampling the base image only; (3) all highlighter strokes as one shared layer at 40 % opacity; (4) all other annotations in document order; (5) clipped to the canvas. Hit testing and selection follow the same order (topmost first) | U | 1 |
 | IMG-7 | Output scale @1x / @2x / @3x (status bar pop-up, Image menu); initially the image's scale. Output pixels per point: copy, save and drag render at it, the base image resampled at render time. Non-destructive: the original pixels stay, switching back restores full quality. Annotations are in points and keep size and position. Canvas and crop snap outward to the new pixel grid. One undo step "Change Scale". Menu items are disabled during a gesture, crop session or text editing; the pop-up is disabled during a crop session and commits an open text edit. The canvas shows the output: when the output scale is below the screen's backing scale (e.g. @1x on a Retina screen), the canvas draws the output's pixels scaled up at every zoom; otherwise it draws directly | U | 1 |
@@ -116,7 +116,7 @@ All annotations are vector objects, editable until export (flattened only on out
 
 | ID | Req | Src | Stage |
 |---|---|---|---|
-| ST-1 | **Double outline (key feature):** every drawn object (arrows, shapes, lines, pen, text, markers, stamps, callouts) is rendered with an inner white outline and an outer soft dark halo (omnidirectional shadow: zero offset, ~2 pt blur, ~50% black), so it is visible on any background. Not applied to highlighter, pixelate, blur, redact, crop | U | 1 |
+| ST-1 | **Double outline (key feature):** text is rendered with an inner white outline and an outer soft dark halo (omnidirectional shadow: zero offset, ~2 pt blur, ~50% black), so it is visible on any background. Arrows, lines, rectangles, rounded rectangles, ellipses and pen strokes are drawn plain (fill / stroke in their color); an internal switch (`OutlineStyle.outlinesShapes`, off) restores the outline on them, no user-visible option. Not applied to highlighter, pixelate, blur, redact, crop | U | 1 |
 | ST-2 | Fixed Skitch palette (§6.3), always visible, one click | U | 1 |
 | ST-3 | Custom color picker (system color panel) | S | 2 |
 | ST-3a | Remember recent custom colors | U | 3 |
@@ -331,7 +331,7 @@ No Settings UI. Everything uses a sensible default and remembers the last value 
 | DEF-9 | New window uses clipboard image | Always (IN-1) | — |
 | DEF-10 | Text font | System font, bold | — |
 | DEF-11 | Highlighter opacity | 40% | — |
-| DEF-12 | Double outline | Always on | — |
+| DEF-12 | Double outline | Text only (internal switch for shapes, off) | — |
 | DEF-13 | Palette | Fixed, §6.3 | — |
 | DEF-14 | Style edits of a selection (color, thickness; every input method) | Each edited annotation's resulting color (color-using tools only) and clamped thickness become its tool's default; move, resize, nudge, delete do not | Per tool |
 

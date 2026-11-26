@@ -39,14 +39,12 @@ import Testing
         #expect(ShapeGeometry.cornerRadius(thickness: 4, rect: small) == 5)
     }
 
-    @Test func renderBoundsContainStrokeAndHalo() {
+    @Test func renderBoundsContainStroke() {
         let rect = CGRect(x: 10, y: 20, width: 30, height: 40)
         let thickness: CGFloat = 8
         let annotation = Annotation(
             style: AnnotationStyle(color: RGBAColor(hex: 0xFF2E6C), thickness: thickness), shape: .ellipse(rect))
-        let white = OutlineStyle.whiteWidth(forLineWidth: thickness)
-        let outset = thickness / 2 + white + OutlineStyle.haloBlur * 2
-        #expect(annotation.renderBounds == rect.insetBy(dx: -outset, dy: -outset))
+        #expect(annotation.renderBounds == rect.insetBy(dx: -thickness / 2, dy: -thickness / 2))
     }
 
     private func render(_ shape: AnnotationShape) -> (Int, Int) -> Pixel {

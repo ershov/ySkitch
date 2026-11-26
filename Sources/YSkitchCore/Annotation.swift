@@ -75,21 +75,24 @@ extension Annotation {
         }
     }
 
-    /// Bounds plus stroke, white outline and halo.
+    /// Bounds plus stroke and, where drawn, outline and halo.
     public var renderBounds: CGRect {
         if case .pixelate(let rect) = shape { return rect }
-        let outline = OutlineStyle.whiteWidth(forLineWidth: style.thickness)
-        let extent = OutlineStyle.extent(outlineWidth: outline)
-        if case .arrow(let tail, let head) = shape {
-            let box = ArrowGeometry.path(tail: tail, head: head, thickness: style.thickness).boundingBoxOfPath
-            return box.insetBy(dx: -extent, dy: -extent)
-        }
         if case .text = shape {
             let textExtent = OutlineStyle.extent(outlineWidth: TextStyle.outlineWidth(fontSize: style.thickness))
             return bounds.insetBy(dx: -textExtent, dy: -textExtent)
         }
-        var outset = style.thickness / 2
-        if case .highlighter = shape {} else { outset += extent }
+        var extent: CGFloat = 0
+        if OutlineStyle.outlinesShapes {
+            if case .highlighter = shape {} else {
+                extent = OutlineStyle.extent(outlineWidth: OutlineStyle.whiteWidth(forLineWidth: style.thickness))
+            }
+        }
+        if case .arrow(let tail, let head) = shape {
+            let box = ArrowGeometry.path(tail: tail, head: head, thickness: style.thickness).boundingBoxOfPath
+            return box.insetBy(dx: -extent, dy: -extent)
+        }
+        let outset = style.thickness / 2 + extent
         return bounds.insetBy(dx: -outset, dy: -outset)
     }
 }

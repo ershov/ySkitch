@@ -54,8 +54,7 @@ import Testing
         let highlighter = Annotation(style: style, shape: .highlighter(points: points))
         #expect(pen.bounds == CGRect(x: 10, y: 20, width: 40, height: 20))
         #expect(highlighter.renderBounds == CGRect(x: 6, y: 16, width: 48, height: 28))
-        #expect(pen.renderBounds.contains(highlighter.renderBounds))
-        #expect(pen.renderBounds.width > highlighter.renderBounds.width)
+        #expect(pen.renderBounds == highlighter.renderBounds)
     }
 
     func line(from a: CGPoint, to b: CGPoint, steps: Int = 40) -> [CGPoint] {
@@ -85,11 +84,10 @@ import Testing
         abs(Int(p.r) - r) <= tolerance && abs(Int(p.g) - g) <= tolerance && abs(Int(p.b) - b) <= tolerance
     }
 
-    @Test func penPixelsAndOutline() {
+    @Test func penPixelsWithoutOutline() {
         let at = render(.pen(points: line(from: CGPoint(x: 20, y: 50), to: CGPoint(x: 80, y: 50))), black: true)
         #expect(near(at(50, 50), 0xFF, 0x2E, 0x6C, tolerance: 8))
-        let ring = at(50, 50 - 5 - 1)
-        #expect(ring.r >= 230 && ring.g >= 230 && ring.b >= 230)
+        #expect(at(50, 50 - 5 - 1) == Pixel(r: 0, g: 0, b: 0, a: 255))
     }
 
     @Test func penSinglePointRendersDot() {
@@ -109,12 +107,11 @@ import Testing
         }
     }
 
-    @Test func penDotHasOutline() {
+    @Test func penDotHasNoOutline() {
         let p = CGPoint(x: 50, y: 50)
         let at = render(.pen(points: [p, p]), black: true)
         #expect(near(at(50, 50), 0xFF, 0x2E, 0x6C, tolerance: 8))
-        let ring = at(50, 50 - 5 - 1)
-        #expect(ring.r >= 230 && ring.g >= 230 && ring.b >= 230)
+        #expect(at(50, 50 - 5 - 1) == Pixel(r: 0, g: 0, b: 0, a: 255))
     }
 
     @Test func highlighterDotAtFortyPercent() {

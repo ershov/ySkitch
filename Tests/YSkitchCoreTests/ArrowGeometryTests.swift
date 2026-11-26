@@ -125,7 +125,7 @@ import Testing
         let annotation = Annotation(style: AnnotationStyle(color: pink, thickness: 8), shape: shape)
         guard case .arrow(let tail, let head) = shape else { return }
         for p in vertices(ArrowGeometry.path(tail: tail, head: head, thickness: 8)) {
-            #expect(annotation.renderBounds.contains(p))
+            #expect(annotation.renderBounds.insetBy(dx: -0.001, dy: -0.001).contains(p))
         }
     }
 
@@ -133,7 +133,6 @@ import Testing
         let annotation = Annotation(
             style: AnnotationStyle(color: pink, thickness: 8),
             shape: .line(start: CGPoint(x: 10, y: 20), end: CGPoint(x: 50, y: 30)))
-        let outset = 4 + OutlineStyle.extent(outlineWidth: OutlineStyle.whiteWidth(forLineWidth: 8))
-        #expect(annotation.renderBounds == CGRect(x: 10, y: 20, width: 40, height: 10).insetBy(dx: -outset, dy: -outset))
+        #expect(annotation.renderBounds == CGRect(x: 10, y: 20, width: 40, height: 10).insetBy(dx: -4, dy: -4))
     }
 }

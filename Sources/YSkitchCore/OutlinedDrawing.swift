@@ -1,6 +1,9 @@
 import CoreGraphics
 
 public enum OutlineStyle {
+    /// Text is always outlined; every other outlinable tool only when this is on.
+    public static let outlinesShapes = false
+
     /// Points.
     public static let haloBlur: CGFloat = 2
     public static let haloColor = CGColor(gray: 0, alpha: 0.5)

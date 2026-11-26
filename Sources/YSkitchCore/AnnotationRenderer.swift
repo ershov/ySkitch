@@ -7,11 +7,16 @@ public enum AnnotationRenderer {
         let style = annotation.style
         switch annotation.shape {
         case .arrow(let tail, let head):
-            OutlinedDrawing.fill(
-                ArrowGeometry.path(tail: tail, head: head, thickness: style.thickness),
-                color: style.color.cgColor,
-                outlineWidth: OutlineStyle.whiteWidth(forLineWidth: style.thickness),
-                in: context)
+            let path = ArrowGeometry.path(tail: tail, head: head, thickness: style.thickness)
+            if OutlineStyle.outlinesShapes {
+                OutlinedDrawing.fill(
+                    path, color: style.color.cgColor,
+                    outlineWidth: OutlineStyle.whiteWidth(forLineWidth: style.thickness), in: context)
+            } else {
+                context.setFillColor(style.color.cgColor)
+                context.addPath(path)
+                context.fillPath()
+            }
         case .highlighter:
             drawHighlighters([annotation], in: context)
         case .text(let content):
@@ -20,14 +25,18 @@ public enum AnnotationRenderer {
             return
         case .rectangle, .roundedRectangle, .ellipse, .line, .pen:
             guard let stroke = annotation.stroke else { return }
-            OutlinedDrawing.stroke(
-                stroke.path,
-                lineWidth: style.thickness,
-                color: style.color.cgColor,
-                lineCap: stroke.cap,
-                lineJoin: stroke.join,
-                in: context
-            )
+            if OutlineStyle.outlinesShapes {
+                OutlinedDrawing.stroke(
+                    stroke.path, lineWidth: style.thickness, color: style.color.cgColor,
+                    lineCap: stroke.cap, lineJoin: stroke.join, in: context)
+            } else {
+                context.setStrokeColor(style.color.cgColor)
+                context.setLineWidth(style.thickness)
+                context.setLineCap(stroke.cap)
+                context.setLineJoin(stroke.join)
+                context.addPath(stroke.path)
+                context.strokePath()
+            }
         }
     }
 
