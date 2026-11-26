@@ -37,8 +37,8 @@ final class StatusBarView: NSView {
 
         configure(actualSizeButton, #selector(actualSize), "Actual Size (⌘0)")
         configure(fitButton, #selector(fit), "Zoom to Fit (⌘9)")
-        configure(zoomOutButton, #selector(zoomOut), "Zoom Out (⌘-)")
-        configure(zoomInButton, #selector(zoomIn), "Zoom In (⌘+)")
+        configure(zoomOutButton, #selector(zoomOut), "Zoom Out (⌘-) · ⌘-scroll down")
+        configure(zoomInButton, #selector(zoomIn), "Zoom In (⌘+) · ⌘-scroll up")
 
         infoLabel.font = .systemFont(ofSize: NSFont.systemFontSize)
         infoLabel.textColor = .secondaryLabelColor

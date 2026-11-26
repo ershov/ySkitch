@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.12 · 2026-11-26
+Status: final v1.13 · 2026-11-26
 
 ## 1. Purpose
 
@@ -80,7 +80,7 @@ Window state is never written to disk, so unredacted originals of closed windows
 | ID | Req | Src | Stage |
 |---|---|---|---|
 | VIEW-1 | Trackpad: two-finger pinch zooms around the gesture point; two-finger swipe pans; smart-zoom (two-finger double-tap) toggles Fit/100% | U | 1 |
-| VIEW-2 | Keyboard/mouse zoom: `⌘+`/`⌘-`, `⌘`+scroll wheel, Fit (`⌘9`), Actual size (`⌘0`); holding space pans with mouse movement, no click needed (space acts like a mouse button) | U | 1 |
+| VIEW-2 | Keyboard/mouse zoom: `⌘+`/`⌘-`, `⌘`+scroll wheel (up zooms in, down zooms out, regardless of the natural-scrolling setting; like `⌃`-scroll in macOS Accessibility Zoom), Fit (`⌘9`), Actual size (`⌘0`); holding space pans with mouse movement, no click needed (space acts like a mouse button) | U | 1 |
 | VIEW-3 | Correct HiDPI rendering; at 100% one image pixel maps to one device pixel for images whose scale matches the screen | U | 1 |
 | VIEW-4 | Manually extend canvas (add margin) | S | 3 |
 | VIEW-5 | Rotate 90° / flip | S | 3 |

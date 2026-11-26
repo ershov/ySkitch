@@ -71,7 +71,10 @@ final class CanvasScrollView: NSScrollView {
         // Line-based wheels report ~1 per notch; treat a line as 10 points.
         let deltaY = event.hasPreciseScrollingDeltas ? event.scrollingDeltaY : event.scrollingDeltaY * 10
         setMagnification(
-            Zoom.wheel(magnification: magnification, deltaY: deltaY),
+            Zoom.wheel(
+                magnification: magnification, deltaY: deltaY,
+                invertedFromDevice: event.isDirectionInvertedFromDevice
+            ),
             centeredAt: contentView.convert(event.locationInWindow, from: nil)
         )
     }

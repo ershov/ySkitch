@@ -29,7 +29,10 @@ public enum Zoom {
         return max(min(viewport.width / content.width, viewport.height / content.height, 1), minimum)
     }
 
-    public static func wheel(magnification: CGFloat, deltaY: CGFloat) -> CGFloat {
-        clamp(magnification * exp(deltaY * 0.01))
+    /// `deltaY` is as reported by AppKit (after natural-scrolling inversion); `invertedFromDevice`
+    /// undoes it so the direction follows the physical gesture: up (away from the user) zooms in.
+    public static func wheel(magnification: CGFloat, deltaY: CGFloat, invertedFromDevice: Bool) -> CGFloat {
+        let physicalUp = invertedFromDevice ? -deltaY : deltaY
+        return clamp(magnification * exp(physicalUp * 0.01))
     }
 }

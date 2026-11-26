@@ -46,10 +46,20 @@ import Testing
     }
 
     @Test func wheel() {
-        #expect(Zoom.wheel(magnification: 1, deltaY: 0) == 1)
-        #expect(Zoom.wheel(magnification: 1, deltaY: 10) > 1)
-        #expect(Zoom.wheel(magnification: 1, deltaY: -10) < 1)
-        #expect(Zoom.wheel(magnification: 30, deltaY: 1000) == Zoom.maximum)
-        #expect(Zoom.wheel(magnification: 0.06, deltaY: -1000) == Zoom.minimum)
+        #expect(Zoom.wheel(magnification: 1, deltaY: 0, invertedFromDevice: false) == 1)
+        #expect(Zoom.wheel(magnification: 1, deltaY: 10, invertedFromDevice: false) > 1)
+        #expect(Zoom.wheel(magnification: 1, deltaY: -10, invertedFromDevice: false) < 1)
+        #expect(Zoom.wheel(magnification: 30, deltaY: 1000, invertedFromDevice: false) == Zoom.maximum)
+        #expect(Zoom.wheel(magnification: 0.06, deltaY: -1000, invertedFromDevice: false) == Zoom.minimum)
+    }
+
+    @Test func wheelFollowsPhysicalDirection() {
+        // Natural scrolling on: fingers up reports a negative delta.
+        #expect(Zoom.wheel(magnification: 1, deltaY: -10, invertedFromDevice: true) > 1)
+        #expect(Zoom.wheel(magnification: 1, deltaY: 10, invertedFromDevice: true) < 1)
+        #expect(
+            Zoom.wheel(magnification: 1, deltaY: -10, invertedFromDevice: true)
+                == Zoom.wheel(magnification: 1, deltaY: 10, invertedFromDevice: false)
+        )
     }
 }
