@@ -45,12 +45,12 @@ final class ShapeDrawingInteraction: CanvasInteraction {
     }
 
     func mouseUp(at point: CGPoint, event: NSEvent) {
-        guard let start else { return }
+        guard let start, let id = annotationID else { return }
         self.start = nil
         annotationID = nil
         if ShapeGeometry.isDrag(from: start, to: point) {
             model.endGesture(actionName)
-            clickSelector.selection.clear()
+            clickSelector.selection.select([id])
         } else {
             model.cancelGesture()
             clickSelector.click(at: start)

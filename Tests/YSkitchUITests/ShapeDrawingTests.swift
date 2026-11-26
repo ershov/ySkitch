@@ -416,7 +416,7 @@ struct ClickSelectsTests {
         }
     }
 
-    @Test func dragDrawsAndClearsSelection() {
+    @Test func dragSelectsNewShapeAndLeavesStrokesUnselected() {
         for tool in Self.tools {
             let controller = makeController(tool: tool)
             defer { controller.close() }
@@ -424,6 +424,20 @@ struct ClickSelectsTests {
             drag(controller, from: CGPoint(x: 200, y: 200), to: CGPoint(x: 260, y: 250))
             #expect(controller.model.document.annotations.count == 2, "\(tool)")
             #expect(controller.model.document.annotations[0] == target, "\(tool)")
+            let drawn = controller.model.document.annotations[1]
+            let selectsDrawn = tool != .pen && tool != .highlighter
+            #expect(controller.selection.selectedIDs == (selectsDrawn ? [drawn.id] : []), "\(tool)")
+        }
+    }
+
+    @Test func undoOfDrawingLeavesNoSelection() {
+        for tool in [Tool.arrow, .line, .rectangle, .roundedRectangle, .ellipse, .pixelate] {
+            let controller = makeController(tool: tool)
+            defer { controller.close() }
+            drag(controller, from: CGPoint(x: 200, y: 200), to: CGPoint(x: 260, y: 250))
+            #expect(controller.selection.selectedIDs.count == 1, "\(tool)")
+            controller.model.undoManager.undo()
+            #expect(controller.model.document.annotations == [target], "\(tool)")
             #expect(controller.selection.isEmpty, "\(tool)")
         }
     }

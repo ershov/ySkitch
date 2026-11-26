@@ -72,10 +72,7 @@ struct StatusInfoTests {
         #expect(label(controller) == "Rectangle · (60, 50) → (10, 20) · 50×30 px · \(thickness) pt")
 
         view.mouseUp(with: event(.leftMouseUp, CGPoint(x: 10, y: 20), in: view))
-        #expect(controller.selection.isEmpty)
-        #expect(label(controller) == Self.sizeText)
-
-        controller.selection.select(controller.model.document.annotations.map(\.id))
+        #expect(controller.selection.selectedIDs == controller.model.document.annotations.map(\.id))
         #expect(label(controller) == "Rectangle · (10, 20) → (60, 50) · 50×30 px · \(thickness) pt")
 
         controller.selection.clear()
@@ -93,7 +90,7 @@ struct StatusInfoTests {
         #expect(label(controller) == "Arrow · (10, 150) → (110, 50) · 141 px · 45° · \(thickness) pt")
 
         view.mouseUp(with: event(.leftMouseUp, CGPoint(x: 110, y: 50), in: view))
-        #expect(label(controller) == Self.sizeText)
+        #expect(label(controller) == "Arrow · (10, 150) → (110, 50) · 141 px · 45° · \(thickness) pt")
     }
 
     @Test func movingSelectionUpdatesLive() {

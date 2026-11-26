@@ -135,14 +135,16 @@ struct DrawingToolSelectionTests {
         }
     }
 
-    @Test func dragElsewhereDrawsAndClearsSelection() {
+    @Test func dragElsewhereDrawsAndReplacesSelection() {
         for tool in Self.tools {
             let controller = selectTarget(tool: tool)
             defer { controller.close() }
             drag(controller, from: CGPoint(x: 250, y: 200), to: CGPoint(x: 300, y: 250))
             #expect(controller.model.document.annotations.count == 2, "\(tool)")
             #expect(controller.model.document.annotations.first == target, "\(tool)")
-            #expect(controller.selection.isEmpty, "\(tool)")
+            let drawn = controller.model.document.annotations[1]
+            let selectsDrawn = tool != .pen && tool != .highlighter
+            #expect(controller.selection.selectedIDs == (selectsDrawn ? [drawn.id] : []), "\(tool)")
         }
     }
 
@@ -155,7 +157,7 @@ struct DrawingToolSelectionTests {
         let annotations = controller.model.document.annotations
         #expect(annotations.count == 3)
         #expect(Array(annotations.prefix(2)) == [target, other])
-        #expect(controller.selection.isEmpty)
+        #expect(controller.selection.selectedIDs == [annotations[2].id])
     }
 
     @Test func clickOnSelectedKeepsSelection() {

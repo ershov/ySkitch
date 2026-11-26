@@ -41,7 +41,7 @@ final class LineDrawingInteraction: CanvasInteraction {
     }
 
     func mouseUp(at point: CGPoint, event: NSEvent) {
-        guard let start else { return }
+        guard let start, let id = annotationID else { return }
         self.start = nil
         annotationID = nil
         let end = endPoint(from: start, flags: event.modifierFlags)
@@ -50,7 +50,7 @@ final class LineDrawingInteraction: CanvasInteraction {
             clickSelector.click(at: start)
         } else {
             model.endGesture(tool == .arrow ? "Draw Arrow" : "Draw Line")
-            clickSelector.selection.clear()
+            clickSelector.selection.select([id])
         }
     }
 
