@@ -3,13 +3,14 @@ import Testing
 import YSkitchCore
 
 @Suite struct ThicknessSliderGeometryTests {
-    private let track = CGRect(x: 0, y: 0, width: 54, height: 170)
+    private let track = CGRect(x: 0, y: 0, width: 54, height: 174)
 
     @Test func paddingsDeriveFromAllRanges() {
         #expect(ThicknessSliderGeometry.topPadding(trackWidth: 54) == 27)
-        #expect(ThicknessSliderGeometry.bottomPadding(trackWidth: 54) == 5)
+        #expect(ThicknessSliderGeometry.bottomPadding(trackWidth: 54) == 12)
+        #expect(ThicknessSliderGeometry.bottomPadding(trackWidth: 54) >= ThicknessSliderGeometry.minimumPadding)
         #expect(ThicknessSliderGeometry.topPadding(trackWidth: 100) == 50)
-        #expect(ThicknessSliderGeometry.height(trackWidth: 54) == 170)
+        #expect(ThicknessSliderGeometry.height(trackWidth: 54) == 174)
     }
 
     @Test func travelIsConstantForEveryTool() {
@@ -18,7 +19,7 @@ import YSkitchCore
             let geometry = ThicknessSliderGeometry(track: track, range: range)
             #expect(geometry.top == 27)
             #expect(geometry.bottom - geometry.top == ThicknessSliderGeometry.travel)
-            #expect(ThicknessSliderGeometry.travel == 138)
+            #expect(ThicknessSliderGeometry.travel == 135)
             #expect(geometry.bottom + ThicknessSliderGeometry.bottomPadding(trackWidth: 54) == track.maxY)
         }
     }
@@ -40,6 +41,17 @@ import YSkitchCore
         #expect(geometry.position(atY: track.maxY) == 0)
         #expect(geometry.position(atY: geometry.top - 1) == 1)
         #expect(geometry.position(atY: geometry.bottom + 1) == 0)
+    }
+
+    @Test func paddingsAreClickable() {
+        let geometry = ThicknessSliderGeometry(track: track, range: 1...40)
+        let bottomPadding = ThicknessSliderGeometry.bottomPadding(trackWidth: track.width)
+        for offset in stride(from: 0, through: bottomPadding, by: 1) {
+            #expect(geometry.position(atY: geometry.bottom + offset) == 0)
+        }
+        for offset in stride(from: 0, through: geometry.top - track.minY, by: 1) {
+            #expect(geometry.position(atY: geometry.top - offset) == 1)
+        }
     }
 
     @Test func positionRoundTrips() {
@@ -74,7 +86,7 @@ import YSkitchCore
     @Test func sampleRect() {
         let geometry = ThicknessSliderGeometry(track: track, range: 1...40)
         let min = geometry.sampleRect(value: 1, at: 0)
-        #expect(min == CGRect(x: 26.5, y: 164.5, width: 1, height: 1))
+        #expect(min == CGRect(x: 26.5, y: 161.5, width: 1, height: 1))
         let max = geometry.sampleRect(value: 40, at: 1)
         #expect(max == CGRect(x: 7, y: 7, width: 40, height: 40))
     }

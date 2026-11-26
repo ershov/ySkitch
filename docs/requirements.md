@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.7 · 2026-11-25
+Status: final v1.8 · 2026-11-26
 
 ## 1. Purpose
 
@@ -264,9 +264,9 @@ Exit codes: 0 success · 1 file problems or the app didn't respond · 2 usage er
 | Column gap (tools → colors) | 18 |
 | Color column width | 54 |
 | Swatch | 27 circle in a 33 frame (selection ring at the frame edge) |
-| Palette → slider spacer | derived: tool rows height − swatches − slider height (8 today), at least 4; below that the color column grows |
-| Slider travel | 138 (sample centers, minimum to maximum), the same for every tool |
-| Slider paddings | top 27, bottom 5: the largest half end-sample over all tools (§6.2); slider height = top + travel + bottom = 170 |
+| Palette → slider spacer | derived: tool rows height − swatches − slider height (4 today), at least 4; below that the color column grows |
+| Slider travel | 135 (sample centers, minimum to maximum), the same for every tool |
+| Slider paddings | top 27, bottom 12: the largest half end-sample over all tools, at least 12 (§6.2); slider height = top + travel + bottom = 174 |
 | Status bar | 40 high; 13 pt text; regular-size buttons; drag handle 110×26 |
 
 ### 6.2 Thickness slider
@@ -285,7 +285,7 @@ Exit codes: 0 success · 1 file problems or the app didn't respond · 2 usage er
 - `[` / `]` move the slider by 1/20 of its range (logarithmic steps).
 - Ranges and defaults are named constants in code.
 - Travel is fixed for all tools, so the same y is the same position for every tool. The wedge spans the travel only; the paddings above and below stay empty except for the sample, but are part of the control: clicks and drags there clamp to the ends.
-- Paddings are the largest half end-sample over all tools with a range (width clamped at the column width): top from the maxima, bottom from the minima. Adding a tool may increase paddings, never changes travel.
+- Paddings are the largest half end-sample over all tools with a range (width clamped at the column width): top from the maxima, bottom from the minima; each at least 12 pt so clicks just beyond an end are easy to hit. Adding a tool may increase paddings, never changes travel.
 - The track is a true size scale: at each slider position its drawn width equals the value at that position (clamped at the column width), so its outline is an exponential curve.
 - Layers, bottom to top:
   1. Width curve fill (light grey).

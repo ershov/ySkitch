@@ -87,6 +87,13 @@ struct ToolbarTests {
         let slider = try #require(sliders(in: content.toolbarSlot).first)
         #expect(slider.cell is WedgeSliderCell)
         #expect(slider.frame.width == ToolbarView.colorColumnWidth)
+        #expect(slider.frame.height == ToolbarView.sliderHeight)
+    }
+
+    @Test func sliderBottomIsLevelWithLastToolRow() {
+        #expect(ToolbarView.sliderSpacing == ToolbarView.minimumSliderSpacing)
+        #expect(ToolbarView.swatchesHeight + ToolbarView.sliderSpacing + ToolbarView.sliderHeight
+            == ToolbarView.toolRowsHeight)
     }
 
     @Test func knobIsRealSizeSample() throws {

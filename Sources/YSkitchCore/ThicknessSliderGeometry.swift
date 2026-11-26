@@ -4,7 +4,10 @@ import CoreGraphics
 /// Widths are true sizes, clamped at the track width. Travel and paddings are the same for every tool.
 public struct ThicknessSliderGeometry: Sendable {
     /// Distance between the sample centers at the minimum and the maximum.
-    public static let travel: CGFloat = 138
+    public static let travel: CGFloat = 135
+
+    /// Minimum clickable padding beyond each end of the travel.
+    public static let minimumPadding: CGFloat = 12
 
     public var track: CGRect
     public var range: ClosedRange<CGFloat>
@@ -18,16 +21,18 @@ public struct ThicknessSliderGeometry: Sendable {
 
     static func width(_ value: CGFloat, trackWidth: CGFloat) -> CGFloat { min(value, trackWidth) }
 
-    /// Largest half sample at the maximum over all tools.
+    /// Largest half sample at the maximum over all tools, at least `minimumPadding`.
     public static func topPadding(trackWidth: CGFloat) -> CGFloat {
-        Tool.allCases.compactMap(\.thicknessRange)
+        let sample = Tool.allCases.compactMap(\.thicknessRange)
             .map { width($0.upperBound, trackWidth: trackWidth) / 2 }.max() ?? 0
+        return max(sample, minimumPadding)
     }
 
-    /// Largest half sample at the minimum over all tools.
+    /// Largest half sample at the minimum over all tools, at least `minimumPadding`.
     public static func bottomPadding(trackWidth: CGFloat) -> CGFloat {
-        Tool.allCases.compactMap(\.thicknessRange)
+        let sample = Tool.allCases.compactMap(\.thicknessRange)
             .map { width($0.lowerBound, trackWidth: trackWidth) / 2 }.max() ?? 0
+        return max(sample, minimumPadding)
     }
 
     public static func height(trackWidth: CGFloat) -> CGFloat {
