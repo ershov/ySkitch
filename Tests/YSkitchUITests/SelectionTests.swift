@@ -75,6 +75,23 @@ struct SelectionTests {
         #expect(!controller.model.undoManager.canUndo)
     }
 
+    @Test func resizingStrokePastOppositeSideMirrorsIt() {
+        let stroke = Annotation(
+            style: Self.style,
+            shape: .pen(points: [CGPoint(x: 100, y: 100), CGPoint(x: 150, y: 130), CGPoint(x: 200, y: 100)]))
+        let controller = makeController([stroke])
+        defer { controller.close() }
+        controller.selection.select([stroke.id])
+        drag(controller, from: CGPoint(x: 200, y: 115), to: CGPoint(x: 50, y: 115))
+        #expect(controller.model.document.annotations.first?.shape
+            == .pen(points: [CGPoint(x: 100, y: 100), CGPoint(x: 75, y: 130), CGPoint(x: 50, y: 100)]))
+
+        controller.model.undoManager.undo()
+        drag(controller, from: CGPoint(x: 200, y: 130), to: CGPoint(x: 50, y: 60))
+        #expect(controller.model.document.annotations.first?.shape
+            == .pen(points: [CGPoint(x: 100, y: 100), CGPoint(x: 75, y: 60), CGPoint(x: 50, y: 100)]))
+    }
+
     @Test func dragMovesSelectionInOneStep() {
         let a = rectangle(CGRect(x: 20, y: 20, width: 60, height: 40))
         let b = rectangle(CGRect(x: 150, y: 20, width: 60, height: 40))

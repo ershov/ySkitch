@@ -45,13 +45,16 @@ extension Annotation {
         return result
     }
 
-    /// Maps the geometry from `bounds` onto `newBounds`; text keeps its size.
-    public func resized(to newBounds: CGRect) -> Annotation {
+    /// Maps the geometry from `bounds` onto `newBounds`, mirrored on a flipped axis; text keeps its size.
+    public func resized(to newBounds: CGRect, flippedX: Bool = false, flippedY: Bool = false) -> Annotation {
         let old = bounds
         let sx = old.width > 0 ? newBounds.width / old.width : 1
         let sy = old.height > 0 ? newBounds.height / old.height : 1
         func map(_ p: CGPoint) -> CGPoint {
-            CGPoint(x: newBounds.minX + (p.x - old.minX) * sx, y: newBounds.minY + (p.y - old.minY) * sy)
+            let dx = (p.x - old.minX) * sx, dy = (p.y - old.minY) * sy
+            return CGPoint(
+                x: flippedX ? newBounds.maxX - dx : newBounds.minX + dx,
+                y: flippedY ? newBounds.maxY - dy : newBounds.minY + dy)
         }
         var result = self
         switch shape {

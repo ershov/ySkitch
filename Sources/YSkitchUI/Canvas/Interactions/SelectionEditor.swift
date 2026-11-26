@@ -95,9 +95,13 @@ final class SelectionEditor {
                 replace([original.id: edited(original.stretchedDot(to: last, centered: centered))])
                 return
             }
-            let bounds = ResizeMath.bounds(
+            let (bounds, flippedX, flippedY) = ResizeMath.resize(
                 original: original.bounds, dragging: handle, to: last, centered: centered, proportional: shift)
-            replace([original.id: bounds == original.bounds ? original : edited(original.resized(to: bounds))])
+            let unchanged = bounds == original.bounds && !flippedX && !flippedY
+            replace([
+                original.id: unchanged
+                    ? original : edited(original.resized(to: bounds, flippedX: flippedX, flippedY: flippedY))
+            ])
         case .endpoint(let original, let which):
             let centered = flags.contains(.option)
             var point = last

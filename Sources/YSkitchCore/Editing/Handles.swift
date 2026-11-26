@@ -102,6 +102,15 @@ public enum ResizeMath {
         original: CGRect, dragging handle: BoundsHandle, to point: CGPoint,
         centered: Bool = false, proportional: Bool = false
     ) -> CGRect {
+        resize(original: original, dragging: handle, to: point, centered: centered, proportional: proportional).rect
+    }
+
+    /// `bounds` plus, per axis, whether the dragged side ended up past the fixed one (the geometry is mirrored).
+    /// A proportional edge drag never flips its lateral axis.
+    public static func resize(
+        original: CGRect, dragging handle: BoundsHandle, to point: CGPoint,
+        centered: Bool = false, proportional: Bool = false
+    ) -> (rect: CGRect, flippedX: Bool, flippedY: Bool) {
         let (sx, sy) = handle.side
         var px = point.x, py = point.y
         var lateral: CGFloat?
@@ -126,7 +135,13 @@ public enum ResizeMath {
                 (minY, maxY) = centeredSpan(original.midY, original.height * lateral / 2)
             }
         }
-        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        let flippedX = sx != 0 && CGFloat(sx) * (px - anchor(sx, original.minX, original.maxX, centered)) < 0
+        let flippedY = sy != 0 && CGFloat(sy) * (py - anchor(sy, original.minY, original.maxY, centered)) < 0
+        return (
+            rect: CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY),
+            flippedX: flippedX,
+            flippedY: flippedY
+        )
     }
 
     private static func anchor(_ side: Int, _ low: CGFloat, _ high: CGFloat, _ centered: Bool) -> CGFloat {

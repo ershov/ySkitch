@@ -182,6 +182,28 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
         #expect(text.resized(to: target) == text)
     }
 
+    @Test func resizedMirrorsPointsOnFlippedAxes() {
+        let stroke = annotation(.pen(points: [CGPoint(x: 0, y: 0), CGPoint(x: 10, y: 5), CGPoint(x: 20, y: 0)]))
+        let mirroredX = stroke.resized(to: CGRect(x: -20, y: 0, width: 20, height: 5), flippedX: true)
+        #expect(mirroredX.shape == .pen(points: [CGPoint(x: 0, y: 0), CGPoint(x: -10, y: 5), CGPoint(x: -20, y: 0)]))
+        let mirroredY = stroke.resized(to: CGRect(x: 0, y: -5, width: 20, height: 5), flippedY: true)
+        #expect(mirroredY.shape == .pen(points: [CGPoint(x: 0, y: 0), CGPoint(x: 10, y: -5), CGPoint(x: 20, y: 0)]))
+        let plain = stroke.resized(to: CGRect(x: 0, y: 0, width: 40, height: 5))
+        #expect(plain.shape == .pen(points: [CGPoint(x: 0, y: 0), CGPoint(x: 20, y: 5), CGPoint(x: 40, y: 0)]))
+    }
+
+    @Test func resizingZeroWidthStrokePastFixedSideStaysFinite() {
+        let stroke = annotation(.pen(points: [CGPoint(x: 10, y: 0), CGPoint(x: 10, y: 5), CGPoint(x: 10, y: 20)]))
+        for handle in [BoundsHandle.left, .right] {
+            let result = ResizeMath.resize(original: stroke.bounds, dragging: handle, to: CGPoint(x: 0, y: 0))
+            guard case .pen(let points) = stroke.resized(
+                to: result.rect, flippedX: result.flippedX, flippedY: result.flippedY).shape
+            else { Issue.record("not a pen"); continue }
+            #expect(points.allSatisfy { $0.x.isFinite && $0.y.isFinite })
+            #expect(Set(points.map(\.x)) == [handle == .right ? 10 : 0])
+        }
+    }
+
     @Test func withEndpointMovesOneEnd() {
         let a = CGPoint(x: 1, y: 2), b = CGPoint(x: 30, y: 40), c = CGPoint(x: 7, y: 8)
         let line = annotation(.line(start: a, end: b))
@@ -259,6 +281,42 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
 
 @Suite struct ResizeMathTests {
     let rect = CGRect(x: 10, y: 20, width: 30, height: 40)
+
+    private func flips(
+        _ handle: BoundsHandle, _ x: CGFloat, _ y: CGFloat, centered: Bool = false, proportional: Bool = false
+    ) -> [Bool] {
+        let result = ResizeMath.resize(
+            original: rect, dragging: handle, to: CGPoint(x: x, y: y), centered: centered, proportional: proportional)
+        return [result.flippedX, result.flippedY]
+    }
+
+    @Test func flipsWhenDraggedSidePassesTheOppositeOne() {
+        #expect(flips(.bottomRight, 50, 70) == [false, false])
+        #expect(flips(.bottomRight, 0, 70) == [true, false])
+        #expect(flips(.bottomRight, 0, 0) == [true, true])
+        #expect(flips(.topLeft, 50, 70) == [true, true])
+        #expect(flips(.right, 0, 0) == [true, false])
+        #expect(flips(.top, 0, 100) == [false, true])
+        #expect(flips(.right, 10, 0) == [false, false])
+    }
+
+    @Test func flipsAtTheCenterWhenCentered() {
+        #expect(flips(.right, 20, 0, centered: true) == [true, false])
+        #expect(flips(.right, 30, 0, centered: true) == [false, false])
+        #expect(flips(.bottomRight, 30, 0, centered: true) == [false, true])
+    }
+
+    @Test func proportionalFlipsFollowEachFactorSign() {
+        #expect(flips(.bottomRight, 0, 70, proportional: true) == [true, false])
+        #expect(flips(.bottomRight, 0, 0, proportional: true) == [true, true])
+        #expect(flips(.right, 0, 0, proportional: true) == [true, false])
+        #expect(flips(.bottom, 0, 0, proportional: true) == [false, true])
+    }
+
+    @Test func flipKeepsBoundsNormalized() {
+        let result = ResizeMath.resize(original: rect, dragging: .right, to: CGPoint(x: -20, y: 0))
+        #expect(result.rect == CGRect(x: -20, y: 20, width: 30, height: 40))
+    }
 
     @Test func cornerMovesKeepingOppositeFixed() {
         #expect(ResizeMath.bounds(original: rect, dragging: .bottomRight, to: CGPoint(x: 50, y: 70))
