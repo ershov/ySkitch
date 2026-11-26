@@ -288,6 +288,101 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
     }
 }
 
+@Suite struct CenteredResizeTests {
+    let rect = CGRect(x: 10, y: 20, width: 30, height: 40)
+
+    private func center(_ r: CGRect) -> CGPoint { CGPoint(x: r.midX, y: r.midY) }
+
+    @Test(arguments: BoundsHandle.allCases)
+    func everyHandleKeepsCenter(handle: BoundsHandle) {
+        let result = ResizeMath.bounds(original: rect, dragging: handle, to: CGPoint(x: 80, y: 90), centered: true)
+        #expect(center(result) == center(rect))
+    }
+
+    @Test func cornerAndEdgeExtents() {
+        #expect(ResizeMath.bounds(original: rect, dragging: .bottomRight, to: CGPoint(x: 50, y: 70), centered: true)
+            == CGRect(x: 0, y: 10, width: 50, height: 60))
+        #expect(ResizeMath.bounds(original: rect, dragging: .top, to: CGPoint(x: 500, y: 0), centered: true)
+            == CGRect(x: 10, y: 0, width: 30, height: 80))
+        #expect(ResizeMath.bounds(original: rect, dragging: .left, to: CGPoint(x: -500, y: 0), centered: true)
+            == CGRect(x: -500, y: 20, width: 1050, height: 40))
+    }
+
+    @Test func flippingThroughCenterNormalizes() {
+        #expect(ResizeMath.bounds(original: rect, dragging: .left, to: CGPoint(x: 60, y: 0), centered: true)
+            == CGRect(x: -10, y: 20, width: 70, height: 40))
+    }
+
+    @Test func minimumSize() {
+        let result = ResizeMath.bounds(original: rect, dragging: .bottomRight, to: CGPoint(x: 25, y: 40), centered: true)
+        #expect(result == CGRect(x: 24.5, y: 39.5, width: 1, height: 1))
+    }
+
+    @Test func endpointMirrorsAroundMidpoint() {
+        let line = annotation(.line(start: CGPoint(x: 0, y: 0), end: CGPoint(x: 100, y: 40)))
+        let moved = line.withEndpointMirrored(.end, at: CGPoint(x: 120, y: 60))
+        #expect(moved.shape == .line(start: CGPoint(x: -20, y: -20), end: CGPoint(x: 120, y: 60)))
+        let arrow = annotation(.arrow(tail: CGPoint(x: 0, y: 0), head: CGPoint(x: 100, y: 40)))
+        #expect(arrow.withEndpointMirrored(.start, at: CGPoint(x: 10, y: 10)).shape
+            == .arrow(tail: CGPoint(x: 10, y: 10), head: CGPoint(x: 90, y: 30)))
+        let box = annotation(.rectangle(rect))
+        #expect(box.withEndpointMirrored(.end, at: .zero) == box)
+    }
+
+    @Test func dotStretchesSymmetrically() {
+        let dot = annotation(.pen(points: [CGPoint(x: 30, y: 40), CGPoint(x: 30, y: 40)]))
+        #expect(dot.stretchedDot(to: CGPoint(x: 40, y: 50), centered: true).shape
+            == .pen(points: [CGPoint(x: 20, y: 30), CGPoint(x: 40, y: 50)]))
+    }
+}
+
+@Suite struct ProportionalResizeTests {
+    let rect = CGRect(x: 10, y: 20, width: 30, height: 40)
+
+    @Test func cornerScalesByLargerFactor() {
+        #expect(ResizeMath.bounds(original: rect, dragging: .bottomRight, to: CGPoint(x: 70, y: 60), proportional: true)
+            == CGRect(x: 10, y: 20, width: 60, height: 80))
+        #expect(ResizeMath.bounds(original: rect, dragging: .bottomRight, to: CGPoint(x: 25, y: 120), proportional: true)
+            == CGRect(x: 10, y: 20, width: 75, height: 100))
+    }
+
+    @Test func cornerWithCenter() {
+        #expect(ResizeMath.bounds(
+            original: rect, dragging: .bottomRight, to: CGPoint(x: 55, y: 50), centered: true, proportional: true)
+            == CGRect(x: -5, y: 0, width: 60, height: 80))
+    }
+
+    @Test func cornerFlipKeepsSignPerAxis() {
+        #expect(ResizeMath.bounds(original: rect, dragging: .bottomRight, to: CGPoint(x: -20, y: 60), proportional: true)
+            == CGRect(x: -20, y: 20, width: 30, height: 40))
+        #expect(ResizeMath.bounds(original: rect, dragging: .bottomRight, to: CGPoint(x: -20, y: -20), proportional: true)
+            == CGRect(x: -20, y: -20, width: 30, height: 40))
+    }
+
+    @Test func edgeScalesOtherAxisAroundCenterLine() {
+        #expect(ResizeMath.bounds(original: rect, dragging: .right, to: CGPoint(x: 70, y: 999), proportional: true)
+            == CGRect(x: 10, y: 0, width: 60, height: 80))
+        #expect(ResizeMath.bounds(original: rect, dragging: .bottom, to: CGPoint(x: 0, y: 100), proportional: true)
+            == CGRect(x: -5, y: 20, width: 60, height: 80))
+    }
+
+    @Test func edgeWithCenter() {
+        #expect(ResizeMath.bounds(
+            original: rect, dragging: .right, to: CGPoint(x: 55, y: 0), centered: true, proportional: true)
+            == CGRect(x: -5, y: 0, width: 60, height: 80))
+    }
+
+    @Test func zeroExtentIgnoresProportional() {
+        let dot = CGRect(x: 10, y: 20, width: 0, height: 0)
+        let line = CGRect(x: 10, y: 20, width: 0, height: 40)
+        for original in [dot, line] {
+            let point = CGPoint(x: 50, y: 80)
+            #expect(ResizeMath.bounds(original: original, dragging: .bottomRight, to: point, proportional: true)
+                == ResizeMath.bounds(original: original, dragging: .bottomRight, to: point))
+        }
+    }
+}
+
 @Suite struct DotTests {
     let location = CGPoint(x: 30, y: 40)
 

@@ -56,6 +56,8 @@ Closed a window by mistake? `⇧⌘T` brings it back, annotations and undo histo
 | Clone and move | `⌘`-drag an annotation |
 | Constrain | `⇧`: 45° for lines/arrows, straight pen/highlighter strokes, square/circle for shapes, axis lock when moving |
 | Reverse arrow | `⌥` while drawing |
+| Draw / resize around center | `⌥` while drawing a shape or crop rect, or dragging a handle |
+| Keep aspect ratio | `⇧` while dragging a corner or edge handle |
 | Pan | hold `Space` and move the mouse |
 | Zoom in / out | `⌘+` / `⌘-`, `⌘`-scroll, pinch |
 | Actual size / fit | `⌘0` / `⌘9` |

@@ -41,7 +41,7 @@ final class ShapeDrawingInteraction: CanvasInteraction {
 
     func mouseDragged(to point: CGPoint, event: NSEvent) {
         last = point
-        update(square: event.modifierFlags.contains(.shift))
+        update(flags: event.modifierFlags)
     }
 
     func mouseUp(at point: CGPoint, event: NSEvent) {
@@ -59,15 +59,16 @@ final class ShapeDrawingInteraction: CanvasInteraction {
 
     func flagsChanged(_ event: NSEvent) {
         guard start != nil else { return }
-        update(square: event.modifierFlags.contains(.shift))
+        update(flags: event.modifierFlags)
     }
 
-    /// Drag start to the opposite corner of the drawn rect.
+    /// The rect's corner opposite the cursor to the cursor's corner.
     var statusGeometry: StatusGeometry? {
         guard let start else { return nil }
-        let corner = CGPoint(
-            x: start.x == rect.minX ? rect.maxX : rect.minX, y: start.y == rect.minY ? rect.maxY : rect.minY)
-        return .box(name: tool.name, from: start, to: corner, thickness: thickness)
+        let towardMin = (x: last.x < start.x, y: last.y < start.y)
+        let cursorCorner = CGPoint(x: towardMin.x ? rect.minX : rect.maxX, y: towardMin.y ? rect.minY : rect.maxY)
+        let oppositeCorner = CGPoint(x: towardMin.x ? rect.maxX : rect.minX, y: towardMin.y ? rect.maxY : rect.minY)
+        return .box(name: tool.name, from: oppositeCorner, to: cursorCorner, thickness: thickness)
     }
 
     func cancel() {
@@ -77,9 +78,10 @@ final class ShapeDrawingInteraction: CanvasInteraction {
         model.cancelGesture()
     }
 
-    private func update(square: Bool) {
+    private func update(flags: NSEvent.ModifierFlags) {
         guard let start, let id = annotationID else { return }
-        rect = ShapeGeometry.rect(from: start, to: last, square: square)
+        rect = ShapeGeometry.rect(
+            from: start, to: last, square: flags.contains(.shift), centered: flags.contains(.option))
         let shape = shape(for: rect)
         model.updateGesture { document in
             guard let index = document.annotations.firstIndex(where: { $0.id == id }) else { return }

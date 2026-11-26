@@ -90,18 +90,26 @@ final class SelectionEditor {
                 : originals.mapValues { edited($0.translated(by: delta)) }
             replace(moved)
         case .resize(let original, let handle):
+            let centered = flags.contains(.option)
             if original.dotLocation != nil {
-                replace([original.id: edited(original.stretchedDot(to: last))])
+                replace([original.id: edited(original.stretchedDot(to: last, centered: centered))])
                 return
             }
-            let bounds = ResizeMath.bounds(original: original.bounds, dragging: handle, to: last)
+            let bounds = ResizeMath.bounds(
+                original: original.bounds, dragging: handle, to: last, centered: centered, proportional: shift)
             replace([original.id: bounds == original.bounds ? original : edited(original.resized(to: bounds))])
         case .endpoint(let original, let which):
+            let centered = flags.contains(.option)
             var point = last
-            if shift, let anchor = original.endpoint(which == .start ? .end : .start) {
+            if shift, let other = original.endpoint(which == .start ? .end : .start),
+               let moving = original.endpoint(which)
+            {
+                let anchor = centered ? CGPoint(x: (other.x + moving.x) / 2, y: (other.y + moving.y) / 2) : other
                 point = Geometry.constrainTo45Degrees(from: anchor, to: last)
             }
-            let moved = point == original.endpoint(which) ? original : edited(original.withEndpoint(which, at: point))
+            let moved = point == original.endpoint(which)
+                ? original
+                : edited(centered ? original.withEndpointMirrored(which, at: point) : original.withEndpoint(which, at: point))
             replace([original.id: moved])
         }
     }

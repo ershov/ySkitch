@@ -22,6 +22,7 @@ final class CropInteraction: CanvasInteraction {
     private var initialRect: CGRect = .zero
     private var drag: Drag?
     private var start: CGPoint = .zero
+    private var last: CGPoint = .zero
 
     /// Proposed crop in document coordinates; nil outside a session. May extend beyond the canvas,
     /// which then grows to show it.
@@ -104,6 +105,7 @@ final class CropInteraction: CanvasInteraction {
         if rect == nil { activate() }
         guard let rect else { return }
         start = point
+        last = point
         if event.clickCount == 2 {
             drag = nil
             self.rect = initialRect
@@ -121,15 +123,23 @@ final class CropInteraction: CanvasInteraction {
     }
 
     func mouseDragged(to point: CGPoint, event: NSEvent) {
+        last = point
+        update(flags: event.modifierFlags)
+    }
+
+    private func update(flags: NSEvent.ModifierFlags) {
         guard let drag else { return }
+        let point = last
         switch drag {
         case .resize(let original, let handle):
-            rect = ResizeMath.bounds(original: original, dragging: handle, to: point)
+            rect = ResizeMath.bounds(
+                original: original, dragging: handle, to: point,
+                centered: flags.contains(.option), proportional: flags.contains(.shift))
         case .move(let original):
             rect = original.offsetBy(dx: point.x - start.x, dy: point.y - start.y)
         case .new:
             guard ShapeGeometry.isDrag(from: start, to: point) else { return }
-            var new = ShapeGeometry.rect(from: start, to: point, square: false)
+            var new = ShapeGeometry.rect(from: start, to: point, square: false, centered: flags.contains(.option))
             new.size.width = max(new.width, ResizeMath.minimumSize)
             new.size.height = max(new.height, ResizeMath.minimumSize)
             rect = new
@@ -140,7 +150,7 @@ final class CropInteraction: CanvasInteraction {
         drag = nil
     }
 
-    func flagsChanged(_ event: NSEvent) {}
+    func flagsChanged(_ event: NSEvent) { update(flags: event.modifierFlags) }
 
     /// The handle whose square of half-side `radius` contains `point`, nearest first.
     static func handle(in rect: CGRect, at point: CGPoint, radius: CGFloat) -> BoundsHandle? {

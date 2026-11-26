@@ -18,13 +18,14 @@ struct CropToolTests {
 
     /// `point` is in document coordinates.
     private func event(
-        _ type: NSEvent.EventType, _ point: CGPoint, in controller: DocumentWindowController, clickCount: Int = 1
+        _ type: NSEvent.EventType, _ point: CGPoint, in controller: DocumentWindowController, clickCount: Int = 1,
+        flags: NSEvent.ModifierFlags = []
     ) -> NSEvent {
         let view = controller.canvasView
         let origin = controller.model.document.canvasRect.origin
         let local = CGPoint(x: point.x - origin.x, y: point.y - origin.y)
         return NSEvent.mouseEvent(
-            with: type, location: view.convert(local, to: nil), modifierFlags: [], timestamp: 0,
+            with: type, location: view.convert(local, to: nil), modifierFlags: flags, timestamp: 0,
             windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: clickCount,
             pressure: 1)!
     }
@@ -37,11 +38,13 @@ struct CropToolTests {
         }
     }
 
-    private func drag(_ controller: DocumentWindowController, from a: CGPoint, to b: CGPoint) {
+    private func drag(
+        _ controller: DocumentWindowController, from a: CGPoint, to b: CGPoint, flags: NSEvent.ModifierFlags = []
+    ) {
         let view = controller.canvasView
-        view.mouseDown(with: event(.leftMouseDown, a, in: controller))
-        view.mouseDragged(with: event(.leftMouseDragged, b, in: controller))
-        view.mouseUp(with: event(.leftMouseUp, b, in: controller))
+        view.mouseDown(with: event(.leftMouseDown, a, in: controller, flags: flags))
+        view.mouseDragged(with: event(.leftMouseDragged, b, in: controller, flags: flags))
+        view.mouseUp(with: event(.leftMouseUp, b, in: controller, flags: flags))
     }
 
     private func key(_ controller: DocumentWindowController, _ characters: String, keyCode: UInt16) throws {
@@ -96,6 +99,29 @@ struct CropToolTests {
         model.undoManager.undo()
         #expect(model.document == original)
         #expect(!model.undoManager.canUndo)
+    }
+
+    @Test func optionDrawsNewRectFromCenter() {
+        let controller = makeController()
+        defer { controller.close() }
+        controller.toolbar.activeTool = .crop
+        drag(controller, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 130, y: 80), flags: .option)
+        #expect(controller.canvasView.proposedCropRect == CGRect(x: 70, y: 80, width: 60, height: 40))
+    }
+
+    @Test func optionResizesAroundCenterAndShiftKeepsRatio() {
+        let controller = makeController()
+        defer { controller.close() }
+        controller.toolbar.activeTool = .crop
+        drag(controller, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 200, y: 150))
+        let view = controller.canvasView
+        let handle = CGPoint(x: 200, y: 150)
+        view.mouseDown(with: event(.leftMouseDown, handle, in: controller))
+        view.mouseDragged(with: event(.leftMouseDragged, CGPoint(x: 220, y: 150), in: controller, flags: .option))
+        #expect(view.proposedCropRect == CGRect(x: 80, y: 100, width: 140, height: 50))
+        view.mouseDragged(with: event(.leftMouseDragged, CGPoint(x: 300, y: 200), in: controller, flags: .shift))
+        #expect(view.proposedCropRect == CGRect(x: 100, y: 100, width: 200, height: 100))
+        view.mouseUp(with: event(.leftMouseUp, CGPoint(x: 300, y: 200), in: controller))
     }
 
     @Test func applyResetsCanvasExtension() throws {

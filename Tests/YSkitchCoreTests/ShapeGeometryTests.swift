@@ -16,6 +16,22 @@ import Testing
         #expect(ShapeGeometry.rect(from: origin, to: end, square: true) == square)
     }
 
+    @Test(arguments: [
+        (CGPoint(x: 70, y: 60), CGRect(x: 30, y: 40, width: 40, height: 20), CGRect(x: 30, y: 30, width: 40, height: 40)),
+        (CGPoint(x: 30, y: 60), CGRect(x: 30, y: 40, width: 40, height: 20), CGRect(x: 30, y: 30, width: 40, height: 40)),
+        (CGPoint(x: 70, y: 45), CGRect(x: 30, y: 45, width: 40, height: 10), CGRect(x: 30, y: 30, width: 40, height: 40)),
+        (CGPoint(x: 45, y: 20), CGRect(x: 45, y: 20, width: 10, height: 60), CGRect(x: 20, y: 20, width: 60, height: 60)),
+    ])
+    func centeredRectInAllQuadrants(end: CGPoint, plain: CGRect, square: CGRect) {
+        #expect(ShapeGeometry.rect(from: origin, to: end, square: false, centered: true) == plain)
+        #expect(ShapeGeometry.rect(from: origin, to: end, square: true, centered: true) == square)
+    }
+
+    @Test func centeredZeroDragIsEmptyAtStart() {
+        #expect(ShapeGeometry.rect(from: origin, to: origin, square: false, centered: true)
+            == CGRect(x: 50, y: 50, width: 0, height: 0))
+    }
+
     @Test func cornerRadiusFormulaAndCap() {
         let big = CGRect(x: 0, y: 0, width: 200, height: 100)
         #expect(ShapeGeometry.cornerRadius(thickness: 4, rect: big) == 14)

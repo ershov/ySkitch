@@ -7,13 +7,17 @@ public enum ShapeGeometry {
     public static let cornerRadiusPerThickness: CGFloat = 2
 
     /// With `square`, both sides equal the longer drag extent, growing from `start` toward `end`.
-    public static func rect(from start: CGPoint, to end: CGPoint, square: Bool) -> CGRect {
+    /// With `centered`, `start` is the center and the rect spans `start` ± the drag extent.
+    public static func rect(from start: CGPoint, to end: CGPoint, square: Bool, centered: Bool = false) -> CGRect {
         var dx = end.x - start.x
         var dy = end.y - start.y
         if square {
             let side = max(abs(dx), abs(dy))
             dx = dx < 0 ? -side : side
             dy = dy < 0 ? -side : side
+        }
+        if centered {
+            return CGRect(x: start.x - abs(dx), y: start.y - abs(dy), width: 2 * abs(dx), height: 2 * abs(dy))
         }
         return CGRect(x: min(start.x, start.x + dx), y: min(start.y, start.y + dy), width: abs(dx), height: abs(dy))
     }

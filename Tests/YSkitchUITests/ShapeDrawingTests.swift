@@ -70,6 +70,60 @@ struct ShapeDrawingTests {
             == .rectangle(CGRect(x: 60, y: 60, width: 40, height: 40)))
     }
 
+    private func flagsChanged(_ flags: NSEvent.ModifierFlags, in view: NSView) -> NSEvent {
+        NSEvent.keyEvent(
+            with: .flagsChanged, location: .zero, modifierFlags: flags, timestamp: 0,
+            windowNumber: view.window?.windowNumber ?? 0, context: nil, characters: "",
+            charactersIgnoringModifiers: "", isARepeat: false, keyCode: 58)!
+    }
+
+    @Test func optionDrawsFromCenter() {
+        let controller = makeController(tool: .ellipse)
+        defer { controller.close() }
+        drag(controller, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 130, y: 80), flags: .option)
+        #expect(controller.canvasView.model.document.annotations[0].shape
+            == .ellipse(CGRect(x: 70, y: 80, width: 60, height: 40)))
+    }
+
+    @Test func optionAndShiftDrawCenteredSquare() {
+        let controller = makeController(tool: .rectangle)
+        defer { controller.close() }
+        drag(controller, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 130, y: 80), flags: [.option, .shift])
+        #expect(controller.canvasView.model.document.annotations[0].shape
+            == .rectangle(CGRect(x: 70, y: 70, width: 60, height: 60)))
+    }
+
+    @Test func togglingOptionMidDragSwitchesMode() {
+        let controller = makeController(tool: .rectangle)
+        defer { controller.close() }
+        let view = controller.canvasView
+        let start = CGPoint(x: 100, y: 100), end = CGPoint(x: 130, y: 120)
+        view.mouseDown(with: event(.leftMouseDown, start, in: view))
+        view.mouseDragged(with: event(.leftMouseDragged, end, in: view))
+        func shape() -> AnnotationShape { view.model.document.annotations[0].shape }
+        #expect(shape() == .rectangle(CGRect(x: 100, y: 100, width: 30, height: 20)))
+        view.flagsChanged(with: flagsChanged(.option, in: view))
+        #expect(shape() == .rectangle(CGRect(x: 70, y: 80, width: 60, height: 40)))
+        view.flagsChanged(with: flagsChanged([], in: view))
+        #expect(shape() == .rectangle(CGRect(x: 100, y: 100, width: 30, height: 20)))
+        view.mouseUp(with: event(.leftMouseUp, end, in: view))
+    }
+
+    @Test func statusShowsCursorCornerAndOpposite() {
+        let controller = makeController(tool: .rectangle)
+        defer { controller.close() }
+        let view = controller.canvasView
+        view.mouseDown(with: event(.leftMouseDown, CGPoint(x: 100, y: 100), in: view, flags: .option))
+        view.mouseDragged(with: event(.leftMouseDragged, CGPoint(x: 130, y: 80), in: view, flags: .option))
+        guard case .box(_, let from, let to, _)? = view.statusGeometry else {
+            Issue.record("no status geometry")
+            return
+        }
+        #expect(from == CGPoint(x: 70, y: 120))
+        #expect(to == CGPoint(x: 130, y: 80))
+        view.mouseUp(with: event(.leftMouseUp, CGPoint(x: 130, y: 80), in: view))
+    }
+
     @Test func clickWithoutDragCreatesNothing() {
         let controller = makeController(tool: .rectangle)
         defer { controller.close() }

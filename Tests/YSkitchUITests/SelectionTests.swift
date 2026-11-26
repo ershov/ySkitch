@@ -128,6 +128,55 @@ struct SelectionTests {
         #expect(model.undoManager.undoActionName == "Resize")
     }
 
+    private func flagsChanged(_ flags: NSEvent.ModifierFlags, in view: NSView) -> NSEvent {
+        NSEvent.keyEvent(
+            with: .flagsChanged, location: .zero, modifierFlags: flags, timestamp: 0,
+            windowNumber: view.window?.windowNumber ?? 0, context: nil, characters: "",
+            charactersIgnoringModifiers: "", isARepeat: false, keyCode: 58)!
+    }
+
+    @Test func modifiersToggleResizeModesMidDrag() {
+        let a = rectangle(CGRect(x: 20, y: 20, width: 60, height: 40))
+        let controller = makeController([a])
+        defer { controller.close() }
+        controller.selection.select([a.id])
+        let view = controller.canvasView
+        view.mouseDown(with: event(.leftMouseDown, CGPoint(x: 80, y: 60), in: view))
+        view.mouseDragged(with: event(.leftMouseDragged, CGPoint(x: 140, y: 70), in: view))
+        func shape() -> AnnotationShape { controller.model.document.annotations[0].shape }
+        #expect(shape() == .rectangle(CGRect(x: 20, y: 20, width: 120, height: 50)))
+        view.flagsChanged(with: flagsChanged(.option, in: view))
+        #expect(shape() == .rectangle(CGRect(x: -40, y: 10, width: 180, height: 60)))
+        view.flagsChanged(with: flagsChanged([.option, .shift], in: view))
+        #expect(shape() == .rectangle(CGRect(x: -40, y: -20, width: 180, height: 120)))
+        view.flagsChanged(with: flagsChanged(.shift, in: view))
+        #expect(shape() == .rectangle(CGRect(x: 20, y: 20, width: 120, height: 80)))
+        view.flagsChanged(with: flagsChanged([], in: view))
+        #expect(shape() == .rectangle(CGRect(x: 20, y: 20, width: 120, height: 50)))
+        view.mouseUp(with: event(.leftMouseUp, CGPoint(x: 140, y: 70), in: view))
+    }
+
+    @Test func optionEndpointDragMirrorsOtherEnd() {
+        let start = CGPoint(x: 20, y: 20), end = CGPoint(x: 120, y: 20)
+        let line = Annotation(style: Self.style, shape: .line(start: start, end: end))
+        let controller = makeController([line])
+        defer { controller.close() }
+        controller.selection.select([line.id])
+        let view = controller.canvasView
+        view.mouseDown(with: event(.leftMouseDown, end, in: view))
+        view.mouseDragged(with: event(.leftMouseDragged, CGPoint(x: 150, y: 40), in: view, flags: .option))
+        #expect(controller.model.document.annotations[0].shape
+            == .line(start: CGPoint(x: -10, y: 0), end: CGPoint(x: 150, y: 40)))
+        view.flagsChanged(with: flagsChanged([.option, .shift], in: view))
+        guard case .line(let s, let e) = controller.model.document.annotations[0].shape else {
+            Issue.record("not a line")
+            return
+        }
+        #expect(abs((s.x + e.x) / 2 - 70) < 1e-9 && abs((s.y + e.y) / 2 - 20) < 1e-9)
+        #expect(abs(abs(e.x - s.x) - abs(e.y - s.y)) < 1e-9 || e.y == s.y || e.x == s.x)
+        view.mouseUp(with: event(.leftMouseUp, CGPoint(x: 150, y: 40), in: view))
+    }
+
     @Test func endpointDragMovesOnlyThatEnd() {
         let start = CGPoint(x: 20, y: 20), end = CGPoint(x: 120, y: 80)
         let line = Annotation(style: Self.style, shape: .line(start: start, end: end))

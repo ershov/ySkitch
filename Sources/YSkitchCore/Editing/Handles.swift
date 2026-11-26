@@ -76,15 +76,68 @@ public enum ResizeMath {
     public static let minimumSize: CGFloat = 1
 
     /// Moves the dragged corner or edge to `point`, keeping the opposite one fixed; normalized when flipped.
-    public static func bounds(original: CGRect, dragging handle: BoundsHandle, to point: CGPoint) -> CGRect {
+    /// With `centered`, the opposite side mirrors the move so the center stays fixed.
+    /// With `proportional`, the rect scales uniformly (no effect when either extent is zero).
+    public static func bounds(
+        original: CGRect, dragging handle: BoundsHandle, to point: CGPoint,
+        centered: Bool = false, proportional: Bool = false
+    ) -> CGRect {
         let (sx, sy) = handle.side
-        let (minX, maxX) = span(sx, original.minX, original.maxX, point.x)
-        let (minY, maxY) = span(sy, original.minY, original.maxY, point.y)
+        var px = point.x, py = point.y
+        var lateral: CGFloat?
+        if proportional, original.width > 0, original.height > 0 {
+            let fx = sx == 0 ? nil : factor(sx, original.minX, original.maxX, px, centered)
+            let fy = sy == 0 ? nil : factor(sy, original.minY, original.maxY, py, centered)
+            let scale = max(abs(fx ?? 0), abs(fy ?? 0))
+            if let fx {
+                px = moving(sx, original.minX, original.maxX, fx < 0 ? -scale : scale, centered)
+            }
+            if let fy {
+                py = moving(sy, original.minY, original.maxY, fy < 0 ? -scale : scale, centered)
+            }
+            if fx == nil || fy == nil { lateral = scale }
+        }
+        var (minX, maxX) = span(sx, original.minX, original.maxX, px, centered)
+        var (minY, maxY) = span(sy, original.minY, original.maxY, py, centered)
+        if let lateral {
+            if sx == 0 {
+                (minX, maxX) = centeredSpan(original.midX, original.width * lateral / 2)
+            } else {
+                (minY, maxY) = centeredSpan(original.midY, original.height * lateral / 2)
+            }
+        }
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
-    private static func span(_ side: Int, _ low: CGFloat, _ high: CGFloat, _ moving: CGFloat) -> (CGFloat, CGFloat) {
+    private static func anchor(_ side: Int, _ low: CGFloat, _ high: CGFloat, _ centered: Bool) -> CGFloat {
+        centered ? (low + high) / 2 : (side < 0 ? high : low)
+    }
+
+    /// Signed ratio of the new to the original distance between the anchor and the dragged side.
+    private static func factor(
+        _ side: Int, _ low: CGFloat, _ high: CGFloat, _ moving: CGFloat, _ centered: Bool
+    ) -> CGFloat {
+        let anchor = anchor(side, low, high, centered)
+        return (moving - anchor) / ((side < 0 ? low : high) - anchor)
+    }
+
+    private static func moving(
+        _ side: Int, _ low: CGFloat, _ high: CGFloat, _ factor: CGFloat, _ centered: Bool
+    ) -> CGFloat {
+        let anchor = anchor(side, low, high, centered)
+        return anchor + ((side < 0 ? low : high) - anchor) * factor
+    }
+
+    private static func centeredSpan(_ center: CGFloat, _ half: CGFloat) -> (CGFloat, CGFloat) {
+        let half = max(half, minimumSize / 2)
+        return (center - half, center + half)
+    }
+
+    private static func span(
+        _ side: Int, _ low: CGFloat, _ high: CGFloat, _ moving: CGFloat, _ centered: Bool
+    ) -> (CGFloat, CGFloat) {
         guard side != 0 else { return (low, high) }
+        if centered { return centeredSpan((low + high) / 2, abs(moving - (low + high) / 2)) }
         let fixed = side < 0 ? high : low
         var lo = min(fixed, moving), hi = max(fixed, moving)
         if hi - lo < minimumSize {

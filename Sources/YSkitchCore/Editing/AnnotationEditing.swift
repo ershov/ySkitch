@@ -78,9 +78,11 @@ extension Annotation {
         }
     }
 
-    /// A dot becomes a straight stroke from its location to `point`; other annotations are returned unchanged.
-    public func stretchedDot(to point: CGPoint) -> Annotation {
-        guard let start = dotLocation else { return self }
+    /// A dot becomes a straight stroke from its location to `point`, or with `centered` through it
+    /// to the mirrored point; other annotations are returned unchanged.
+    public func stretchedDot(to point: CGPoint, centered: Bool = false) -> Annotation {
+        guard let dot = dotLocation else { return self }
+        let start = centered ? CGPoint(x: 2 * dot.x - point.x, y: 2 * dot.y - point.y) : dot
         var result = self
         switch shape {
         case .pen: result.shape = .pen(points: [start, point])
@@ -101,6 +103,14 @@ extension Annotation {
         default: break
         }
         return result
+    }
+
+    /// Moves `which` to `point` and the other endpoint to its mirror around the current midpoint.
+    /// Lines and arrows only; other shapes are returned unchanged.
+    public func withEndpointMirrored(_ which: Endpoint, at point: CGPoint) -> Annotation {
+        guard let start = endpoint(.start), let end = endpoint(.end) else { return self }
+        let mirror = CGPoint(x: start.x + end.x - point.x, y: start.y + end.y - point.y)
+        return withEndpoint(which, at: point).withEndpoint(which == .start ? .end : .start, at: mirror)
     }
 
     public func endpoint(_ which: Endpoint) -> CGPoint? {
