@@ -68,6 +68,28 @@ extension Annotation {
         return result
     }
 
+    /// The location of a pen or highlighter stroke whose points all coincide.
+    public var dotLocation: CGPoint? {
+        switch shape {
+        case .pen(let points), .highlighter(let points):
+            guard let first = points.first, points.allSatisfy({ $0 == first }) else { return nil }
+            return first
+        default: return nil
+        }
+    }
+
+    /// A dot becomes a straight stroke from its location to `point`; other annotations are returned unchanged.
+    public func stretchedDot(to point: CGPoint) -> Annotation {
+        guard let start = dotLocation else { return self }
+        var result = self
+        switch shape {
+        case .pen: result.shape = .pen(points: [start, point])
+        case .highlighter: result.shape = .highlighter(points: [start, point])
+        default: break
+        }
+        return result
+    }
+
     /// Lines and arrows only; other shapes are returned unchanged.
     public func withEndpoint(_ which: Endpoint, at point: CGPoint) -> Annotation {
         var result = self

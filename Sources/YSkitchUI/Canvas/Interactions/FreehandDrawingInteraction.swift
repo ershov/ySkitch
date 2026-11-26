@@ -49,15 +49,19 @@ final class FreehandDrawingInteraction: CanvasInteraction {
         if point != last { append(point) }
         let start = points?.first ?? point
         let isDrag = points?.contains { ShapeGeometry.isDrag(from: start, to: $0) } ?? false
+        let id = annotationID
         points = nil
         annotationID = nil
-        if isDrag {
-            model.endGesture(tool == .pen ? "Draw" : "Highlight")
-            clickSelector.selection.clear()
-        } else {
+        if !isDrag {
+            guard var dot = model.document.annotations.first(where: { $0.id == id }) else { return }
             model.cancelGesture()
-            clickSelector.click(at: start)
+            if clickSelector.click(at: start) { return }
+            dot.shape = shape(points: [start, start])
+            model.beginGesture()
+            model.updateGesture { [dot] in $0.annotations.append(dot) }
         }
+        model.endGesture(tool == .pen ? "Draw" : "Highlight")
+        clickSelector.selection.clear()
     }
 
     func flagsChanged(_ event: NSEvent) {}

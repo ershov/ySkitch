@@ -31,12 +31,15 @@ struct ClickSelector {
     let magnification: () -> CGFloat
 
     /// Selects the topmost annotation at `point`, or clears the selection on empty space.
-    func click(at point: CGPoint) {
+    /// Returns whether an annotation was hit.
+    @discardableResult
+    func click(at point: CGPoint) -> Bool {
         let tolerance = SelectInteraction.hitTolerance / magnification()
         if let hit = AnnotationHitTest.topmost(in: selection.model.document, at: point, tolerance: tolerance) {
             selection.select([hit])
-        } else {
-            selection.clear()
+            return true
         }
+        selection.clear()
+        return false
     }
 }

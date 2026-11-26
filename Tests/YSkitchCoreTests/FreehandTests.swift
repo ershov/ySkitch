@@ -97,6 +97,33 @@ import Testing
         #expect(near(at(50, 50), 0xFF, 0x2E, 0x6C, tolerance: 8))
     }
 
+    @Test func twoCoincidentPointsRenderRoundDisc() {
+        let p = CGPoint(x: 50, y: 50)
+        for thickness: CGFloat in [10, 20] {
+            let at = render(.pen(points: [p, p]), thickness: thickness)
+            let r = thickness / 2
+            #expect(near(at(50, 50), 0xFF, 0x2E, 0x6C, tolerance: 8))
+            #expect(near(at(50 + r - 1.5, 50), 0xFF, 0x2E, 0x6C, tolerance: 8))
+            #expect(near(at(50, 50 - r + 1.5), 0xFF, 0x2E, 0x6C, tolerance: 8))
+            #expect(at(50 + r - 1, 50 + r - 1) == white)
+        }
+    }
+
+    @Test func penDotHasOutline() {
+        let p = CGPoint(x: 50, y: 50)
+        let at = render(.pen(points: [p, p]), black: true)
+        #expect(near(at(50, 50), 0xFF, 0x2E, 0x6C, tolerance: 8))
+        let ring = at(50, 50 - 5 - 1)
+        #expect(ring.r >= 230 && ring.g >= 230 && ring.b >= 230)
+    }
+
+    @Test func highlighterDotAtFortyPercent() {
+        let p = CGPoint(x: 50, y: 50)
+        let at = render(.highlighter(points: [p, p]))
+        #expect(near(at(50, 50), 255, 171, 196, tolerance: 4))
+        #expect(at(50 + 6.5, 50) == white)
+    }
+
     @Test func highlighterOverWhite() {
         let at = render(.highlighter(points: line(from: CGPoint(x: 20, y: 50), to: CGPoint(x: 80, y: 50))))
         #expect(near(at(50, 50), 255, 171, 196, tolerance: 4))

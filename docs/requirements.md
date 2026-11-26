@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.9 · 2026-11-26
+Status: final v1.10 · 2026-11-26
 
 ## 1. Purpose
 
@@ -98,8 +98,8 @@ All annotations are vector objects, editable until export (flattened only on out
 | T-4 | Rounded rectangle | Radius scales with thickness | U | 1 |
 | T-5 | Ellipse | Outline | U | 1 |
 | T-6 | Line | Straight segment | U | 1 |
-| T-7 | Freehand pen | Stroke smoothing | U | 1 |
-| T-8 | Highlighter | Semi-transparent (40 % opacity, normal blend), round tip. All strokes share one layer (IMG-6): overlaps, within a stroke or between strokes, highlight once; where colors overlap, the later stroke's color shows | U | 1 |
+| T-7 | Freehand pen | Stroke smoothing. A click without a drag on empty space draws a dot (ED-1) | U | 1 |
+| T-8 | Highlighter | Semi-transparent (40 % opacity, normal blend), round tip. All strokes share one layer (IMG-6): overlaps, within a stroke or between strokes, highlight once; where colors overlap, the later stroke's color shows. A click without a drag on empty space draws a dot (ED-1) | U | 1 |
 | T-9 | Crop | Handles; non-destructive (re-croppable); Enter applies, Esc cancels. The rect may extend beyond the image in any direction (white padding); the canvas grows while dragging to show it. Double-click proposes the current image (the canvas before the session). Status bar coordinates are relative to the current image (the canvas before the session). Discards image pixels outside the crop rect. Existing annotations stay as objects; parts outside the crop are hidden until the annotation is edited, which extends the canvas per IMG-4 | U | 1 |
 | T-10 | Pixelate | Region; destructive in output; thickness slider sets block size. Redacts image pixels only: annotations are never pixelated and always render above (IMG-6) | U | 1 |
 | T-11 | Blur | Alternative to pixelate; thickness slider sets radius | S | 2 |
@@ -128,8 +128,8 @@ All annotations are vector objects, editable until export (flattened only on out
 
 | ID | Req | Src | Stage |
 |---|---|---|---|
-| ED-1 | Select tool; click/marquee select; `⇧`-click multi-select, `⇧`-marquee adds. A marquee selects annotations whose drawn geometry it touches (stroke incl. thickness; filled area of arrows, text boxes and pixelate), not their bounds. In every tool, a right-drag or `⌃`-drag draws a marquee that adds the touched annotations to the selection (`⌥`: removes them); not during a crop session or text editing; a right-click or `⌃`-click without a drag does nothing. In every drawing tool except Text and Crop, a click without a drag creates nothing and selects the topmost annotation under the cursor (empty space clears the selection); the tool stays active | S | 1 |
-| ED-2 | Move, resize, endpoint drag (lines/arrows). In the drawing tools of ED-1, a press on a handle of the selected annotation or on a selected annotation (topmost under the cursor) moves/resizes it as in the Select tool; a press elsewhere draws | S | 1 |
+| ED-1 | Select tool; click/marquee select; `⇧`-click multi-select, `⇧`-marquee adds. A marquee selects annotations whose drawn geometry it touches (stroke incl. thickness; filled area of arrows, text boxes and pixelate), not their bounds. In every tool, a right-drag or `⌃`-drag draws a marquee that adds the touched annotations to the selection (`⌥`: removes them); not during a crop session or text editing; a right-click or `⌃`-click without a drag does nothing. In every drawing tool except Text and Crop, a click without a drag selects the topmost annotation under the cursor; on empty space it clears the selection and, with Pen and Highlighter, draws a dot (a stroke of two coincident points, diameter = thickness; sub-threshold jitter is discarded), with the other tools creates nothing; the tool stays active | S | 1 |
+| ED-2 | Move, resize, endpoint drag (lines/arrows). In the drawing tools of ED-1, a press on a handle of the selected annotation or on a selected annotation (topmost under the cursor) moves/resizes it as in the Select tool; a press elsewhere draws. A dot shows a single bottom-right handle; dragging it stretches the dot into a straight stroke from the dot to the cursor, after which it has the normal bounds handles | S | 1 |
 | ED-3 | Delete (`⌫`), duplicate (`⌘D`), copy/paste objects between windows; `⌘`-drag on an annotation (Select tool, or a selected annotation in a drawing tool) moves a copy of it (of the whole selection if it is selected) and selects the copy; `Esc` cancels; a `⌘`-click without a drag creates nothing; one undo step | S | 1 |
 | ED-4 | Nudge with arrow keys (1 pt; `⇧` = 20 pt); consecutive nudges are one undo step | S | 1 |
 | ED-5 | Z-order: bring to front / send to back | S | 2 |

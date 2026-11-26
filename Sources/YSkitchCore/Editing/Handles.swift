@@ -45,7 +45,7 @@ public struct Handle: Equatable, Sendable {
 }
 
 public enum Handles {
-    /// Endpoint handles for lines and arrows, none for text, bounds handles otherwise.
+    /// Endpoint handles for lines and arrows, none for text, a single handle for a dot, bounds handles otherwise.
     public static func handles(for annotation: Annotation) -> [Handle] {
         switch annotation.shape {
         case .line(let start, let end), .arrow(let start, let end):
@@ -53,6 +53,9 @@ public enum Handles {
         case .text:
             return []
         case .rectangle, .roundedRectangle, .ellipse, .pen, .highlighter, .pixelate:
+            if let dot = annotation.dotLocation {
+                return [Handle(kind: .bounds(.bottomRight), position: dot)]
+            }
             let rect = annotation.bounds
             return BoundsHandle.allCases.map { Handle(kind: .bounds($0), position: $0.position(in: rect)) }
         }

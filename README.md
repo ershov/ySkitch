@@ -30,7 +30,7 @@ Fast, keyboard-driven image annotation for macOS. Copy a screenshot, launch, mar
 | Crop | `C` | Non-destructive, re-croppable; can pad beyond the image with white; double-click selects the whole image; `↩` applies, `Esc` cancels |
 
 - Fixed 8-color Skitch palette; each tool remembers its own color and thickness.
-- Drawing tools edit too: click an annotation to select it, drag it or its handles to change it.
+- Drawing tools edit too: click an annotation to select it, drag it or its handles to change it. Pen and Highlighter draw a dot on a click in empty space.
 - Restyle several objects at once: a color or slider position applies to each selected object, in its own tool's range.
 - The canvas grows to fit annotations drawn past the image edge.
 - The status bar shows live geometry of the element being drawn or selected (position, size, length, angle, thickness).

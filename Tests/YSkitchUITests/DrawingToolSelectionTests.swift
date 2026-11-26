@@ -314,3 +314,84 @@ struct DrawingToolSelectionTests {
         #expect(text.canvasView.textEditor.isEditing)
     }
 }
+
+@MainActor
+struct DotDrawingTests {
+    private func makeController(tool: Tool, annotations: [Annotation] = []) -> DocumentWindowController {
+        var document = Document(blankSize: CGSize(width: 400, height: 300), scale: 1)
+        document.annotations = annotations
+        let settings = ToolSettings(preferences: Preferences(store: InMemoryPreferencesStore()))
+        let controller = DocumentWindowController(document: document, title: "Test", toolSettings: settings)
+        controller.canvasView.toolbar.activeTool = tool
+        return controller
+    }
+
+    private func event(_ type: NSEvent.EventType, _ point: CGPoint, in view: NSView) -> NSEvent {
+        NSEvent.mouseEvent(
+            with: type, location: view.convert(point, to: nil), modifierFlags: [], timestamp: 0,
+            windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: 1,
+            pressure: 1)!
+    }
+
+    private func click(_ controller: DocumentWindowController, _ point: CGPoint, jitter: CGPoint? = nil) {
+        let view = controller.canvasView
+        view.mouseDown(with: event(.leftMouseDown, point, in: view))
+        if let jitter { view.mouseDragged(with: event(.leftMouseDragged, jitter, in: view)) }
+        view.mouseUp(with: event(.leftMouseUp, jitter ?? point, in: view))
+    }
+
+    private func drag(_ controller: DocumentWindowController, from a: CGPoint, to b: CGPoint) {
+        let view = controller.canvasView
+        view.mouseDown(with: event(.leftMouseDown, a, in: view))
+        view.mouseDragged(with: event(.leftMouseDragged, b, in: view))
+        view.mouseUp(with: event(.leftMouseUp, b, in: view))
+    }
+
+    @Test func clickOnEmptySpaceCreatesDot() {
+        for (tool, name) in [(Tool.pen, "Draw"), (.highlighter, "Highlight")] {
+            let controller = makeController(tool: tool)
+            defer { controller.close() }
+            let model = controller.model
+            click(controller, CGPoint(x: 50, y: 60), jitter: CGPoint(x: 50.5, y: 60.5))
+            #expect(model.document.annotations.count == 1, "\(tool)")
+            let point = CGPoint(x: 50, y: 60)
+            let expected: AnnotationShape = tool == .pen
+                ? .pen(points: [point, point]) : .highlighter(points: [point, point])
+            #expect(model.document.annotations.first?.shape == expected, "\(tool)")
+            #expect(controller.selection.selectedIDs.isEmpty, "\(tool)")
+            #expect(model.undoManager.undoActionName == name, "\(tool)")
+            model.undoManager.undo()
+            #expect(model.document.annotations.isEmpty, "\(tool)")
+            #expect(!model.undoManager.canUndo, "\(tool)")
+        }
+    }
+
+    @Test func clickOnAnnotationSelectsWithoutDot() {
+        let target = Annotation(
+            style: AnnotationStyle(color: RGBAColor(hex: 0xFF2500), thickness: 4),
+            shape: .rectangle(CGRect(x: 100, y: 100, width: 80, height: 60)))
+        for tool in [Tool.pen, .highlighter] {
+            let controller = makeController(tool: tool, annotations: [target])
+            defer { controller.close() }
+            click(controller, CGPoint(x: 100, y: 130))
+            #expect(controller.model.document.annotations == [target], "\(tool)")
+            #expect(controller.selection.selectedIDs == [target.id], "\(tool)")
+            #expect(!controller.model.undoManager.canUndo, "\(tool)")
+        }
+    }
+
+    @Test func draggingDotHandleStretchesIntoLine() {
+        let controller = makeController(tool: .pen)
+        defer { controller.close() }
+        let model = controller.model
+        click(controller, CGPoint(x: 50, y: 60))
+        let id = model.document.annotations[0].id
+        click(controller, CGPoint(x: 50, y: 60))
+        #expect(controller.selection.selectedIDs == [id])
+        drag(controller, from: CGPoint(x: 50, y: 60), to: CGPoint(x: 120, y: 90))
+        #expect(model.document.annotations.count == 1)
+        #expect(model.document.annotations[0].shape
+            == .pen(points: [CGPoint(x: 50, y: 60), CGPoint(x: 120, y: 90)]))
+        #expect(model.undoManager.undoActionName == "Resize")
+    }
+}

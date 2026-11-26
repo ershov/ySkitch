@@ -297,16 +297,6 @@ struct FreehandDrawingTests {
         }
         #expect(model.undoManager.undoActionName == "Highlight")
     }
-
-    @Test func clickCreatesNothing() {
-        for tool in [Tool.pen, .highlighter] {
-            let controller = makeController(tool: tool)
-            defer { controller.close() }
-            stroke(controller, through: [CGPoint(x: 30, y: 30)])
-            #expect(controller.canvasView.model.document.annotations.isEmpty)
-            #expect(!controller.canvasView.model.undoManager.canUndo)
-        }
-    }
 }
 
 @MainActor
@@ -367,6 +357,10 @@ struct ClickSelectsTests {
             controller.selection.select([target.id])
             click(controller, CGPoint(x: 300, y: 250))
             #expect(controller.selection.isEmpty, "\(tool)")
+            if tool == .pen || tool == .highlighter {
+                #expect(controller.model.document.annotations.count == 2, "\(tool)")
+                continue
+            }
             #expect(controller.model.document.annotations == [target], "\(tool)")
             #expect(!controller.model.undoManager.canUndo, "\(tool)")
         }

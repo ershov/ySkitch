@@ -287,3 +287,57 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
         #expect(flipped == CGRect(x: 9, y: 20, width: 1, height: 40))
     }
 }
+
+@Suite struct DotTests {
+    let location = CGPoint(x: 30, y: 40)
+
+    private func dot(_ tool: Tool = .pen, thickness: CGFloat = 10) -> Annotation {
+        annotation(tool == .pen ? .pen(points: [location, location]) : .highlighter(points: [location, location]),
+                   thickness: thickness)
+    }
+
+    @Test func detectsDots() {
+        #expect(dot().dotLocation == location)
+        #expect(dot(.highlighter).dotLocation == location)
+        #expect(annotation(.pen(points: [location, CGPoint(x: 31, y: 40)])).dotLocation == nil)
+        #expect(annotation(.rectangle(CGRect(x: 1, y: 1, width: 0, height: 0))).dotLocation == nil)
+    }
+
+    @Test func hasSingleBottomRightHandle() {
+        #expect(Handles.handles(for: dot()) == [Handle(kind: .bounds(.bottomRight), position: location)])
+        #expect(Handles.handle(for: dot(), at: CGPoint(x: 32, y: 41), radius: 3)?.kind == .bounds(.bottomRight))
+    }
+
+    @Test func hitTestUsesThicknessAndTolerance() {
+        let a = dot()
+        #expect(AnnotationHitTest.contains(a, point: location, tolerance: 1))
+        #expect(AnnotationHitTest.contains(a, point: CGPoint(x: 35.5, y: 40), tolerance: 1))
+        #expect(!AnnotationHitTest.contains(a, point: CGPoint(x: 37, y: 40), tolerance: 1))
+        #expect(AnnotationHitTest.intersects(a, rect: CGRect(x: 33, y: 38, width: 10, height: 4)))
+        #expect(!AnnotationHitTest.intersects(a, rect: CGRect(x: 40, y: 38, width: 10, height: 4)))
+    }
+
+    @Test func stretchesIntoStraightStroke() {
+        let target = CGPoint(x: 10, y: 5)
+        #expect(dot().stretchedDot(to: target).shape == .pen(points: [location, target]))
+        #expect(dot(.highlighter).stretchedDot(to: target).shape == .highlighter(points: [location, target]))
+        let stroke = annotation(.pen(points: [location, CGPoint(x: 50, y: 50)]))
+        #expect(stroke.stretchedDot(to: target) == stroke)
+    }
+
+    @Test func stretchedDotHasBoundsHandles() {
+        let stretched = dot().stretchedDot(to: CGPoint(x: 60, y: 40))
+        #expect(Handles.handles(for: stretched).count == 8)
+    }
+
+    @Test func horizontalStrokeKeepsZeroAxis() {
+        let line = annotation(.pen(points: [CGPoint(x: 10, y: 20), CGPoint(x: 50, y: 20)]), thickness: 4)
+        let resized = line.resized(to: CGRect(x: 10, y: 20, width: 80, height: 0))
+        #expect(resized.shape == .pen(points: [CGPoint(x: 10, y: 20), CGPoint(x: 90, y: 20)]))
+    }
+
+    @Test func statusShowsZeroSize() {
+        let text = StatusText.geometry(StatusGeometry(dot()), canvasOrigin: .zero, scale: 1)
+        #expect(text == "Pen · (30, 40) → (30, 40) · 0×0 px · 10 pt")
+    }
+}

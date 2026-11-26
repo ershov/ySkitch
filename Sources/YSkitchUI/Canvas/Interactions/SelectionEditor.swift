@@ -90,6 +90,10 @@ final class SelectionEditor {
                 : originals.mapValues { edited($0.translated(by: delta)) }
             replace(moved)
         case .resize(let original, let handle):
+            if original.dotLocation != nil {
+                replace([original.id: edited(original.stretchedDot(to: last))])
+                return
+            }
             let bounds = ResizeMath.bounds(original: original.bounds, dragging: handle, to: last)
             replace([original.id: bounds == original.bounds ? original : edited(original.resized(to: bounds))])
         case .endpoint(let original, let which):
