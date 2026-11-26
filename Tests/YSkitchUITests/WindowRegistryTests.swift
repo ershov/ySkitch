@@ -65,6 +65,7 @@ struct WindowRegistryTests {
     @Test func reopenedWindowKeepsStoredMagnification() throws {
         let registry = WindowRegistry(toolSettings: .inMemory())
         let original = registry.show(Document(blankSize: CGSize(width: 8000, height: 8000), scale: 1), title: "Large")
+        original.scrollView.setFitMode(false)
         original.scrollView.magnification = 0.5
         try #require(original.window).close()
         let reopened = try #require(registry.reopenLastClosed())

@@ -69,14 +69,105 @@ struct CanvasTests {
         let scrollView = CanvasScrollView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         scrollView.scrollerStyle = .legacy
         scrollView.documentView = NSView(frame: NSRect(x: 0, y: 0, width: 2000, height: 1000))
-        scrollView.zoomToFit()
+        scrollView.setFitMode(true)
 
-        let expected = min(scrollView.frame.width / 2000, scrollView.frame.height / 1000)
+        let viewport = scrollView.frame.size
+        let margin = Zoom.fitMargin(viewport: viewport)
+        let expected = min((viewport.width - 2 * margin) / 2000, (viewport.height - 2 * margin) / 1000)
         #expect(abs(scrollView.magnification - expected) < 0.001)
 
         let clipBounds = scrollView.contentView.bounds
         #expect(abs(clipBounds.midX - 1000) < 1)
         #expect(abs(clipBounds.midY - 500) < 1)
+    }
+
+    @Test func fitModeRefitsOnViewportResize() {
+        let scrollView = CanvasScrollView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+        scrollView.documentView = NSView(frame: NSRect(x: 0, y: 0, width: 2000, height: 1000))
+        scrollView.setFitMode(true)
+        let before = scrollView.magnification
+        scrollView.setFrameSize(NSSize(width: 400, height: 300))
+        #expect(scrollView.magnification < before)
+        #expect(scrollView.isFitMode)
+    }
+
+    @Test func fitModeRefitsWhenCanvasSizeChanges() {
+        let controller = DocumentWindowController(
+            document: Document(blankSize: CGSize(width: 400, height: 300), scale: 1), title: "Test", toolSettings: .inMemory())
+        defer { controller.close() }
+        #expect(controller.scrollView.isFitMode)
+        controller.model.perform("Resize") { $0 = Document(blankSize: CGSize(width: 8000, height: 6000), scale: 1) }
+        #expect(controller.scrollView.magnification < 1)
+        controller.model.undoManager.undo()
+        #expect(controller.scrollView.magnification == 1)
+    }
+
+    @Test func fitModeWaitsForGestureToEnd() {
+        let controller = DocumentWindowController(
+            document: Document(blankSize: CGSize(width: 400, height: 300), scale: 1), title: "Test", toolSettings: .inMemory())
+        defer { controller.close() }
+        controller.model.beginGesture()
+        controller.model.updateGesture {
+            var annotation = Annotation(
+                style: AnnotationStyle(color: Palette.colors[0], thickness: 2),
+                shape: .rectangle(CGRect(x: 0, y: 0, width: 8000, height: 6000)))
+            annotation.extendsCanvas = true
+            $0.annotations.append(annotation)
+        }
+        #expect(controller.scrollView.magnification == 1)
+        controller.model.endGesture("Drag")
+        #expect(controller.scrollView.magnification < 1)
+    }
+
+    @Test func userZoomTurnsFitModeOff() {
+        let controller = DocumentWindowController(
+            document: Document(blankSize: CGSize(width: 400, height: 300), scale: 1), title: "Test", toolSettings: .inMemory())
+        defer { controller.close() }
+        controller.zoomIn(nil)
+        #expect(!controller.scrollView.isFitMode)
+        #expect(controller.statusBar.fitButton.state == .off)
+        controller.zoomToFit(nil)
+        #expect(controller.scrollView.isFitMode)
+        #expect(controller.statusBar.fitButton.state == .on)
+        controller.zoomToActualSize(nil)
+        #expect(!controller.scrollView.isFitMode)
+    }
+
+    @Test func zoomToFitTogglesAndKeepsZoomWhenOff() {
+        let size = CGSize(width: 8000, height: 6000)
+        let controller = DocumentWindowController(
+            document: Document(blankSize: size, scale: 1), title: "Test", toolSettings: .inMemory())
+        defer { controller.close() }
+        let fitted = controller.scrollView.magnification
+        #expect(fitted < 1)
+        controller.zoomToFit(nil)
+        #expect(!controller.scrollView.isFitMode)
+        #expect(controller.scrollView.magnification == fitted)
+        controller.zoomToFit(nil)
+        #expect(controller.scrollView.isFitMode)
+        #expect(controller.scrollView.magnification == fitted)
+    }
+
+    @Test func smartZoomTogglesBetweenFitAndActualSize() {
+        let controller = DocumentWindowController(
+            document: Document(blankSize: CGSize(width: 8000, height: 6000), scale: 1), title: "Test", toolSettings: .inMemory())
+        defer { controller.close() }
+        let scrollView = controller.scrollView
+        scrollView.toggleSmartZoom(at: .zero)
+        #expect(scrollView.magnification == 1)
+        #expect(!scrollView.isFitMode)
+        scrollView.toggleSmartZoom(at: .zero)
+        #expect(scrollView.isFitMode)
+        #expect(scrollView.magnification < 1)
+    }
+
+    @Test func newWindowStartsInFitMode() {
+        let controller = DocumentWindowController(
+            document: Document(blankSize: CGSize(width: 400, height: 300), scale: 1), title: "Test", toolSettings: .inMemory())
+        defer { controller.close() }
+        #expect(controller.scrollView.isFitMode)
+        #expect(controller.statusBar.fitButton.state == .on)
+        #expect(controller.scrollView.magnification == 1)
     }
 
     @Test func interpolation() {

@@ -23,10 +23,16 @@ public enum Zoom {
         steps.last { $0 < magnification - tolerance } ?? minimum
     }
 
-    /// Largest magnification showing all of `content` in `viewport`, never above 1.
-    public static func fit(content: CGSize, viewport: CGSize) -> CGFloat {
+    /// Empty space kept around the content when fitting: `WindowSizing.margin`, at most 10 % of the viewport's smaller side.
+    public static func fitMargin(viewport: CGSize) -> CGFloat {
+        min(WindowSizing.margin, 0.1 * min(viewport.width, viewport.height))
+    }
+
+    /// Largest magnification showing all of `content` plus `margin` on each side in `viewport`, never above 1.
+    public static func fit(content: CGSize, viewport: CGSize, margin: CGFloat) -> CGFloat {
         guard content.width > 0, content.height > 0 else { return 1 }
-        return max(min(viewport.width / content.width, viewport.height / content.height, 1), minimum)
+        let available = CGSize(width: viewport.width - 2 * margin, height: viewport.height - 2 * margin)
+        return max(min(available.width / content.width, available.height / content.height, 1), minimum)
     }
 
     /// `deltaY` is as reported by AppKit (after natural-scrolling inversion); `invertedFromDevice`

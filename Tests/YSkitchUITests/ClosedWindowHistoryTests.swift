@@ -19,7 +19,8 @@ struct ClosedWindowHistoryTests {
         let registry = WindowRegistry(toolSettings: .inMemory())
         let original = registry.openBlank()
         original.model.perform("Add") { $0.annotations.append(rectangle()) }
-        original.scrollView.magnification = 2
+        original.zoomToActualSize(nil)
+        original.zoomIn(nil)
         let model = original.model
         let document = model.document
         let title = original.defaultFileName
@@ -35,11 +36,23 @@ struct ClosedWindowHistoryTests {
         #expect(reopened.window?.title == title)
         #expect(reopened.defaultFileName == title)
         #expect(reopened.savedURL == nil)
-        #expect(reopened.scrollView.magnification == CGFloat(2))
+        #expect(reopened.scrollView.magnification == 1.5)
+        #expect(!reopened.scrollView.isFitMode)
         #expect(reopened.model.undoManager.canUndo)
         reopened.model.undoManager.undo()
         #expect(reopened.model.document.annotations.isEmpty)
         #expect(registry.closedWindows.isEmpty)
+    }
+
+    @Test func reopenRestoresFitMode() throws {
+        let registry = WindowRegistry(toolSettings: .inMemory())
+        let original = registry.openBlank()
+        #expect(original.scrollView.isFitMode)
+        try #require(original.window).close()
+        let reopened = try #require(registry.reopenLastClosed())
+        defer { reopened.close() }
+        #expect(reopened.scrollView.isFitMode)
+        #expect(reopened.statusBar.fitButton.state == .on)
     }
 
     @Test func reopenIsLastInFirstOut() throws {

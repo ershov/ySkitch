@@ -15,7 +15,7 @@ final class StatusBarView: NSView {
     let zoomLabel = NSTextField(labelWithString: "")
 
     var onActualSize: (() -> Void)?
-    var onFit: (() -> Void)?
+    var onFit: ((Bool) -> Void)?
     var onZoomOut: (() -> Void)?
     var onZoomIn: (() -> Void)?
     var onScaleChange: ((CGFloat) -> Void)?
@@ -35,8 +35,9 @@ final class StatusBarView: NSView {
         controls = NSStackView(views: [actualSizeButton, fitButton, zoomOutButton, zoomLabel, zoomInButton])
         super.init(frame: .zero)
 
-        configure(actualSizeButton, #selector(actualSize), "Actual Size (⌘0)")
-        configure(fitButton, #selector(fit), "Zoom to Fit (⌘9)")
+        configure(actualSizeButton, #selector(actualSize), "Actual Size (⌘0). Two-finger double-tap toggles Fit / 100 %")
+        configure(fitButton, #selector(fit), "Zoom to Fit (⌘9) — keeps fitting until you zoom. Two-finger double-tap toggles Fit / 100 %")
+        fitButton.setButtonType(.pushOnPushOff)
         configure(zoomOutButton, #selector(zoomOut), "Zoom Out (⌘-) · ⌘-scroll down")
         configure(zoomInButton, #selector(zoomIn), "Zoom In (⌘+) · ⌘-scroll up")
 
@@ -134,7 +135,7 @@ final class StatusBarView: NSView {
     }
 
     @objc private func actualSize() { onActualSize?() }
-    @objc private func fit() { onFit?() }
+    @objc private func fit() { onFit?(fitButton.state == .on) }
     @objc private func zoomOut() { onZoomOut?() }
     @objc private func zoomIn() { onZoomIn?() }
 

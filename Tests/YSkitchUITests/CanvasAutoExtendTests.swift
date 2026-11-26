@@ -97,6 +97,7 @@ struct CanvasAutoExtendTests {
         defer { controller.close() }
         let model = controller.model
         let scrollView = controller.scrollView
+        scrollView.setFitMode(false)
         scrollView.magnification = 2
         scrollView.tile()
         let clipView = scrollView.contentView

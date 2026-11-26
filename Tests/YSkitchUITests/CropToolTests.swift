@@ -13,6 +13,7 @@ struct CropToolTests {
         document.annotations = annotations
         let controller = DocumentWindowController(document: document, title: "Test", toolSettings: settings)
         controller.toolbar.activeTool = .arrow
+        controller.scrollView.setFitMode(false)
         return controller
     }
 

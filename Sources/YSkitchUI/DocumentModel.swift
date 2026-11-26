@@ -14,6 +14,7 @@ final class DocumentModel {
     }
 
     var onChange: (() -> Void)?
+    var onGestureEnd: (() -> Void)?
 
     private var gestureStart: Document?
     private var lastCoalesced: (key: String, document: Document)?
@@ -61,6 +62,7 @@ final class DocumentModel {
         fitted.updateCanvas(allowShrink: true)
         if fitted != document { document = fitted }
         if start != document { registerUndo(previous: start, actionName: actionName) }
+        onGestureEnd?()
     }
 
     func cancelGesture() {
@@ -69,6 +71,7 @@ final class DocumentModel {
         var restored = start
         restored.updateCanvas(allowShrink: true)
         document = restored
+        onGestureEnd?()
     }
 
     private func registerUndo(previous: Document, actionName: String) {

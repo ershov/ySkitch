@@ -60,7 +60,7 @@ Closed a window by mistake? `⇧⌘T` brings it back, annotations and undo histo
 | Keep aspect ratio | `⇧` while dragging a corner or edge handle |
 | Pan | hold `Space` and move the mouse |
 | Zoom in / out | `⌘+` / `⌘-`, `⌘`-scroll (up zooms in), pinch |
-| Actual size / fit | `⌘0` / `⌘9` |
+| Actual size / fit (toggle, keeps fitting until you zoom) | `⌘0` / `⌘9` |
 | Duplicate / delete | `⌘D` / `⌫` |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Copy image / save | `⇧⌘C` / `⌘S` |

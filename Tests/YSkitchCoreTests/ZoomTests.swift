@@ -30,19 +30,35 @@ import Testing
         #expect(Zoom.stepDown(from: 0.01) == Zoom.minimum)
     }
 
-    @Test func fitLargerContentShrinks() {
-        let fit = Zoom.fit(content: CGSize(width: 2000, height: 1000), viewport: CGSize(width: 1000, height: 800))
+    @Test func fitLeavesMarginOnEachSide() {
+        let fit = Zoom.fit(content: CGSize(width: 2000, height: 1000), viewport: CGSize(width: 1100, height: 800), margin: 50)
         #expect(fit == 0.5)
+        let tall = Zoom.fit(content: CGSize(width: 100, height: 1000), viewport: CGSize(width: 1000, height: 700), margin: 100)
+        #expect(tall == 0.5)
     }
 
     @Test func fitSmallerContentStaysAtActualSize() {
-        let fit = Zoom.fit(content: CGSize(width: 200, height: 100), viewport: CGSize(width: 1000, height: 800))
+        let fit = Zoom.fit(content: CGSize(width: 200, height: 100), viewport: CGSize(width: 1000, height: 800), margin: 60)
         #expect(fit == 1)
     }
 
     @Test func fitClampsToMinimum() {
-        let fit = Zoom.fit(content: CGSize(width: 100_000, height: 100), viewport: CGSize(width: 100, height: 100))
+        let fit = Zoom.fit(content: CGSize(width: 100_000, height: 100), viewport: CGSize(width: 100, height: 100), margin: 10)
         #expect(fit == Zoom.minimum)
+    }
+
+    @Test func fitMarginIsCappedByViewportSize() {
+        #expect(Zoom.fitMargin(viewport: CGSize(width: 2000, height: 1000)) == WindowSizing.margin)
+        #expect(Zoom.fitMargin(viewport: CGSize(width: 2000, height: 300)) == 30)
+        #expect(Zoom.fitMargin(viewport: CGSize(width: 250, height: 2000)) == 25)
+    }
+
+    @Test func windowSizedForDocumentFitsAtActualSize() {
+        let document = CGSize(width: 800, height: 500)
+        let viewport = WindowSizing.contentSize(
+            documentSize: document, chrome: .zero, visibleFrame: CGSize(width: 3000, height: 3000),
+            minimum: CGSize(width: 100, height: 100))
+        #expect(Zoom.fit(content: document, viewport: viewport, margin: Zoom.fitMargin(viewport: viewport)) == 1)
     }
 
     @Test func wheel() {

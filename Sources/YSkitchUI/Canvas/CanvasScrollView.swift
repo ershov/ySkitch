@@ -3,9 +3,17 @@ import YSkitchCore
 
 final class CanvasScrollView: NSScrollView {
     var onMagnificationChange: ((CGFloat) -> Void)?
+    var onFitModeChange: ((Bool) -> Void)?
     var onDrop: ((NSPasteboard) -> Bool)?
 
+    /// While on, the view keeps fitting the canvas; any user zoom turns it off.
+    private(set) var isFitMode = false {
+        didSet { if isFitMode != oldValue { onFitModeChange?(isFitMode) } }
+    }
+
     private var magnificationObservation: NSKeyValueObservation?
+    private var isFitting = false
+    private var fitted: (content: NSSize, viewport: NSSize)?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -58,16 +66,37 @@ final class CanvasScrollView: NSScrollView {
     }
 
     private var fitMagnification: CGFloat {
-        Zoom.fit(content: documentView?.frame.size ?? .zero, viewport: fitViewportSize)
+        let viewport = fitViewportSize
+        return Zoom.fit(
+            content: documentView?.frame.size ?? .zero, viewport: viewport, margin: Zoom.fitMargin(viewport: viewport))
+    }
+
+    override func tile() {
+        super.tile()
+        if isFitMode, !isFitting, fitted?.viewport != fitViewportSize { fit() }
+    }
+
+    override func magnify(with event: NSEvent) {
+        isFitMode = false
+        super.magnify(with: event)
     }
 
     override func smartMagnify(with event: NSEvent) {
-        let target = abs(magnification - 1) < 0.001 ? fitMagnification : 1
-        setMagnification(target, centeredAt: contentView.convert(event.locationInWindow, from: nil))
+        toggleSmartZoom(at: contentView.convert(event.locationInWindow, from: nil))
+    }
+
+    func toggleSmartZoom(at point: NSPoint) {
+        if abs(magnification - 1) < 0.001 {
+            setFitMode(true)
+        } else {
+            isFitMode = false
+            setMagnification(1, centeredAt: point)
+        }
     }
 
     override func scrollWheel(with event: NSEvent) {
         guard event.modifierFlags.contains(.command) else { return super.scrollWheel(with: event) }
+        isFitMode = false
         // Line-based wheels report ~1 per notch; treat a line as 10 points.
         let deltaY = event.hasPreciseScrollingDeltas ? event.scrollingDeltaY : event.scrollingDeltaY * 10
         setMagnification(
@@ -80,20 +109,41 @@ final class CanvasScrollView: NSScrollView {
     }
 
     func zoomIn() {
+        isFitMode = false
         setMagnification(Zoom.stepUp(from: magnification), centeredAt: visibleCenter)
     }
 
     func zoomOut() {
+        isFitMode = false
         setMagnification(Zoom.stepDown(from: magnification), centeredAt: visibleCenter)
     }
 
     func zoomToActualSize() {
+        isFitMode = false
         setMagnification(1, centeredAt: visibleCenter)
     }
 
-    func zoomToFit() {
+    /// Turning it on fits immediately; turning it off keeps the current zoom.
+    func setFitMode(_ on: Bool) {
+        isFitMode = on
+        if on { fit() }
+    }
+
+    /// Re-fits after a viewport or canvas size change.
+    func refitIfNeeded() {
+        guard isFitMode, !isFitting,
+            fitted?.content != documentView?.frame.size || fitted?.viewport != fitViewportSize
+        else { return }
+        fit()
+    }
+
+    private func fit() {
+        guard !isFitting else { return }
+        isFitting = true
+        defer { isFitting = false }
         magnification = fitMagnification
         tile()
+        fitted = (documentView?.frame.size ?? .zero, fitViewportSize)
         guard let documentFrame = documentView?.frame else { return }
         var bounds = contentView.bounds
         bounds.origin = NSPoint(

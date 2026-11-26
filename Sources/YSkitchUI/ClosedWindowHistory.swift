@@ -13,6 +13,7 @@ final class ClosedWindowHistory {
         let frame: NSRect
         let magnification: CGFloat
         let scrollOrigin: NSPoint
+        let isFitMode: Bool
         let tool: Tool
 
         @MainActor init(_ controller: DocumentWindowController) {
@@ -22,6 +23,7 @@ final class ClosedWindowHistory {
             frame = controller.window?.frame ?? .zero
             magnification = controller.scrollView.magnification
             scrollOrigin = controller.scrollView.contentView.bounds.origin
+            isFitMode = controller.scrollView.isFitMode
             let toolbar = controller.toolbar
             // A cancelled crop session leaves the crop tool selected; restore the tool used before it.
             tool = toolbar.activeTool == .crop ? toolbar.previousTool : toolbar.activeTool

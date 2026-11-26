@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.13 · 2026-11-26
+Status: final v1.14 · 2026-11-26
 
 ## 1. Purpose
 
@@ -70,7 +70,7 @@ No editable native format: output is always a flat regular image.
 | WIN-2 | Standard window management: Window menu, `` ⌘` `` cycling, `⌘W` close | S | 1 |
 | WIN-3 | No "unsaved changes" prompt. On close, window state (image + annotation objects + view + undo history) is kept **in memory only** | U | 1 |
 | WIN-4 | `⌘⇧T` reopens the most recently closed window (LIFO stack; repeatable). Capacity is the named constant `ClosedWindowHistory.capacity = 20`; oldest entries are dropped beyond it. History is lost when the app quits | U | 1 |
-| WIN-5 | New window sized to fit image plus a 60 pt margin on each side (`WindowSizing.margin`), capped to screen; opens at 100 % when it fits, else Fit (Fit itself adds no margin) | S | 1 |
+| WIN-5 | New window sized to fit image plus a 60 pt margin on each side (`WindowSizing.margin`), capped to screen; opens in Fit mode (VIEW-2), i.e. at 100 % when the image fits, else smaller | S | 1 |
 | WIN-6 | Standard macOS app lifecycle: app keeps running with no windows; no special handling | U | 1 |
 
 Window state is never written to disk, so unredacted originals of closed windows don't outlive the process.
@@ -79,8 +79,9 @@ Window state is never written to disk, so unredacted originals of closed windows
 
 | ID | Req | Src | Stage |
 |---|---|---|---|
-| VIEW-1 | Trackpad: two-finger pinch zooms around the gesture point; two-finger swipe pans; smart-zoom (two-finger double-tap) toggles Fit/100% | U | 1 |
-| VIEW-2 | Keyboard/mouse zoom: `⌘+`/`⌘-`, `⌘`+scroll wheel (up zooms in, down zooms out, regardless of the natural-scrolling setting; like `⌃`-scroll in macOS Accessibility Zoom), Fit (`⌘9`), Actual size (`⌘0`); holding space pans with mouse movement, no click needed (space acts like a mouse button) | U | 1 |
+| VIEW-1 | Trackpad: two-finger pinch zooms around the gesture point; two-finger swipe pans; smart-zoom (two-finger double-tap): not at 100 % → 100 % (Fit mode off); at 100 % → Fit mode on. Pinch turns Fit mode off | U | 1 |
+| VIEW-2 | Keyboard/mouse zoom: `⌘+`/`⌘-`, `⌘`+scroll wheel (up zooms in, down zooms out, regardless of the natural-scrolling setting; like `⌃`-scroll in macOS Accessibility Zoom), Actual size (`⌘0`), Fit (`⌘9`); holding space pans with mouse movement, no click needed (space acts like a mouse button) | U | 1 |
+| VIEW-2a | Fit is a persistent mode toggled by `⌘9` and the status-bar `Fit` button (two-state; its pressed state is the only indicator). On: zooms to fit immediately and keeps the canvas fitted and centered on window/viewport resize and on canvas size change (IMG-4, crop, IN-8, IMG-7, undo/redo); not live during a drag or crop session, re-fit on commit. Off (button/`⌘9` again): zoom stays. Any user zoom (pinch, `⌘+`/`⌘-`, `⌘`-scroll, Actual size, 1:1, smart zoom to 100 %) turns it off; scrolling/panning does not. Fit never exceeds 100 % and leaves a margin of `min(WindowSizing.margin, 10 % of the viewport's smaller side)` on each side. New windows start in Fit mode; reopened windows (WIN-4) restore the mode | U | 1 |
 | VIEW-3 | Correct HiDPI rendering; at 100% one image pixel maps to one device pixel for images whose scale matches the screen | U | 1 |
 | VIEW-4 | Manually extend canvas (add margin) | S | 3 |
 | VIEW-5 | Rotate 90° / flip | S | 3 |
@@ -239,7 +240,7 @@ Exit codes: 0 success · 1 file problems or the app didn't respond · 2 usage er
   Later tools join the nearest group: step markers, stamps, callouts → after Text; arrow variants → shapes group.
 - **Color column**: 8 palette swatches, keys `1`–`8`, selected one ringed (`◉`); `+` (custom color) comes in Stage 2. Swatch: colored circle with a 4 pt white outline and a thin dark outer edge.
 - **Thickness slider**: below the swatches after a spacer, centered in the whole color column; its bottom is level with the last tool row, the spacer absorbs the difference. No `[` / `]` labels. See §6.2.
-- **Status bar**: left — image size (`2880×1800 px · 1440×900 pt`) or element info (below), then the output scale pop-up (IMG-7): borderless, label font, `@1x` / `@2x` / `@3x` with the current one checked; always visible, the label truncates before it; center — drag handle (OUT-4); while the thickness slider is dragged, left shows its value instead (§6.2); right, in order — `1:1` (actual size, `⌘0`), `Fit` (`⌘9`), zoom `−` / percentage / `+`.
+- **Status bar**: left — image size (`2880×1800 px · 1440×900 pt`) or element info (below), then the output scale pop-up (IMG-7): borderless, label font, `@1x` / `@2x` / `@3x` with the current one checked; always visible, the label truncates before it; center — drag handle (OUT-4); while the thickness slider is dragged, left shows its value instead (§6.2); right, in order — `1:1` (actual size, `⌘0`), `Fit` (`⌘9`, two-state toggle), zoom `−` / percentage / `+`.
   - **Element info** replaces the image size while an element is drawn, moved, resized, nudged or selected, and while a text is edited, a crop session is open or a selection marquee is dragged; it updates live. Priority: element being drawn (or crop rect / marquee), else edited text, else selection, else image size.
   - Fields are `·` separated integers; `px` = image pixels:
     - Arrow, Line: `Arrow · (x1, y1) → (x2, y2) · L px · θ° · T pt` — start (arrow tail) → end (head), length, angle (0° = pointing right, counter-clockwise positive on screen, −179…180), stroke width.

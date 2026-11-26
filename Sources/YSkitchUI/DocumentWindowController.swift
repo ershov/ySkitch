@@ -77,8 +77,10 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
             guard let self else { return }
             selection.documentDidChange()
             canvasView.documentDidChange()
+            if !model.isInGesture { scrollView.refitIfNeeded() }
             updateStatusInfo()
         }
+        model.onGestureEnd = { [weak scrollView] in scrollView?.refitIfNeeded() }
         selection.onChange = { [weak self] in
             self?.canvasView.needsDisplay = true
             self?.updateStatusInfo()
@@ -86,7 +88,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         toolbar.onThicknessDragChange = { [weak self] in self?.updateStatusInfo() }
         canvasView.onStatusChange = { [weak self] in self?.updateStatusInfo() }
         statusBar.onActualSize = { [weak scrollView] in scrollView?.zoomToActualSize() }
-        statusBar.onFit = { [weak scrollView] in scrollView?.zoomToFit() }
+        statusBar.onFit = { [weak scrollView] in scrollView?.setFitMode($0) }
         statusBar.onZoomOut = { [weak scrollView] in scrollView?.zoomOut() }
         statusBar.onZoomIn = { [weak scrollView] in scrollView?.zoomIn() }
         statusBar.onScaleChange = { [weak self] in
@@ -95,6 +97,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
             self?.changeScale(to: $0)
         }
         scrollView.onMagnificationChange = { [weak statusBar] in statusBar?.update(magnification: $0) }
+        scrollView.onFitModeChange = { [weak statusBar] in statusBar?.fitButton.state = $0 ? .on : .off }
         statusBar.dragHandle.imageProvider = { [weak self] in self?.dragPayload() }
         canvasView.onCropSessionChange = { [weak self] in
             self?.statusBar.dragHandle.isEnabled = !$0
@@ -103,7 +106,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         updateStatusInfo()
         window.contentView?.layoutSubtreeIfNeeded()
         refreshMinimumSize()
-        scrollView.zoomToFit()
+        scrollView.setFitMode(true)
         statusBar.update(magnification: scrollView.magnification)
     }
 
@@ -159,7 +162,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     @objc func zoomIn(_ sender: Any?) { scrollView.zoomIn() }
     @objc func zoomOut(_ sender: Any?) { scrollView.zoomOut() }
     @objc func zoomToActualSize(_ sender: Any?) { scrollView.zoomToActualSize() }
-    @objc func zoomToFit(_ sender: Any?) { scrollView.zoomToFit() }
+    @objc func zoomToFit(_ sender: Any?) { scrollView.setFitMode(!scrollView.isFitMode) }
 
     func copyImage(to pasteboard: NSPasteboard) {
         let document = model.document
@@ -234,7 +237,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
             actionName: "Paste Image")
         undoManager.setActionName("Paste Image")
         undoManager.endUndoGrouping()
-        scrollView.zoomToFit()
+        scrollView.setFitMode(true)
         return true
     }
 

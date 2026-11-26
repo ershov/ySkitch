@@ -101,7 +101,7 @@ final class WindowRegistry {
         controller.showWindow(nil)
         // The window frame is constrained to the screen only when shown.
         window.contentView?.layoutSubtreeIfNeeded()
-        controller.scrollView.zoomToFit()
+        controller.scrollView.setFitMode(true)
         return controller
     }
 
@@ -140,6 +140,7 @@ final class WindowRegistry {
         scrollView.magnification = entry.magnification
         scrollView.contentView.scroll(to: entry.scrollOrigin)
         scrollView.reflectScrolledClipView(scrollView.contentView)
+        scrollView.setFitMode(entry.isFitMode)
         if controller.toolbar.activeTool != entry.tool { controller.toolbar.activeTool = entry.tool }
         scrollView.onDrop = { [weak self] in self?.openDropped($0) ?? false }
         register(controller, window: window)
