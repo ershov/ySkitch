@@ -44,21 +44,41 @@ public struct Handle: Equatable, Sendable {
     }
 }
 
-public enum Handles {
-    /// Endpoint handles for lines and arrows, none for text, a single handle for a dot, bounds handles otherwise.
-    public static func handles(for annotation: Annotation) -> [Handle] {
-        switch annotation.shape {
-        case .line(let start, let end), .arrow(let start, let end):
-            return [Handle(kind: .endpoint(.start), position: start), Handle(kind: .endpoint(.end), position: end)]
-        case .text:
-            return []
-        case .rectangle, .roundedRectangle, .ellipse, .pen, .highlighter, .pixelate:
-            if let dot = annotation.dotLocation {
-                return [Handle(kind: .bounds(.bottomRight), position: dot)]
-            }
-            let rect = annotation.bounds
-            return BoundsHandle.allCases.map { Handle(kind: .bounds($0), position: $0.position(in: rect)) }
+/// What the canvas draws over a selected annotation.
+public enum SelectionIndicator: Equatable, Sendable {
+    case segment(start: CGPoint, end: CGPoint)
+    case bounds(CGRect)
+    /// Bounds plus the stroke's centerline.
+    case boundsAndStroke(CGRect, points: [CGPoint])
+
+    public init(for annotation: Annotation) {
+        if let start = annotation.endpoint(.start), let end = annotation.endpoint(.end) {
+            self = .segment(start: start, end: end)
+            return
         }
+        switch annotation.shape {
+        case .pen(let points), .highlighter(let points):
+            self = annotation.dotLocation == nil
+                ? .boundsAndStroke(annotation.bounds, points: points) : .bounds(annotation.bounds)
+        default:
+            self = .bounds(annotation.bounds)
+        }
+    }
+}
+
+public enum Handles {
+    /// Endpoint handles for lines, arrows and straight strokes, none for text, a single handle for a dot,
+    /// bounds handles otherwise.
+    public static func handles(for annotation: Annotation) -> [Handle] {
+        if case .text = annotation.shape { return [] }
+        if let start = annotation.endpoint(.start), let end = annotation.endpoint(.end) {
+            return [Handle(kind: .endpoint(.start), position: start), Handle(kind: .endpoint(.end), position: end)]
+        }
+        if let dot = annotation.dotLocation {
+            return [Handle(kind: .bounds(.bottomRight), position: dot)]
+        }
+        let rect = annotation.bounds
+        return BoundsHandle.allCases.map { Handle(kind: .bounds($0), position: $0.position(in: rect)) }
     }
 
     /// The handle whose square of half-side `radius` contains `point`, nearest first.

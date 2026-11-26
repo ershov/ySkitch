@@ -197,7 +197,16 @@ final class CanvasView: NSView, NSMenuItemValidation {
         context.setLineWidth(pixel)
         context.setStrokeColor(accent)
         for annotation in selected {
-            context.stroke(annotation.bounds.insetBy(dx: -pixel / 2, dy: -pixel / 2))
+            switch SelectionIndicator(for: annotation) {
+            case .segment(let start, let end):
+                context.strokeLineSegments(between: [start, end])
+            case .bounds(let rect):
+                context.stroke(rect.insetBy(dx: -pixel / 2, dy: -pixel / 2))
+            case .boundsAndStroke(let rect, let points):
+                context.stroke(rect.insetBy(dx: -pixel / 2, dy: -pixel / 2))
+                context.addPath(StrokeSmoothing.path(points))
+                context.strokePath()
+            }
         }
         if selected.count == 1, let annotation = selected.first {
             context.setFillColor(CGColor(gray: 1, alpha: 1))

@@ -117,6 +117,22 @@ struct DrawingToolSelectionTests {
         #expect(controller.model.undoManager.undoActionName == "Move")
     }
 
+    @Test func endpointDragMovesStraightStrokeEndpoint() {
+        for tool in [Tool.pen, .highlighter] {
+            let shape: ([CGPoint]) -> AnnotationShape = { tool == .pen ? .pen(points: $0) : .highlighter(points: $0) }
+            let start = CGPoint(x: 100, y: 100), end = CGPoint(x: 200, y: 100)
+            let stroke = Annotation(style: Self.style, shape: shape([start, end]))
+            let controller = makeController(tool: tool, annotations: [stroke])
+            defer { controller.close() }
+            click(controller, CGPoint(x: 150, y: 100))
+            #expect(controller.selection.selectedIDs == [stroke.id], "\(tool)")
+            drag(controller, from: end, to: CGPoint(x: 210, y: 150), flags: .shift)
+            let snapped = Geometry.constrainTo45Degrees(from: start, to: CGPoint(x: 210, y: 150))
+            #expect(controller.model.document.annotations[0].shape == shape([start, snapped]), "\(tool)")
+            #expect(controller.model.undoManager.undoActionName == "Move Endpoint", "\(tool)")
+        }
+    }
+
     @Test func endpointDragMovesEndpoint() {
         let line = Annotation(
             style: Self.style, shape: .line(start: CGPoint(x: 50, y: 50), end: CGPoint(x: 150, y: 50)))

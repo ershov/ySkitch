@@ -92,7 +92,15 @@ extension Annotation {
         return result
     }
 
-    /// Lines and arrows only; other shapes are returned unchanged.
+    /// A pen or highlighter stroke of exactly two distinct points; it behaves like a line.
+    public var isStraightStroke: Bool {
+        switch shape {
+        case .pen(let points), .highlighter(let points): points.count == 2 && dotLocation == nil
+        default: false
+        }
+    }
+
+    /// Lines, arrows and straight strokes only; other shapes are returned unchanged.
     public func withEndpoint(_ which: Endpoint, at point: CGPoint) -> Annotation {
         var result = self
         switch (shape, which) {
@@ -100,13 +108,19 @@ extension Annotation {
         case (.line(let start, _), .end): result.shape = .line(start: start, end: point)
         case (.arrow(_, let head), .start): result.shape = .arrow(tail: point, head: head)
         case (.arrow(let tail, _), .end): result.shape = .arrow(tail: tail, head: point)
+        case (.pen(var points), _) where isStraightStroke:
+            points[which == .start ? 0 : 1] = point
+            result.shape = .pen(points: points)
+        case (.highlighter(var points), _) where isStraightStroke:
+            points[which == .start ? 0 : 1] = point
+            result.shape = .highlighter(points: points)
         default: break
         }
         return result
     }
 
     /// Moves `which` to `point` and the other endpoint to its mirror around the current midpoint.
-    /// Lines and arrows only; other shapes are returned unchanged.
+    /// Lines, arrows and straight strokes only; other shapes are returned unchanged.
     public func withEndpointMirrored(_ which: Endpoint, at point: CGPoint) -> Annotation {
         guard let start = endpoint(.start), let end = endpoint(.end) else { return self }
         let mirror = CGPoint(x: start.x + end.x - point.x, y: start.y + end.y - point.y)
@@ -116,6 +130,7 @@ extension Annotation {
     public func endpoint(_ which: Endpoint) -> CGPoint? {
         switch shape {
         case .line(let start, let end), .arrow(let start, let end): which == .start ? start : end
+        case .pen(let points), .highlighter(let points): isStraightStroke ? points[which == .start ? 0 : 1] : nil
         default: nil
         }
     }

@@ -226,7 +226,8 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
         let p = CGPoint(x: 1, y: 2), q = CGPoint(x: 3, y: 4)
         let cases: [(AnnotationShape, Int)] = [
             (.rectangle(rect), 8), (.roundedRectangle(rect), 8), (.ellipse(rect), 8), (.pixelate(rect), 8),
-            (.pen(points: [p, q]), 8), (.highlighter(points: [p, q]), 8),
+            (.pen(points: [p, q]), 2), (.highlighter(points: [p, q]), 2),
+            (.pen(points: [p, q, rect.origin]), 8), (.highlighter(points: [p, q, rect.origin]), 8),
             (.line(start: p, end: q), 2), (.arrow(tail: p, head: q), 2),
             (.text(TextContent(origin: p, string: "A")), 0),
         ]
@@ -420,9 +421,9 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
         #expect(stroke.stretchedDot(to: target) == stroke)
     }
 
-    @Test func stretchedDotHasBoundsHandles() {
+    @Test func stretchedDotHasEndpointHandles() {
         let stretched = dot().stretchedDot(to: CGPoint(x: 60, y: 40))
-        #expect(Handles.handles(for: stretched).count == 8)
+        #expect(Handles.handles(for: stretched).map(\.kind) == [.endpoint(.start), .endpoint(.end)])
     }
 
     @Test func horizontalStrokeKeepsZeroAxis() {
@@ -434,5 +435,47 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
     @Test func statusShowsZeroSize() {
         let text = StatusText.geometry(StatusGeometry(dot()), canvasOrigin: .zero, scale: 1)
         #expect(text == "Pen · (30, 40) → (30, 40) · 0×0 px · 10 pt")
+    }
+}
+
+@Suite struct StraightStrokeTests {
+    let a = CGPoint(x: 10, y: 20), b = CGPoint(x: 50, y: 30), c = CGPoint(x: 90, y: 5)
+
+    @Test func indicatorKindPerShape() {
+        let rect = CGRect(x: 1, y: 2, width: 30, height: 40)
+        #expect(SelectionIndicator(for: annotation(.line(start: a, end: b))) == .segment(start: a, end: b))
+        #expect(SelectionIndicator(for: annotation(.arrow(tail: a, head: b))) == .segment(start: a, end: b))
+        #expect(SelectionIndicator(for: annotation(.pen(points: [a, b]))) == .segment(start: a, end: b))
+        #expect(SelectionIndicator(for: annotation(.highlighter(points: [a, b]))) == .segment(start: a, end: b))
+        let freehand = annotation(.pen(points: [a, b, c]))
+        #expect(SelectionIndicator(for: freehand) == .boundsAndStroke(freehand.bounds, points: [a, b, c]))
+        let dot = annotation(.pen(points: [a, a]))
+        #expect(SelectionIndicator(for: dot) == .bounds(dot.bounds))
+        #expect(SelectionIndicator(for: annotation(.rectangle(rect))) == .bounds(rect))
+        let text = annotation(.text(TextContent(origin: a, string: "A")))
+        #expect(SelectionIndicator(for: text) == .bounds(text.bounds))
+    }
+
+    @Test func endpointsAndEditing() {
+        for make: ([CGPoint]) -> AnnotationShape in [{ .pen(points: $0) }, { .highlighter(points: $0) }] {
+            let stroke = annotation(make([a, b]))
+            #expect(stroke.isStraightStroke)
+            #expect(stroke.endpoint(.start) == a && stroke.endpoint(.end) == b)
+            #expect(stroke.withEndpoint(.start, at: c).shape == make([c, b]))
+            #expect(stroke.withEndpoint(.end, at: c).shape == make([a, c]))
+            let mirrored = stroke.withEndpointMirrored(.end, at: c)
+            #expect(mirrored.shape == make([CGPoint(x: -30, y: 45), c]))
+        }
+    }
+
+    @Test func freehandAndDotAreNotStraight() {
+        let freehand = annotation(.pen(points: [a, b, c]))
+        #expect(!freehand.isStraightStroke)
+        #expect(freehand.endpoint(.start) == nil)
+        #expect(freehand.withEndpoint(.start, at: c) == freehand)
+        #expect(Handles.handles(for: freehand).count == 8)
+        let dot = annotation(.pen(points: [a, a]))
+        #expect(!dot.isStraightStroke)
+        #expect(dot.endpoint(.end) == nil)
     }
 }
