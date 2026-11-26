@@ -23,6 +23,7 @@ final class StatusBarView: NSView {
 
     private let separator = NSView()
     private let controls: NSStackView
+    private let infoRow: NSStackView
     private static let inset: CGFloat = 14
     private static let handleGap: CGFloat = 8
     private static let labelGap: CGFloat = 4
@@ -36,6 +37,7 @@ final class StatusBarView: NSView {
         zoomOutButton = NSButton(title: "−", target: nil, action: nil)
         zoomInButton = NSButton(title: "+", target: nil, action: nil)
         controls = NSStackView(views: [actualSizeButton, fitButton, zoomOutButton, zoomButton, zoomInButton])
+        infoRow = NSStackView(views: [infoLabel, scaleButton])
         super.init(frame: .zero)
 
         configure(actualSizeButton, #selector(actualSize), "Actual Size (⌘0). Two-finger double-tap toggles Fit / 100 %")
@@ -61,7 +63,9 @@ final class StatusBarView: NSView {
         zoomButton.onPress = { [weak self] in self?.openZoomSlider($0) }
 
         controls.spacing = 6
-        for view in [infoLabel, scaleButton, dragHandle, controls, separator] {
+        infoRow.spacing = Self.labelGap
+        infoRow.alignment = .firstBaseline
+        for view in [infoRow, dragHandle, controls, separator] {
             view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(view)
         }
@@ -74,13 +78,11 @@ final class StatusBarView: NSView {
             separator.leadingAnchor.constraint(equalTo: leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: trailingAnchor),
             separator.heightAnchor.constraint(equalToConstant: 1),
-            infoLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.inset),
-            infoLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+            infoRow.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.inset),
+            infoRow.centerYAnchor.constraint(equalTo: centerYAnchor),
+            infoRow.trailingAnchor.constraint(lessThanOrEqualTo: dragHandle.leadingAnchor, constant: -Self.handleGap),
             dragHandle.centerXAnchor.constraint(equalTo: centerXAnchor),
             dragHandle.centerYAnchor.constraint(equalTo: centerYAnchor),
-            scaleButton.leadingAnchor.constraint(equalTo: infoLabel.trailingAnchor, constant: Self.labelGap),
-            scaleButton.firstBaselineAnchor.constraint(equalTo: infoLabel.firstBaselineAnchor),
-            scaleButton.trailingAnchor.constraint(lessThanOrEqualTo: dragHandle.leadingAnchor, constant: -Self.handleGap),
             controls.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Self.inset),
             controls.centerYAnchor.constraint(equalTo: centerYAnchor),
             controls.leadingAnchor.constraint(greaterThanOrEqualTo: dragHandle.trailingAnchor, constant: Self.handleGap),

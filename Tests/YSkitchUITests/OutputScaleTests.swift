@@ -58,7 +58,7 @@ struct OutputScaleTests {
         #expect(controller.statusBar.scaleButton.titleOfSelectedItem == "@2x")
     }
 
-    @Test func popUpStaysVisibleWithElementInfo() {
+    @Test func popUpHiddenWithElementInfo() {
         var document = Document(blankSize: CGSize(width: 400, height: 300), scale: 2)
         let annotation = Annotation(
             style: AnnotationStyle(color: RGBAColor(hex: 0xFF0000), thickness: 4),
@@ -68,6 +68,8 @@ struct OutputScaleTests {
         defer { controller.close() }
         controller.selection.select([annotation.id])
         #expect(controller.statusBar.infoLabel.stringValue.hasPrefix("Rectangle"))
+        #expect(controller.statusBar.scaleButton.isHidden)
+        controller.selection.clear()
         #expect(!controller.statusBar.scaleButton.isHidden)
         #expect(controller.statusBar.scaleButton.titleOfSelectedItem == "@2x")
     }
@@ -99,39 +101,14 @@ struct OutputScaleTests {
         #expect(controller.canvasView.isCropping)
         let item = try imageMenuItem("Scale @1x")
         #expect(!controller.validateMenuItem(item))
-        #expect(!controller.statusBar.scaleButton.isEnabled)
+        #expect(controller.statusBar.scaleButton.isHidden)
 
         controller.changeScale(to: 1)
-        select("@1x", in: controller)
         #expect(controller.model.document.scale == 2)
-        #expect(controller.statusBar.scaleButton.titleOfSelectedItem == "@2x")
 
         controller.cancelCrop(nil)
         #expect(controller.validateMenuItem(item))
-        #expect(controller.statusBar.scaleButton.isEnabled)
-    }
-
-    @Test func popUpCommitsTextEditing() throws {
-        let controller = makeController(Document(blankSize: CGSize(width: 400, height: 300), scale: 2))
-        defer { controller.close() }
-        controller.toolbar.activeTool = .text
-        let view = controller.canvasView
-        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
-            let event = try #require(NSEvent.mouseEvent(
-                with: type, location: view.convert(CGPoint(x: 50, y: 50), to: nil), modifierFlags: [], timestamp: 0,
-                windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: 1,
-                pressure: 1))
-            type == .leftMouseDown ? view.mouseDown(with: event) : view.mouseUp(with: event)
-        }
-        let textView = try #require(view.textEditor.textView)
-        textView.insertText("Hi", replacementRange: NSRange(location: NSNotFound, length: 0))
-        #expect(!controller.validateMenuItem(try imageMenuItem("Scale @1x")))
-        #expect(controller.statusBar.scaleButton.isEnabled)
-
-        select("@1x", in: controller)
-        #expect(!view.textEditor.isEditing)
-        #expect(controller.model.document.annotations.count == 1)
-        #expect(controller.model.document.scale == 1)
+        #expect(!controller.statusBar.scaleButton.isHidden)
     }
 
     /// Columns alternate black and white at 2×, so 1× output pixels are gray.

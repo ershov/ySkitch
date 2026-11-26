@@ -92,11 +92,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         statusBar.onZoomOut = { [weak scrollView] in scrollView?.zoomOut() }
         statusBar.onZoomIn = { [weak scrollView] in scrollView?.zoomIn() }
         statusBar.onZoomTo = { [weak scrollView] in scrollView?.zoom(to: $0) }
-        statusBar.onScaleChange = { [weak self] in
-            // The pop-up doesn't take focus, so an open text edit would otherwise block the change.
-            self?.canvasView.commitTextEditing()
-            self?.changeScale(to: $0)
-        }
+        statusBar.onScaleChange = { [weak self] in self?.changeScale(to: $0) }
         scrollView.onMagnificationChange = { [weak statusBar] in statusBar?.update(magnification: $0) }
         scrollView.onFitModeChange = { [weak statusBar] in statusBar?.fitButton.state = $0 ? .on : .off }
         statusBar.dragHandle.imageProvider = { [weak self] in self?.dragPayload() }
@@ -112,19 +108,22 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     }
 
     /// Slider value while dragging, else geometry of the element being drawn or selected, else the image size.
+    /// The output scale pop-up is shown only with the image size.
     private func updateStatusInfo() {
         let document = model.document
         statusBar.update(scale: document.scale)
-        statusBar.scaleButton.isEnabled = !canvasView.isCropping
         if toolbar.isDraggingThickness,
             let text = StatusText.thickness(tool: toolbar.styleTool, value: toolbar.displayedStyle.thickness)
         {
             statusBar.update(info: text)
+            statusBar.scaleButton.isHidden = true
             return
         }
-        statusBar.update(info: canvasView.statusGeometry.map {
+        let geometry = canvasView.statusGeometry
+        statusBar.update(info: geometry.map {
             StatusText.geometry($0, canvasOrigin: canvasView.statusOrigin, scale: document.scale)
         } ?? StatusText.size(canvas: document.canvasRect.size, scale: document.scale))
+        statusBar.scaleButton.isHidden = geometry != nil
     }
 
     /// Nil during a crop session: the document is uncropped until the session ends.

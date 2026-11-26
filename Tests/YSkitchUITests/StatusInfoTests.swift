@@ -28,6 +28,10 @@ struct StatusInfoTests {
         controller.statusBar.infoLabel.stringValue
     }
 
+    private func scaleHidden(_ controller: DocumentWindowController) -> Bool {
+        controller.statusBar.scaleButton.isHidden
+    }
+
     private func rectangle(_ rect: CGRect) -> Annotation {
         Annotation(style: AnnotationStyle(color: RGBAColor(red: 1, green: 0, blue: 0), thickness: 4), shape: .rectangle(rect))
     }
@@ -37,13 +41,16 @@ struct StatusInfoTests {
         defer { controller.close() }
         let toolbar = controller.toolbar
 
+        #expect(!scaleHidden(controller))
         toolbar.beginThicknessDrag()
         toolbar.setThickness(12)
         #expect(label(controller) == "Arrow · Width 12 pt")
+        #expect(scaleHidden(controller))
         toolbar.setThickness(7.5)
         #expect(label(controller) == "Arrow · Width 7.5 pt")
         toolbar.endThicknessDrag()
         #expect(label(controller) == Self.sizeText)
+        #expect(!scaleHidden(controller))
     }
 
     @Test func sliderDragOnSelectionShowsSelectionToolThenGeometry() {
@@ -70,13 +77,17 @@ struct StatusInfoTests {
         view.mouseDown(with: event(.leftMouseDown, CGPoint(x: 60, y: 50), in: view))
         view.mouseDragged(with: event(.leftMouseDragged, CGPoint(x: 10, y: 20), in: view))
         #expect(label(controller) == "Rectangle · (60, 50) → (10, 20) · 50×30 px · \(thickness) pt")
+        #expect(scaleHidden(controller))
 
         view.mouseUp(with: event(.leftMouseUp, CGPoint(x: 10, y: 20), in: view))
         #expect(controller.selection.selectedIDs == controller.model.document.annotations.map(\.id))
         #expect(label(controller) == "Rectangle · (10, 20) → (60, 50) · 50×30 px · \(thickness) pt")
 
+        #expect(scaleHidden(controller))
+
         controller.selection.clear()
         #expect(label(controller) == Self.sizeText)
+        #expect(!scaleHidden(controller))
     }
 
     @Test func drawingArrowShowsSegment() {
@@ -129,9 +140,11 @@ struct StatusInfoTests {
         let controller = makeController(tool: .crop)
         defer { controller.close() }
         #expect(label(controller) == "Crop · (0, 0) → (400, 300) · 400×300 px")
+        #expect(scaleHidden(controller))
 
         controller.canvasView.cancelCrop()
         #expect(label(controller) == Self.sizeText)
+        #expect(!scaleHidden(controller))
     }
 
     @Test func textEditingShowsTextBox() throws {
@@ -140,9 +153,11 @@ struct StatusInfoTests {
         let view = controller.canvasView
         view.mouseDown(with: event(.leftMouseDown, CGPoint(x: 50, y: 50), in: view))
         let textView = try #require(view.textEditor.textView)
+        #expect(scaleHidden(controller))
         textView.insertText("Hi", replacementRange: NSRange(location: NSNotFound, length: 0))
         #expect(label(controller).hasPrefix("Text · "))
         #expect(label(controller).hasSuffix(" · \(Int(controller.toolbar.settings.style(for: .text).thickness)) pt"))
+        #expect(scaleHidden(controller))
 
         view.commitTextEditing()
         #expect(label(controller) == Self.sizeText)

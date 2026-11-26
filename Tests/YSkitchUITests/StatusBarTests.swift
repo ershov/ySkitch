@@ -109,8 +109,9 @@ struct MinimumWindowSizeTests {
         statusBar.layoutSubtreeIfNeeded()
 
         let handle = statusBar.dragHandle.frame
-        let label = statusBar.infoLabel.frame
-        let scale = statusBar.scaleButton.alignmentRect(forFrame: statusBar.scaleButton.frame)
+        let label = statusBar.convert(statusBar.infoLabel.frame, from: statusBar.infoLabel.superview)
+        let scaleFrame = statusBar.convert(statusBar.scaleButton.frame, from: statusBar.scaleButton.superview)
+        let scale = statusBar.scaleButton.alignmentRect(forFrame: scaleFrame)
         let controls = statusBar.zoomInButton.frame.union(statusBar.actualSizeButton.frame)
         let controlsInBar = statusBar.convert(controls, from: statusBar.actualSizeButton.superview)
         #expect(label.maxX <= scale.minX)
