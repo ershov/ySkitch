@@ -97,3 +97,21 @@ import YSkitchCore
         #expect(abs(value - pow(40, 0.3)) < 1e-9)
     }
 }
+
+@Suite struct ThicknessFineStepTests {
+    @Test func stepsByGranularity() {
+        #expect(ThicknessScale.fineStepped(10, in: 1...40, by: 1) == 10.5)
+        #expect(ThicknessScale.fineStepped(10, in: 1...40, by: -1) == 9.5)
+    }
+
+    @Test func clampsToRange() {
+        #expect(ThicknessScale.fineStepped(40, in: 1...40, by: 1) == 40)
+        #expect(ThicknessScale.fineStepped(1, in: 1...40, by: -1) == 1)
+        #expect(ThicknessScale.fineStepped(0.8, in: 1...40, by: -1) == 1)
+    }
+
+    @Test func snapsToGrid() {
+        #expect(ThicknessScale.fineStepped(10.3, in: 1...40, by: 1) == 11)
+        #expect(ThicknessScale.fineStepped(10.3, in: 1...40, by: -1) == 10)
+    }
+}

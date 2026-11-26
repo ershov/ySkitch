@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.8 · 2026-11-26
+Status: final v1.9 · 2026-11-26
 
 ## 1. Purpose
 
@@ -145,7 +145,7 @@ All annotations are vector objects, editable until export (flattened only on out
 | KEY-3 | `⌥` while drawing arrow: reverse direction (head at start point) | U | 1 |
 | KEY-4 | `⌥` while drawing rect/ellipse: draw from center | S | 2 |
 | KEY-5 | Single-key tool shortcuts (V select, T text, A arrow, L line, R rect, U rounded rect, O ellipse, P pen, H highlighter, X pixelate, C crop) | S | 1 |
-| KEY-6 | Number keys `1`–`8` select palette color; `[` / `]` step the thickness slider down / up | S | 1 |
+| KEY-6 | Number keys `1`–`8` select palette color; `[` / `]` step the thickness slider down / up; `⇧[` / `⇧]` step the value by 0.5 pt | S | 1 |
 | KEY-7 | `Esc` cancels current operation, otherwise deselects (every tool) | S | 1 |
 | KEY-8 | Every function has a menu item showing its shortcut (menus below) | U | 1 |
 | KEY-9 | Right-drag or `⌃`-drag in any tool: marquee adds to the selection; with `⌥` removes from it (ED-1) | U | 1 |
@@ -158,7 +158,7 @@ All annotations are vector objects, editable until export (flattened only on out
 - **Tools** (single keys, no modifiers):
   - Tools in toolbar groups, checkmark on the active one: Select `V` · Text `T` · Arrow `A`, Line `L`, Rectangle `R`, Rounded Rectangle `U`, Ellipse `O` · Pen `P`, Highlighter `H` · Pixelate `X` · Crop `C`
   - Color ▸ Red `1` … Black `8` (§6.3), checkmark on the shown color; disabled when the tool or selection has no color
-  - Thinner `[` · Thicker `]`; disabled without a thickness
+  - Thinner `[` · Thicker `]` · Slightly Thinner `⇧[` · Slightly Thicker `⇧]`; disabled without a thickness
   - Apply Crop `↩` · Cancel Crop `Esc`; enabled only during a crop session
 - **Image:** Scale @1x `⌥⌘1` · Scale @2x `⌥⌘2` · Scale @3x `⌥⌘3` (IMG-7); checkmark on the current scale; disabled during a gesture, crop session or text editing
 - **View:** Zoom In `⌘+` (also `⌘=`) · Zoom Out `⌘-` · Actual Size `⌘0` · Zoom to Fit `⌘9` · Enter Full Screen `⌃⌘F`
@@ -282,7 +282,7 @@ Exit codes: 0 success · 1 file problems or the app didn't respond · 2 usage er
 - While the slider is dragged (mouse-down to mouse-up, not `[` / `]`), the status bar's left label shows `<Tool> · <Meaning> <value> pt` (e.g. `Arrow · Width 12 pt`, `Text · Font size 36 pt`), updating live, for the shown style tool (the selection's tool when editing a selection); afterwards it returns to the normal content.
 - Logarithmic mapping, so small sizes get finer control. Top = maximum, bottom = minimum.
 - With several objects selected, the slider position applies per object: each gets the value at that position in its own tool's range (e.g. top of the range: arrow 40 pt, text 120 pt).
-- `[` / `]` move the slider by 1/20 of its range (logarithmic steps).
+- `[` / `]` move the slider by 1/20 of its range (logarithmic steps); `⇧[` / `⇧]` change the value by 0.5 pt (the slider granularity), clamped to the tool's range. Both apply to the selection if any, else to the current tool; no slider-drag status label.
 - Ranges and defaults are named constants in code.
 - Travel is fixed for all tools, so the same y is the same position for every tool. The wedge spans the travel only; the paddings above and below stay empty except for the sample, but are part of the control: clicks and drags there clamp to the ends.
 - Paddings are the largest half end-sample over all tools with a range (width clamped at the column width): top from the maxima, bottom from the minima; each at least 12 pt so clicks just beyond an end are easy to hit. Adding a tool may increase paddings, never changes travel.

@@ -315,6 +315,25 @@ struct SelectionTests {
         #expect(settings.style(for: .arrow).thickness == 12)
     }
 
+    @Test func fineStepOfMixedSelectionSetsEachToolDefault() {
+        let arrow = Annotation(style: Self.style, shape: .arrow(tail: CGPoint(x: 20, y: 20), head: CGPoint(x: 100, y: 80)))
+        let text = Annotation(
+            style: AnnotationStyle(color: Self.style.color, thickness: 24),
+            shape: .text(TextContent(origin: CGPoint(x: 150, y: 20), string: "Hi")))
+        let controller = makeController([arrow, text])
+        defer { controller.close() }
+        controller.selection.select([arrow.id, text.id])
+        controller.toolbar.perform(.thicknessFineStep(1))
+        let annotations = controller.model.document.annotations
+        #expect(annotations[0].style.thickness == Self.style.thickness + 0.5)
+        #expect(annotations[1].style.thickness == 24.5)
+        #expect(settings.style(for: .arrow).thickness == Self.style.thickness + 0.5)
+        #expect(settings.style(for: .text).thickness == 24.5)
+        controller.toolbar.perform(.thicknessFineStep(1))
+        controller.model.undoManager.undo()
+        #expect(controller.model.document.annotations[0].style.thickness == Self.style.thickness + 0.5)
+    }
+
     private func arrowAndText() -> (arrow: Annotation, text: Annotation) {
         let arrow = Annotation(style: Self.style, shape: .arrow(tail: CGPoint(x: 20, y: 20), head: CGPoint(x: 100, y: 80)))
         let text = Annotation(

@@ -139,11 +139,11 @@ final class SelectionModel {
     }
 
     /// Steps each annotation's own thickness within its kind's range.
-    func stepThickness(by steps: Int) {
+    func stepThickness(by steps: Int, fine: Bool = false) {
+        let step = fine ? ThicknessScale.fineStepped : ThicknessScale.stepped
         edit("Change Thickness") { annotation in
             guard let range = annotation.shape.tool.thicknessRange else { return annotation }
-            return annotation.withStyle(
-                thickness: ThicknessScale.stepped(annotation.style.thickness, in: range, by: steps))
+            return annotation.withStyle(thickness: step(annotation.style.thickness, range, steps))
         }
     }
 

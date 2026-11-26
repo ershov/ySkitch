@@ -177,9 +177,14 @@ import Testing
         #expect(ToolShortcut.action(for: "]") == .thicknessStep(1))
     }
 
+    @Test func shiftedBrackets() {
+        #expect(ToolShortcut.action(for: "{") == .thicknessFineStep(-1))
+        #expect(ToolShortcut.action(for: "}") == .thicknessFineStep(1))
+    }
+
     @Test func keysRoundTrip() {
         let actions = Tool.allCases.map { ToolShortcut.Action.tool($0) }
-            + Palette.colors.indices.map { .color($0) } + [.thicknessStep(-1), .thicknessStep(1)]
+            + Palette.colors.indices.map { .color($0) } + [.thicknessStep(-1), .thicknessStep(1), .thicknessFineStep(-1), .thicknessFineStep(1)]
         for action in actions {
             let key = ToolShortcut.key(for: action)
             #expect(key == key.lowercased())
@@ -190,7 +195,7 @@ import Testing
     }
 
     @Test func unknown() {
-        for characters in ["", "q", "Z", " ", "{", "ab", "١", "\u{1B}"] {
+        for characters in ["", "q", "Z", " ", "(", "ab", "١", "\u{1B}"] {
             #expect(ToolShortcut.action(for: characters) == nil)
         }
     }

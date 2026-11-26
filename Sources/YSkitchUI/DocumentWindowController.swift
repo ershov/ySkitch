@@ -268,9 +268,9 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         selection.selectAll()
     }
 
-    /// The action comes from the item's key equivalent; the Tools menu builds items from `ToolShortcut`.
+    /// The Tools menu items carry their `ToolShortcut.Action`.
     @objc func performToolShortcut(_ sender: NSMenuItem) {
-        guard let action = ToolShortcut.action(for: sender.keyEquivalent) else { return }
+        guard let action = sender.representedObject as? ToolShortcut.Action else { return }
         toolbar.perform(action)
     }
 
@@ -328,7 +328,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     }
 
     private func validateToolShortcut(_ item: NSMenuItem) -> Bool {
-        guard let action = ToolShortcut.action(for: item.keyEquivalent) else { return false }
+        guard let action = item.representedObject as? ToolShortcut.Action else { return false }
         item.state = toolbar.isCurrent(action) ? .on : .off
         return toolbar.canPerform(action)
     }

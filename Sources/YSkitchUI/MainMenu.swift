@@ -111,6 +111,8 @@ enum MainMenu {
         menu.addItem(color)
         menu.addItem(shortcutItem("Thinner", .thicknessStep(-1)))
         menu.addItem(shortcutItem("Thicker", .thicknessStep(1)))
+        menu.addItem(shortcutItem("Slightly Thinner", .thicknessFineStep(-1)))
+        menu.addItem(shortcutItem("Slightly Thicker", .thicknessFineStep(1)))
         menu.addItem(.separator())
         menu.addItem(item("Apply Crop", #selector(DocumentWindowController.applyCrop(_:)), "\r", []))
         menu.addItem(item("Cancel Crop", #selector(DocumentWindowController.cancelCrop(_:)), "\u{1b}", []))
@@ -118,7 +120,18 @@ enum MainMenu {
     }
 
     private static func shortcutItem(_ title: String, _ action: ToolShortcut.Action) -> NSMenuItem {
-        item(title, #selector(DocumentWindowController.performToolShortcut(_:)), ToolShortcut.key(for: action), [])
+        let key: String
+        let modifiers: NSEvent.ModifierFlags
+        if case .thicknessFineStep(let steps) = action {
+            key = steps < 0 ? "[" : "]"
+            modifiers = .shift
+        } else {
+            key = ToolShortcut.key(for: action)
+            modifiers = []
+        }
+        let item = item(title, #selector(DocumentWindowController.performToolShortcut(_:)), key, modifiers)
+        item.representedObject = action
+        return item
     }
 
     private static func swatch(_ color: RGBAColor) -> NSImage {

@@ -32,7 +32,7 @@ struct ToolsMenuTests {
         #expect(titles == [
             "Select", "-", "Text", "-", "Arrow", "Line", "Rectangle", "Rounded Rectangle", "Ellipse", "-",
             "Pen", "Highlighter", "-", "Pixelate", "-", "Crop", "-",
-            "Color", "Thinner", "Thicker", "-", "Apply Crop", "Cancel Crop",
+            "Color", "Thinner", "Thicker", "Slightly Thinner", "Slightly Thicker", "-", "Apply Crop", "Cancel Crop",
         ])
         #expect(try colorMenu().items.map(\.title) == Palette.names)
     }
@@ -51,6 +51,12 @@ struct ToolsMenuTests {
             (try item("Apply Crop", in: tools), "\r", #selector(DocumentWindowController.applyCrop(_:))),
             (try item("Cancel Crop", in: tools), "\u{1b}", #selector(DocumentWindowController.cancelCrop(_:))),
         ]
+        for (title, key) in [("Slightly Thinner", "["), ("Slightly Thicker", "]")] {
+            let item = try item(title, in: tools)
+            #expect(item.keyEquivalent == key)
+            #expect(item.keyEquivalentModifierMask == NSEvent.ModifierFlags.shift)
+            #expect(item.action == #selector(DocumentWindowController.performToolShortcut(_:)))
+        }
         for (item, key, action) in cases {
             #expect(item.keyEquivalent == key, "\(item.title) key")
             #expect(item.keyEquivalentModifierMask == [], "\(item.title) modifiers")
@@ -134,6 +140,24 @@ struct ToolsMenuTests {
             #expect(controller.validateMenuItem(thinner) == (tool.thicknessRange != nil), "\(tool.name)")
             #expect(controller.validateMenuItem(thicker) == (tool.thicknessRange != nil), "\(tool.name)")
             #expect(thinner.state == .off)
+        }
+    }
+
+    @Test func fineThicknessItems() throws {
+        let controller = makeController()
+        defer { controller.close() }
+        let tools = try toolsMenu()
+        let thinner = try item("Slightly Thinner", in: tools)
+        let thicker = try item("Slightly Thicker", in: tools)
+        controller.performToolShortcut(thicker)
+        #expect(controller.toolbar.currentStyle.thickness == Tool.strokeDefault + 0.5)
+        controller.performToolShortcut(thinner)
+        controller.performToolShortcut(thinner)
+        #expect(controller.toolbar.currentStyle.thickness == Tool.strokeDefault - 0.5)
+        for tool in Tool.allCases {
+            controller.toolbar.activeTool = tool
+            #expect(controller.validateMenuItem(thinner) == (tool.thicknessRange != nil), "\(tool.name)")
+            #expect(controller.validateMenuItem(thicker) == (tool.thicknessRange != nil), "\(tool.name)")
         }
     }
 

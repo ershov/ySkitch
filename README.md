@@ -49,6 +49,7 @@ Closed a window by mistake? `⇧⌘T` brings it back, annotations and undo histo
 |---|---|
 | Palette color | `1`–`8` |
 | Thinner / thicker | `[` / `]` |
+| Slightly thinner / thicker | `⇧[` / `⇧]` |
 | Add to selection | right-drag or `⌃`-drag a marquee, in any tool; with `⌥` removes |
 | Select all | `⌘A` |
 | Nudge selection | arrow keys: 1 pt, `⇧` 20 pt |

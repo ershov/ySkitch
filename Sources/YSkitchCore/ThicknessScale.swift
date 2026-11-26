@@ -22,6 +22,12 @@ public enum ThicknessScale {
         return range.lowerBound * pow(range.upperBound / range.lowerBound, p)
     }
 
+    /// Moves by `steps` × `granularity`, snapped to the granularity grid.
+    public static func fineStepped(_ value: CGFloat, in range: ClosedRange<CGFloat>, by steps: Int) -> CGFloat {
+        let snapped = ((value + CGFloat(steps) * granularity) / granularity).rounded() * granularity
+        return min(max(snapped, range.lowerBound), range.upperBound)
+    }
+
     /// Moves by `stepSize` per step; keeps moving while the rounded value is unchanged,
     /// so every step changes the value until a bound is reached.
     public static func stepped(_ value: CGFloat, in range: ClosedRange<CGFloat>, by steps: Int) -> CGFloat {

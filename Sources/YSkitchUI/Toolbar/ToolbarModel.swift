@@ -73,14 +73,15 @@ final class ToolbarModel {
         setThickness(atPosition: ThicknessScale.position(of: thickness, in: range))
     }
 
-    func stepThickness(by steps: Int) {
+    func stepThickness(by steps: Int, fine: Bool = false) {
         if let selection, selectionStyle != nil {
-            selection.stepThickness(by: steps)
+            selection.stepThickness(by: steps, fine: fine)
             adoptSelectionStyles(color: false, thickness: true)
             return
         }
         guard let range = activeTool.thicknessRange else { return }
-        setThickness(ThicknessScale.stepped(currentStyle.thickness, in: range, by: steps))
+        let step = fine ? ThicknessScale.fineStepped : ThicknessScale.stepped
+        setThickness(step(currentStyle.thickness, range, steps))
     }
 
     /// Makes the edited selection's styles the defaults of their tools (applied on every edit, including each slider step).
@@ -110,7 +111,7 @@ final class ToolbarModel {
         switch action {
         case .tool: true
         case .color: styleTool.usesColor
-        case .thicknessStep: styleTool.thicknessRange != nil
+        case .thicknessStep, .thicknessFineStep: styleTool.thicknessRange != nil
         }
     }
 
@@ -119,7 +120,7 @@ final class ToolbarModel {
         switch action {
         case .tool(let tool): activeTool == tool
         case .color(let index): styleTool.usesColor && displayedStyle.color == Palette.colors[index]
-        case .thicknessStep: false
+        case .thicknessStep, .thicknessFineStep: false
         }
     }
 
@@ -128,6 +129,7 @@ final class ToolbarModel {
         case .tool(let tool): activeTool = tool
         case .color(let index): selectColor(index: index)
         case .thicknessStep(let steps): stepThickness(by: steps)
+        case .thicknessFineStep(let steps): stepThickness(by: steps, fine: true)
         }
     }
 }
