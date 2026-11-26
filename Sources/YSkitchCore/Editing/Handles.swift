@@ -67,10 +67,9 @@ public enum SelectionIndicator: Equatable, Sendable {
 }
 
 public enum Handles {
-    /// Endpoint handles for lines, arrows and straight strokes, none for text, a single handle for a dot,
+    /// Endpoint handles for lines, arrows and straight strokes, a single handle for a dot,
     /// bounds handles otherwise.
     public static func handles(for annotation: Annotation) -> [Handle] {
-        if case .text = annotation.shape { return [] }
         if let start = annotation.endpoint(.start), let end = annotation.endpoint(.end) {
             return [Handle(kind: .endpoint(.start), position: start), Handle(kind: .endpoint(.end), position: end)]
         }

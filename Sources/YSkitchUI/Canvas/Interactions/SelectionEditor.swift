@@ -91,6 +91,11 @@ final class SelectionEditor {
             replace(moved)
         case .resize(let original, let handle):
             let centered = flags.contains(.option)
+            if original.isText {
+                let resized = original.resizedText(dragging: handle, to: last, centered: centered)
+                replace([original.id: resized.style == original.style ? original : edited(resized)])
+                return
+            }
             if original.dotLocation != nil {
                 replace([original.id: edited(original.stretchedDot(to: last, centered: centered))])
                 return

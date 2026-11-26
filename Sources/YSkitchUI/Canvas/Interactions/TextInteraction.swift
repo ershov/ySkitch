@@ -26,15 +26,17 @@ final class TextInteraction: CanvasInteraction {
 
     func mouseDown(at point: CGPoint, event: NSEvent) {
         cancel()
-        if selectionEditor.beginHandleDrag(at: point) { return }
         let document = model.document
-        guard let hit = AnnotationHitTest.topmost(
+        let hit = AnnotationHitTest.topmost(
             in: document, at: point, tolerance: SelectInteraction.hitTolerance / magnification())
-        else {
+        let isDoubleClickOnText = event.clickCount >= 2
+            && document.annotations.contains(where: { $0.id == hit && $0.isText })
+        if !isDoubleClickOnText, selectionEditor.beginHandleDrag(at: point) { return }
+        guard let hit else {
             selection.clear()
             return editor.beginNew(at: point)
         }
-        if event.clickCount >= 2, document.annotations.contains(where: { $0.id == hit && $0.isText }) {
+        if isDoubleClickOnText {
             selection.select([hit])
             return editor.beginEditing(annotationID: hit, at: point)
         }

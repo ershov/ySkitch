@@ -251,7 +251,7 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
             (.pen(points: [p, q]), 2), (.highlighter(points: [p, q]), 2),
             (.pen(points: [p, q, rect.origin]), 8), (.highlighter(points: [p, q, rect.origin]), 8),
             (.line(start: p, end: q), 2), (.arrow(tail: p, head: q), 2),
-            (.text(TextContent(origin: p, string: "A")), 0),
+            (.text(TextContent(origin: p, string: "A")), 8),
         ]
         for (shape, count) in cases {
             #expect(Handles.handles(for: annotation(shape)).count == count, "\(shape)")
@@ -535,5 +535,59 @@ private func annotation(_ shape: AnnotationShape, thickness: CGFloat = 4) -> Ann
         let dot = annotation(.pen(points: [a, a]))
         #expect(!dot.isStraightStroke)
         #expect(dot.endpoint(.end) == nil)
+    }
+}
+
+@Suite struct TextResizeTests {
+    private func text(size: CGFloat = 40) -> Annotation {
+        annotation(.text(TextContent(origin: CGPoint(x: 100, y: 100), string: "Hello")), thickness: size)
+    }
+
+    private func close(_ a: CGPoint, _ b: CGPoint, tolerance: CGFloat = 3) -> Bool {
+        abs(a.x - b.x) <= tolerance && abs(a.y - b.y) <= tolerance
+    }
+
+    @Test func edgeHandleScalesByItsAxis() {
+        let original = text()
+        let bounds = original.bounds
+        let target = CGPoint(x: bounds.minX + 2 * bounds.width, y: bounds.midY)
+        let resized = original.resizedText(dragging: .right, to: target)
+        #expect(abs(resized.style.thickness - 80) < 0.001)
+        #expect(close(BoundsHandle.left.position(in: resized.bounds), BoundsHandle.left.position(in: bounds)))
+    }
+
+    @Test func cornerHandleAveragesAxes() {
+        let original = text()
+        let bounds = original.bounds
+        let target = CGPoint(x: bounds.minX + 2 * bounds.width, y: bounds.minY + 1.5 * bounds.height)
+        let resized = original.resizedText(dragging: .bottomRight, to: target)
+        #expect(abs(resized.style.thickness - 70) < 0.001)
+        #expect(close(resized.bounds.origin, bounds.origin))
+    }
+
+    @Test func centeredKeepsCenter() {
+        let original = text()
+        let bounds = original.bounds
+        let target = CGPoint(x: bounds.midX + bounds.width, y: bounds.midY)
+        let resized = original.resizedText(dragging: .right, to: target, centered: true)
+        #expect(abs(resized.style.thickness - 80) < 0.001)
+        #expect(close(CGPoint(x: resized.bounds.midX, y: resized.bounds.midY), CGPoint(x: bounds.midX, y: bounds.midY)))
+    }
+
+    @Test func draggingPastTheOppositeSideGivesMinimumSize() {
+        let original = text()
+        let resized = original.resizedText(dragging: .right, to: CGPoint(x: original.bounds.minX - 50, y: 0))
+        #expect(resized.style.thickness == Tool.fontSizeRange.lowerBound)
+    }
+
+    @Test func sizeIsClamped() {
+        let original = text()
+        let target = CGPoint(x: original.bounds.minX + 1000 * original.bounds.width, y: original.bounds.midY)
+        #expect(original.resizedText(dragging: .right, to: target).style.thickness == Tool.fontSizeRange.upperBound)
+    }
+
+    @Test func nonTextIsUnchanged() {
+        let rectangle = annotation(.rectangle(CGRect(x: 0, y: 0, width: 10, height: 10)))
+        #expect(rectangle.resizedText(dragging: .right, to: CGPoint(x: 50, y: 5)) == rectangle)
     }
 }

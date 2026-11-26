@@ -41,19 +41,20 @@ final class SelectInteraction: CanvasInteraction {
 
     func mouseDown(at point: CGPoint, event: NSEvent) {
         cancel()
-        if editor.beginHandleDrag(at: point) { return }
         let document = model.document
         let shift = event.modifierFlags.contains(.shift)
+        let hit = AnnotationHitTest.topmost(in: document, at: point, tolerance: Self.hitTolerance / magnification())
+        let isDoubleClickOnText = event.clickCount == 2
+            && document.annotations.contains(where: { $0.id == hit && $0.isText })
+        if !isDoubleClickOnText, editor.beginHandleDrag(at: point) { return }
 
-        guard let hit = AnnotationHitTest.topmost(
-            in: document, at: point, tolerance: Self.hitTolerance / magnification())
-        else {
+        guard let hit else {
             marqueeSelection = MarqueeSelection(
                 selection: selection, start: point, mode: shift ? .add : .replace,
                 overlayDidChange: overlayDidChange)
             return
         }
-        if event.clickCount == 2, document.annotations.contains(where: { $0.id == hit && $0.isText }) {
+        if isDoubleClickOnText {
             selection.select([hit])
             return beginTextEditing(hit)
         }

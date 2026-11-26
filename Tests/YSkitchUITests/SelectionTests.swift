@@ -145,6 +145,45 @@ struct SelectionTests {
         #expect(model.undoManager.undoActionName == "Resize")
     }
 
+    @Test func textHandleChangesFontSizeOnly() {
+        let text = Annotation(
+            style: AnnotationStyle(color: RGBAColor(hex: 0xFF2500), thickness: 40),
+            shape: .text(TextContent(origin: CGPoint(x: 50, y: 50), string: "Hello")))
+        let controller = makeController([text])
+        defer { controller.close() }
+        controller.selection.select([text.id])
+        let bounds = text.bounds
+        let defaultSize = settings.style(for: .text).thickness
+        drag(
+            controller, from: CGPoint(x: bounds.maxX, y: bounds.maxY),
+            to: CGPoint(x: bounds.minX + 2 * bounds.width, y: bounds.minY + 2 * bounds.height))
+        let model = controller.model
+        let resized = model.document.annotations[0]
+        #expect(abs(resized.style.thickness - 80) < 0.001)
+        #expect(abs(resized.bounds.minX - bounds.minX) < 3 && abs(resized.bounds.minY - bounds.minY) < 3)
+        #expect(model.undoManager.undoActionName == "Resize")
+        #expect(settings.style(for: .text).thickness == defaultSize)
+        #expect(model.document.annotations.count == 1)
+    }
+
+    @Test func textHandleResizesInTextTool() {
+        let text = Annotation(
+            style: AnnotationStyle(color: RGBAColor(hex: 0xFF2500), thickness: 40),
+            shape: .text(TextContent(origin: CGPoint(x: 50, y: 50), string: "Hello")))
+        let controller = makeController([text])
+        defer { controller.close() }
+        controller.toolbar.activeTool = .text
+        controller.selection.select([text.id])
+        let bounds = text.bounds
+        drag(
+            controller, from: CGPoint(x: bounds.maxX, y: bounds.maxY),
+            to: CGPoint(x: bounds.minX + 2 * bounds.width, y: bounds.minY + 2 * bounds.height))
+        #expect(controller.model.document.annotations.count == 1)
+        #expect(abs(controller.model.document.annotations[0].style.thickness - 80) < 0.001)
+        #expect(controller.canvasView.textEditor.textView == nil)
+        #expect(controller.model.undoManager.undoActionName == "Resize")
+    }
+
     private func flagsChanged(_ flags: NSEvent.ModifierFlags, in view: NSView) -> NSEvent {
         NSEvent.keyEvent(
             with: .flagsChanged, location: .zero, modifierFlags: flags, timestamp: 0,

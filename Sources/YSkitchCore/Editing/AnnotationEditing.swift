@@ -138,6 +138,30 @@ extension Annotation {
         }
     }
 
+    /// Text only: scales the font size by the drag (an edge handle by its axis, a corner by the average of both),
+    /// keeping the opposite corner or edge midpoint (the center when `centered`) in place. Others are unchanged.
+    public func resizedText(dragging handle: BoundsHandle, to point: CGPoint, centered: Bool = false) -> Annotation {
+        guard case .text(var content) = shape else { return self }
+        let old = bounds
+        let (rect, flippedX, flippedY) = ResizeMath.resize(
+            original: old, dragging: handle, to: point, centered: centered)
+        let (sx, sy) = handle.side
+        var ratios: [CGFloat] = []
+        if sx != 0, old.width > 0 { ratios.append((flippedX ? -1 : 1) * rect.width / old.width) }
+        if sy != 0, old.height > 0 { ratios.append((flippedY ? -1 : 1) * rect.height / old.height) }
+        guard !ratios.isEmpty else { return self }
+        var result = withStyle(thickness: style.thickness * ratios.reduce(0, +) / CGFloat(ratios.count))
+        func fixedPoint(in bounds: CGRect) -> CGPoint {
+            if centered { return CGPoint(x: bounds.midX, y: bounds.midY) }
+            let opposite = BoundsHandle.allCases.first { $0.side == (-sx, -sy) }
+            return opposite?.position(in: bounds) ?? .zero
+        }
+        let before = fixedPoint(in: old), after = fixedPoint(in: result.bounds)
+        content.origin = CGPoint(x: content.origin.x + before.x - after.x, y: content.origin.y + before.y - after.y)
+        result.shape = .text(content)
+        return result
+    }
+
     /// Color is ignored by kinds without color; thickness is clamped to the kind's range.
     public func withStyle(color: RGBAColor? = nil, thickness: CGFloat? = nil) -> Annotation {
         var result = self
