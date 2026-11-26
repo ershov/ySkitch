@@ -395,3 +395,92 @@ struct DotDrawingTests {
         #expect(model.undoManager.undoActionName == "Resize")
     }
 }
+
+@MainActor
+struct StraightStrokeTests {
+    private func makeController(tool: Tool) -> DocumentWindowController {
+        let document = Document(blankSize: CGSize(width: 400, height: 300), scale: 1)
+        let settings = ToolSettings(preferences: Preferences(store: InMemoryPreferencesStore()))
+        let controller = DocumentWindowController(document: document, title: "Test", toolSettings: settings)
+        controller.canvasView.toolbar.activeTool = tool
+        return controller
+    }
+
+    private func mouse(
+        _ type: NSEvent.EventType, _ point: CGPoint, flags: NSEvent.ModifierFlags = [], in view: NSView
+    ) -> NSEvent {
+        NSEvent.mouseEvent(
+            with: type, location: view.convert(point, to: nil), modifierFlags: flags, timestamp: 0,
+            windowNumber: view.window?.windowNumber ?? 0, context: nil, eventNumber: 0, clickCount: 1,
+            pressure: 1)!
+    }
+
+    private func flagsChanged(_ flags: NSEvent.ModifierFlags, in view: NSView) -> NSEvent {
+        NSEvent.keyEvent(
+            with: .flagsChanged, location: .zero, modifierFlags: flags, timestamp: 0,
+            windowNumber: view.window?.windowNumber ?? 0, context: nil, characters: "",
+            charactersIgnoringModifiers: "", isARepeat: false, keyCode: 56)!
+    }
+
+    private func points(_ controller: DocumentWindowController) -> [CGPoint]? {
+        switch controller.model.document.annotations.first?.shape {
+        case .pen(let points), .highlighter(let points): points
+        default: nil
+        }
+    }
+
+    @Test func shiftFromPressGivesSnappedSegment() {
+        for tool in [Tool.pen, .highlighter] {
+            let controller = makeController(tool: tool)
+            defer { controller.close() }
+            let view = controller.canvasView
+            let start = CGPoint(x: 100, y: 100)
+            view.mouseDown(with: mouse(.leftMouseDown, start, flags: .shift, in: view))
+            view.mouseDragged(with: mouse(.leftMouseDragged, CGPoint(x: 160, y: 110), flags: .shift, in: view))
+            view.mouseDragged(with: mouse(.leftMouseDragged, CGPoint(x: 200, y: 105), flags: .shift, in: view))
+            view.mouseUp(with: mouse(.leftMouseUp, CGPoint(x: 200, y: 105), flags: .shift, in: view))
+            #expect(points(controller) == [start, CGPoint(x: 200, y: 100)], "\(tool)")
+            #expect(controller.model.document.annotations.count == 1, "\(tool)")
+        }
+    }
+
+    @Test func shiftMidDragStraightensAndStaysStraight() {
+        for tool in [Tool.pen, .highlighter] {
+            let controller = makeController(tool: tool)
+            defer { controller.close() }
+            let view = controller.canvasView
+            let start = CGPoint(x: 100, y: 100)
+            view.mouseDown(with: mouse(.leftMouseDown, start, in: view))
+            view.mouseDragged(with: mouse(.leftMouseDragged, CGPoint(x: 120, y: 140), in: view))
+            view.mouseDragged(with: mouse(.leftMouseDragged, CGPoint(x: 160, y: 110), in: view))
+            #expect(points(controller)?.count == 3, "\(tool)")
+
+            view.flagsChanged(with: flagsChanged(.shift, in: view))
+            #expect(points(controller) == [start, CGPoint(x: 160, y: 100)], "\(tool)")
+
+            view.flagsChanged(with: flagsChanged([], in: view))
+            #expect(points(controller) == [start, CGPoint(x: 160, y: 110)], "\(tool)")
+
+            view.mouseDragged(with: mouse(.leftMouseDragged, CGPoint(x: 170, y: 130), in: view))
+            let snapped = Geometry.constrainTo45Degrees(from: start, to: CGPoint(x: 170, y: 130))
+            #expect(snapped != CGPoint(x: 170, y: 130))
+            #expect(points(controller) == [start, CGPoint(x: 170, y: 130)], "\(tool)")
+
+            view.flagsChanged(with: flagsChanged(.shift, in: view))
+            #expect(points(controller) == [start, snapped], "\(tool)")
+
+            view.mouseUp(with: mouse(.leftMouseUp, CGPoint(x: 170, y: 130), flags: .shift, in: view))
+            #expect(points(controller) == [start, snapped], "\(tool)")
+        }
+    }
+
+    @Test func shiftClickWithoutDragGivesDot() {
+        let controller = makeController(tool: .pen)
+        defer { controller.close() }
+        let view = controller.canvasView
+        let point = CGPoint(x: 50, y: 60)
+        view.mouseDown(with: mouse(.leftMouseDown, point, flags: .shift, in: view))
+        view.mouseUp(with: mouse(.leftMouseUp, point, flags: .shift, in: view))
+        #expect(points(controller) == [point, point])
+    }
+}

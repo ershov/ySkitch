@@ -1,6 +1,6 @@
 # ySkitch — Requirements
 
-Status: final v1.10 · 2026-11-26
+Status: final v1.11 · 2026-11-26
 
 ## 1. Purpose
 
@@ -98,8 +98,8 @@ All annotations are vector objects, editable until export (flattened only on out
 | T-4 | Rounded rectangle | Radius scales with thickness | U | 1 |
 | T-5 | Ellipse | Outline | U | 1 |
 | T-6 | Line | Straight segment | U | 1 |
-| T-7 | Freehand pen | Stroke smoothing. A click without a drag on empty space draws a dot (ED-1) | U | 1 |
-| T-8 | Highlighter | Semi-transparent (40 % opacity, normal blend), round tip. All strokes share one layer (IMG-6): overlaps, within a stroke or between strokes, highlight once; where colors overlap, the later stroke's color shows. A click without a drag on empty space draws a dot (ED-1) | U | 1 |
+| T-7 | Freehand pen | Stroke smoothing. `⇧` straightens the stroke (KEY-1). A click without a drag on empty space draws a dot (ED-1) | U | 1 |
+| T-8 | Highlighter | Semi-transparent (40 % opacity, normal blend), round tip. `⇧` straightens the stroke (KEY-1). All strokes share one layer (IMG-6): overlaps, within a stroke or between strokes, highlight once; where colors overlap, the later stroke's color shows. A click without a drag on empty space draws a dot (ED-1) | U | 1 |
 | T-9 | Crop | Handles; non-destructive (re-croppable); Enter applies, Esc cancels. The rect may extend beyond the image in any direction (white padding); the canvas grows while dragging to show it. Double-click proposes the current image (the canvas before the session). Status bar coordinates are relative to the current image (the canvas before the session). Discards image pixels outside the crop rect. Existing annotations stay as objects; parts outside the crop are hidden until the annotation is edited, which extends the canvas per IMG-4 | U | 1 |
 | T-10 | Pixelate | Region; destructive in output; thickness slider sets block size. Redacts image pixels only: annotations are never pixelated and always render above (IMG-6) | U | 1 |
 | T-11 | Blur | Alternative to pixelate; thickness slider sets radius | S | 2 |
@@ -140,7 +140,7 @@ All annotations are vector objects, editable until export (flattened only on out
 
 | ID | Req | Src | Stage |
 |---|---|---|---|
-| KEY-1 | `⇧` while drawing line/arrow: constrain to 45° steps | U | 1 |
+| KEY-1 | `⇧` while drawing line/arrow: constrain to 45° steps. `⇧` while drawing pen/highlighter: replace the stroke with a straight segment from its start to the cursor, 45° steps while held; after release it stays straight and follows the cursor freely (pressing `⇧` again re-applies 45°) | U | 1 |
 | KEY-2 | `⇧` while drawing rect/ellipse: square/circle; while moving or `⌘`-dragging a copy: constrain axis | S | 1 |
 | KEY-3 | `⌥` while drawing arrow: reverse direction (head at start point) | U | 1 |
 | KEY-4 | `⌥` while drawing rect/ellipse: draw from center | S | 2 |

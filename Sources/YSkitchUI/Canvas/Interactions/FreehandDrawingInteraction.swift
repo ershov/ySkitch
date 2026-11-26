@@ -11,6 +11,9 @@ final class FreehandDrawingInteraction: CanvasInteraction {
 
     private var points: [CGPoint]?
     private var annotationID: UUID?
+    private var cursorPosition: CGPoint = .zero
+    private var moved = false
+    private var straight = false
 
     init(
         tool: Tool, model: DocumentModel, toolbar: ToolbarModel, clickSelector: ClickSelector,
@@ -34,24 +37,41 @@ final class FreehandDrawingInteraction: CanvasInteraction {
         )
         points = [point]
         annotationID = annotation.id
+        cursorPosition = point
+        moved = false
+        straight = false
         model.beginGesture()
         model.updateGesture { $0.annotations.append(annotation) }
+        if event.modifierFlags.contains(.shift) { straighten(shift: true) }
     }
 
     func mouseDragged(to point: CGPoint, event: NSEvent) {
         guard let last = points?.last else { return }
+        track(point)
+        let shift = event.modifierFlags.contains(.shift)
+        if straight || shift {
+            straighten(shift: shift)
+            return
+        }
         guard hypot(point.x - last.x, point.y - last.y) >= 1 / magnification() else { return }
         append(point)
     }
 
     func mouseUp(at point: CGPoint, event: NSEvent) {
         guard let last = points?.last else { return }
-        if point != last { append(point) }
+        track(point)
+        let shift = event.modifierFlags.contains(.shift)
+        if straight || shift {
+            straighten(shift: shift)
+        } else if point != last {
+            append(point)
+        }
         let start = points?.first ?? point
-        let isDrag = points?.contains { ShapeGeometry.isDrag(from: start, to: $0) } ?? false
+        let isDrag = moved
         let id = annotationID
         points = nil
         annotationID = nil
+        straight = false
         if !isDrag {
             guard var dot = model.document.annotations.first(where: { $0.id == id }) else { return }
             model.cancelGesture()
@@ -64,7 +84,11 @@ final class FreehandDrawingInteraction: CanvasInteraction {
         clickSelector.selection.clear()
     }
 
-    func flagsChanged(_ event: NSEvent) {}
+    func flagsChanged(_ event: NSEvent) {
+        guard points != nil else { return }
+        let shift = event.modifierFlags.contains(.shift)
+        if straight || shift { straighten(shift: shift) }
+    }
 
     var statusGeometry: StatusGeometry? {
         guard let id = annotationID,
@@ -76,14 +100,32 @@ final class FreehandDrawingInteraction: CanvasInteraction {
         guard points != nil else { return }
         points = nil
         annotationID = nil
+        straight = false
         model.cancelGesture()
     }
 
+    private func track(_ point: CGPoint) {
+        cursorPosition = point
+        if let start = points?.first, ShapeGeometry.isDrag(from: start, to: point) { moved = true }
+    }
+
+    // Once straightened, the stroke stays a segment for the rest of the gesture.
+    private func straighten(shift: Bool) {
+        guard let start = points?.first else { return }
+        straight = true
+        let end = shift ? Geometry.constrainTo45Degrees(from: start, to: cursorPosition) : cursorPosition
+        setPoints([start, end])
+    }
+
     private func append(_ point: CGPoint) {
-        guard var current = points, let id = annotationID else { return }
-        current.append(point)
-        points = current
-        let shape = shape(points: current)
+        guard let current = points else { return }
+        setPoints(current + [point])
+    }
+
+    private func setPoints(_ newPoints: [CGPoint]) {
+        guard let id = annotationID else { return }
+        points = newPoints
+        let shape = shape(points: newPoints)
         model.updateGesture { document in
             guard let index = document.annotations.firstIndex(where: { $0.id == id }) else { return }
             document.annotations[index].shape = shape

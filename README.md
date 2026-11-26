@@ -54,7 +54,7 @@ Closed a window by mistake? `⇧⌘T` brings it back, annotations and undo histo
 | Select all | `⌘A` |
 | Nudge selection | arrow keys: 1 pt, `⇧` 20 pt |
 | Clone and move | `⌘`-drag an annotation |
-| Constrain | `⇧`: 45° for lines/arrows, square/circle for shapes, axis lock when moving |
+| Constrain | `⇧`: 45° for lines/arrows, straight pen/highlighter strokes, square/circle for shapes, axis lock when moving |
 | Reverse arrow | `⌥` while drawing |
 | Pan | hold `Space` and move the mouse |
 | Zoom in / out | `⌘+` / `⌘-`, `⌘`-scroll, pinch |
