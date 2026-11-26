@@ -199,11 +199,31 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     @objc func cut(_ sender: Any?) { cut(to: .general) }
 
     @objc func duplicate(_ sender: Any?) {
-        let copies = selection.selectedAnnotations.map { $0.translated(by: Self.pasteOffset).withNewID() }
+        let copies = selection.selectedAnnotations.map { $0.translated(by: PastePlacement.step).withNewID() }
         insert(copies, actionName: "Duplicate")
     }
 
-    private static let pasteOffset = CGVector(dx: 10, dy: 10)
+    private struct PasteSnapState {
+        var pasteboardName: NSPasteboard.Name
+        var changeCount: Int
+        var targets: [CGVector] = []
+    }
+
+    private var pasteSnap: PasteSnapState?
+
+    /// The cursor in document coordinates if it is over the scroll view (surround included), else the center of the visible canvas.
+    private func pasteAnchor() -> CGPoint {
+        let visible = canvasView.visibleRect
+        var point = CGPoint(x: visible.midX, y: visible.midY)
+        if let window {
+            let clip = scrollView.contentView
+            if clip.bounds.contains(clip.convert(window.mouseLocationOutsideOfEventStream, from: nil)) {
+                point = canvasView.convert(window.mouseLocationOutsideOfEventStream, from: nil)
+            }
+        }
+        let origin = model.document.canvasRect.origin
+        return CGPoint(x: point.x + origin.x, y: point.y + origin.y)
+    }
 
     private func insert(_ annotations: [Annotation], actionName: String) {
         guard !annotations.isEmpty else { return }
@@ -212,23 +232,31 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
         selection.select(annotations.map(\.id))
     }
 
-    private func pasteAnnotations(_ data: Data) -> Bool {
+    private func pasteAnnotations(_ data: Data, from pasteboard: NSPasteboard, at anchor: CGPoint?) -> Bool {
         guard var pasted = try? JSONDecoder().decode([Annotation].self, from: data), !pasted.isEmpty else {
             return false
         }
         pasted = pasted.map { $0.withNewID() }
-        let existing = model.document.annotations.map(\.shape)
-        while pasted.contains(where: { existing.contains($0.shape) }) {
-            pasted = pasted.map { $0.translated(by: Self.pasteOffset) }
-        }
-        insert(pasted, actionName: "Paste")
+        var snap = pasteSnap.flatMap {
+            $0.pasteboardName == pasteboard.name && $0.changeCount == pasteboard.changeCount ? $0 : nil
+        } ?? PasteSnapState(pasteboardName: pasteboard.name, changeCount: pasteboard.changeCount)
+        let offset = PastePlacement.offset(
+            for: pasted, anchor: anchor ?? pasteAnchor(), canvas: model.document.canvasRect,
+            existing: model.document.annotations.map(\.shape), snapTargets: snap.targets)
+        if !snap.targets.contains(offset.snapped) { snap.targets.append(offset.snapped) }
+        pasteSnap = snap
+        insert(pasted.map { $0.translated(by: offset.final) }, actionName: "Paste")
         return true
     }
 
     @discardableResult
-    func paste(from pasteboard: NSPasteboard) -> Bool {
+    func paste(from pasteboard: NSPasteboard, at anchor: CGPoint? = nil) -> Bool {
         guard !model.isInGesture else { return false }
-        if let data = pasteboard.data(forType: .annotations), pasteAnnotations(data) { return true }
+        if let data = pasteboard.data(forType: .annotations),
+            pasteAnnotations(data, from: pasteboard, at: anchor)
+        {
+            return true
+        }
         guard let pasted = PasteboardImageReader.read(from: pasteboard) else { return false }
         let undoManager = model.undoManager
         undoManager.beginUndoGrouping()

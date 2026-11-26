@@ -30,6 +30,8 @@ struct ObjectClipboardTests {
         return (controller, items)
     }
 
+    private static let originalsCenter = CGPoint(x: 40, y: 10)
+
     private func rects(_ annotations: [Annotation]) -> [CGRect] {
         annotations.compactMap { if case .rectangle(let rect) = $0.shape { rect } else { nil } }
     }
@@ -68,7 +70,7 @@ struct ObjectClipboardTests {
         defer { pasteboard.releaseGlobally() }
         source.copy(to: pasteboard)
 
-        #expect(target.paste(from: pasteboard))
+        #expect(target.paste(from: pasteboard, at: Self.originalsCenter))
 
         let pasted = target.model.document.annotations
         #expect(rects(pasted) == rects(items))
@@ -88,13 +90,73 @@ struct ObjectClipboardTests {
         defer { pasteboard.releaseGlobally() }
         controller.copy(to: pasteboard)
 
-        controller.paste(from: pasteboard)
-        controller.paste(from: pasteboard)
+        controller.paste(from: pasteboard, at: Self.originalsCenter)
+        controller.paste(from: pasteboard, at: Self.originalsCenter)
 
         let all = controller.model.document.annotations
         #expect(all.count == 6)
         #expect(rects(Array(all[2..<4])) == rects(items).map { $0.offsetBy(dx: 10, dy: 10) })
         #expect(rects(Array(all[4..<6])) == rects(items).map { $0.offsetBy(dx: 20, dy: 20) })
+    }
+
+    @Test func pasteFarFromOriginalsLandsCentered() {
+        let (controller, _) = controllerWithSelection()
+        defer { controller.close() }
+        let pasteboard = privatePasteboard()
+        defer { pasteboard.releaseGlobally() }
+        controller.copy(to: pasteboard)
+
+        controller.paste(from: pasteboard, at: CGPoint(x: 60, y: 70))
+
+        let pasted = Array(controller.model.document.annotations[2...])
+        #expect(rects(pasted).reduce(CGRect.null) { $0.union($1) }.center == CGPoint(x: 60, y: 70))
+    }
+
+    @Test func repeatedPasteAtSameAnchorCascades() {
+        let (controller, _) = controllerWithSelection()
+        defer { controller.close() }
+        let pasteboard = privatePasteboard()
+        defer { pasteboard.releaseGlobally() }
+        controller.copy(to: pasteboard)
+        let anchor = CGPoint(x: 60, y: 70)
+
+        for _ in 0..<3 { controller.paste(from: pasteboard, at: anchor) }
+
+        let all = controller.model.document.annotations
+        let first = rects(Array(all[2..<4]))
+        #expect(rects(Array(all[4..<6])) == first.map { $0.offsetBy(dx: 10, dy: 10) })
+        #expect(rects(Array(all[6..<8])) == first.map { $0.offsetBy(dx: 20, dy: 20) })
+    }
+
+    @Test func newCopyResetsSnapTargets() {
+        let (controller, _) = controllerWithSelection()
+        defer { controller.close() }
+        let pasteboard = privatePasteboard()
+        defer { pasteboard.releaseGlobally() }
+        controller.copy(to: pasteboard)
+        let anchor = CGPoint(x: 60, y: 70)
+        controller.paste(from: pasteboard, at: anchor)
+        controller.paste(from: pasteboard, at: anchor)
+
+        controller.selection.select(controller.model.document.annotations.prefix(2).map(\.id))
+        controller.copy(to: pasteboard)
+        controller.paste(from: pasteboard, at: CGPoint(x: 65, y: 75))
+
+        let pasted = Array(controller.model.document.annotations[6...])
+        #expect(rects(pasted).reduce(CGRect.null) { $0.union($1) }.center == CGPoint(x: 65, y: 75))
+    }
+
+    @Test func clampedPasteDoesNotGrowCanvas() {
+        let (controller, _) = controllerWithSelection()
+        defer { controller.close() }
+        let pasteboard = privatePasteboard()
+        defer { pasteboard.releaseGlobally() }
+        controller.copy(to: pasteboard)
+        let canvas = controller.model.document.canvasRect
+
+        controller.paste(from: pasteboard, at: CGPoint(x: 500, y: -300))
+
+        #expect(controller.model.document.canvasRect == canvas)
     }
 
     @Test func annotationsTakePrecedenceOverImage() throws {
@@ -165,4 +227,8 @@ struct ObjectClipboardTests {
         #expect(controller.validateMenuItem(cut))
         #expect(controller.validateMenuItem(duplicate))
     }
+}
+
+private extension CGRect {
+    var center: CGPoint { CGPoint(x: midX, y: midY) }
 }
