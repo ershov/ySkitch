@@ -411,10 +411,6 @@ struct ClickSelectsTests {
             controller.selection.select([target.id])
             click(controller, CGPoint(x: 300, y: 250))
             #expect(controller.selection.isEmpty, "\(tool)")
-            if tool == .pen || tool == .highlighter {
-                #expect(controller.model.document.annotations.count == 2, "\(tool)")
-                continue
-            }
             #expect(controller.model.document.annotations == [target], "\(tool)")
             #expect(!controller.model.undoManager.canUndo, "\(tool)")
         }

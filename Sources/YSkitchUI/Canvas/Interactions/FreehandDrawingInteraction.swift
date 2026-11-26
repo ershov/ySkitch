@@ -75,7 +75,8 @@ final class FreehandDrawingInteraction: CanvasInteraction {
         if !isDrag {
             guard var dot = model.document.annotations.first(where: { $0.id == id }) else { return }
             model.cancelGesture()
-            if clickSelector.click(at: start) { return }
+            let hadSelection = !clickSelector.selection.isEmpty
+            if clickSelector.click(at: start) || hadSelection { return }
             dot.shape = shape(points: [start, start])
             model.beginGesture()
             model.updateGesture { [dot] in $0.annotations.append(dot) }

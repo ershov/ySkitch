@@ -167,6 +167,19 @@ struct DrawingToolSelectionTests {
         #expect(!controller.model.undoManager.canUndo)
     }
 
+    @Test func clickOnEmptySpaceWithSelectionOnlyClears() {
+        let empty = CGPoint(x: 300, y: 250)
+        for tool in [Tool.pen, .highlighter] {
+            let controller = selectTarget(tool: tool)
+            defer { controller.close() }
+            click(controller, empty)
+            #expect(controller.selection.isEmpty, "\(tool)")
+            #expect(controller.model.document.annotations == [target], "\(tool)")
+            click(controller, empty)
+            #expect(controller.model.document.annotations.count == 2, "\(tool)")
+        }
+    }
+
     @Test func escapeCancelsEdit() throws {
         let controller = selectTarget(tool: .arrow)
         defer { controller.close() }
