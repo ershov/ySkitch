@@ -107,7 +107,7 @@ git show HEAD~1:docs/screenshot.png | yskitch -
 
 ## Build from source
 
-Requirements: macOS 14 or later, Command Line Tools (`xcode-select --install`). Xcode is not needed.
+Requirements: macOS 14 or later, Command Line Tools with Swift 6.0 or later (`xcode-select --install`). Xcode is not needed.
 
 ```sh
 ./build.sh               # release build → build/ySkitch.app (ad-hoc signed)

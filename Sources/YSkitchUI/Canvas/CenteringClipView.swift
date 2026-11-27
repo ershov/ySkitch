@@ -3,21 +3,22 @@ import YSkitchCore
 
 /// Centers a document smaller than the viewport instead of pinning it to a corner.
 final class CenteringClipView: NSClipView {
-    private var documentFrameObserver: (any NSObjectProtocol)?
-
     override func didAddSubview(_ subview: NSView) {
         super.didAddSubview(subview)
         guard subview === documentView else { return }
         subview.postsFrameChangedNotifications = true
-        documentFrameObserver = NotificationCenter.default.addObserver(
-            forName: NSView.frameDidChangeNotification, object: subview, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.needsDisplay = true }
-        }
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(documentFrameDidChange),
+            name: NSView.frameDidChangeNotification, object: subview)
     }
 
-    isolated deinit {
-        documentFrameObserver.map(NotificationCenter.default.removeObserver)
+    override func willRemoveSubview(_ subview: NSView) {
+        super.willRemoveSubview(subview)
+        NotificationCenter.default.removeObserver(self, name: NSView.frameDidChangeNotification, object: subview)
+    }
+
+    @objc private func documentFrameDidChange(_ notification: Notification) {
+        needsDisplay = true
     }
 
     override func viewDidChangeBackingProperties() {

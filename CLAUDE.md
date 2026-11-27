@@ -40,6 +40,7 @@ ySkitch — a macOS image annotation app in the spirit of Skitch: clipboard/file
 - SwiftPM stamps the binary's SDK version with the deployment target. AppKit picks its look and behavior from the SDK version, so `build.sh` rewrites it to the installed SDK via `vtool`. Check: `vtool -show-build build/ySkitch.app/Contents/MacOS/ySkitch` → `minos 14.0`, `sdk <installed SDK>`.
 - A Command Line Tools upgrade changes the SDK version and with it AppKit behavior; check the app after upgrading.
 - Test binaries aren't rewritten; they run with macOS 14 AppKit behavior.
+- Toolchain floor: Swift 6.0 (`swift-tools-version: 6.0`). Don't use language features from Swift 6.1+ (e.g. `isolated deinit`, trailing commas in argument lists, `nonisolated` on types).
 
 ### Rules
 
