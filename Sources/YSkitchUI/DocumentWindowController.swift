@@ -273,8 +273,11 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSMe
     private func setIdentity(fileName: String, savedURL: URL?, actionName: String) {
         let previousName = defaultFileName
         let previousURL = self.savedURL
-        model.undoManager.registerUndo(withTarget: self) {
-            $0.setIdentity(fileName: previousName, savedURL: previousURL, actionName: actionName)
+        // Keep window identity in the document's undo group, including on older SDKs.
+        model.undoManager.registerUndo(withTarget: self) { controller in
+            MainActor.assumeIsolated {
+                controller.setIdentity(fileName: previousName, savedURL: previousURL, actionName: actionName)
+            }
         }
         model.undoManager.setActionName(actionName)
         defaultFileName = fileName

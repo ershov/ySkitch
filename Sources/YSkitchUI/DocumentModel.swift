@@ -76,7 +76,10 @@ final class DocumentModel {
 
     private func registerUndo(previous: Document, actionName: String) {
         undoManager.beginUndoGrouping()
-        undoManager.registerUndo(withTarget: self) { $0.restore(previous, actionName: actionName) }
+        // Older SDKs omit main-actor isolation from the undo handler.
+        undoManager.registerUndo(withTarget: self) { model in
+            MainActor.assumeIsolated { model.restore(previous, actionName: actionName) }
+        }
         undoManager.setActionName(actionName)
         undoManager.endUndoGrouping()
     }
@@ -85,7 +88,10 @@ final class DocumentModel {
         lastCoalesced = nil
         let current = document
         document = previous
-        undoManager.registerUndo(withTarget: self) { $0.restore(current, actionName: actionName) }
+        // The inverse must be registered before the current undo or redo finishes.
+        undoManager.registerUndo(withTarget: self) { model in
+            MainActor.assumeIsolated { model.restore(current, actionName: actionName) }
+        }
         undoManager.setActionName(actionName)
     }
 }

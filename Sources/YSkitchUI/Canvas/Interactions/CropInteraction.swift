@@ -154,10 +154,16 @@ final class CropInteraction: CanvasInteraction {
 
     /// The handle whose square of half-side `radius` contains `point`, nearest first.
     static func handle(in rect: CGRect, at point: CGPoint, radius: CGFloat) -> BoundsHandle? {
-        BoundsHandle.allCases
-            .map { ($0, $0.position(in: rect)) }
-            .filter { abs($0.1.x - point.x) <= radius && abs($0.1.y - point.y) <= radius }
-            .min { hypot($0.1.x - point.x, $0.1.y - point.y) < hypot($1.1.x - point.x, $1.1.y - point.y) }?
-            .0
+        // Swift 6.1 times out when type-checking these operations as one expression.
+        let handles = BoundsHandle.allCases.map { (handle: $0, position: $0.position(in: rect)) }
+        let hits = handles.filter {
+            abs($0.position.x - point.x) <= radius && abs($0.position.y - point.y) <= radius
+        }
+        let nearest = hits.min { lhs, rhs in
+            let leftDistance = hypot(lhs.position.x - point.x, lhs.position.y - point.y)
+            let rightDistance = hypot(rhs.position.x - point.x, rhs.position.y - point.y)
+            return leftDistance < rightDistance
+        }
+        return nearest?.handle
     }
 }

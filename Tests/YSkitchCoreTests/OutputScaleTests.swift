@@ -8,8 +8,11 @@ import Testing
     /// 41×30 px at 2× (20.5×15 pt), a different color per pixel.
     private static func document() -> Document {
         let width = 41, height = 30
-        let pixels = (0..<(width * height)).map {
-            Pixel(r: UInt8($0 % 251), g: UInt8(($0 * 7) % 253), b: UInt8(($0 * 13) % 255), a: 255)
+        let pixels = (0..<(width * height)).map { index -> Pixel in
+            let red = UInt8(index % 251)
+            let green = UInt8((index * 7) % 253)
+            let blue = UInt8((index * 13) % 255)
+            return Pixel(r: red, g: green, b: blue, a: 255)
         }
         var document = Document(image: BaseImage(cgImage: makeImage(width: width, height: height, pixels: pixels), scale: 2))
         let style = AnnotationStyle(color: RGBAColor(hex: 0x0000FF), thickness: 1.5)
