@@ -13,6 +13,10 @@ BIN_DIR="$(swift build -c release --show-bin-path)"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/$APP_NAME" "$APP/Contents/MacOS/$APP_NAME"
+# SwiftPM records the deployment target as the SDK version; AppKit keys its current look and behavior off the SDK version.
+MIN_OS="$(vtool -show-build "$APP/Contents/MacOS/$APP_NAME" | awk '$1 == "minos" { print $2 }')"
+vtool -set-build-version macos "$MIN_OS" "$(xcrun --show-sdk-version)" -replace \
+    -output "$APP/Contents/MacOS/$APP_NAME" "$APP/Contents/MacOS/$APP_NAME"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 plutil -replace CFBundleShortVersionString -string "$(./version.sh version)" "$APP/Contents/Info.plist"

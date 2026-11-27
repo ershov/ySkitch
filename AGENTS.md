@@ -3,7 +3,7 @@
 ySkitch — a macOS image annotation app in the spirit of Skitch: clipboard/file in → annotate → clipboard/PNG out.
 
 - Requirements (source of truth): `docs/requirements.md`. Update it when requirements change; reference requirement IDs (e.g. `T-1`, `KEY-3`) in tickets and commit messages, not in code.
-- Stack: Swift 6 (strict concurrency, modern dialect: `@MainActor`, `async`/`await`, `Observation`, value types), AppKit for app/windows/canvas, SwiftUI allowed for toolbar and settings. Minimum macOS 26.
+- Stack: Swift 6 (strict concurrency, modern dialect: `@MainActor`, `async`/`await`, `Observation`, value types), AppKit for app/windows/canvas, SwiftUI allowed for toolbar and settings. Minimum macOS 14.
 - Toolchain: Command Line Tools only — no Xcode, no `.xcodeproj`. Build with Swift Package Manager. Tests use Swift Testing (`import Testing`); XCTest is not available.
 
 ### Layout
@@ -32,6 +32,14 @@ ySkitch — a macOS image annotation app in the spirit of Skitch: clipboard/file
 - Version lives only in `VERSION`; build number is derived (`git rev-list --count HEAD`), never stored.
 - Release: bump `VERSION`, commit, then `git tag -a "$(./version.sh tag)" -m "Release $(./version.sh version)"`.
 - Tags are `vMAJOR.MINOR.PATCH`. Only commit, tag or bump the version when the user asks.
+
+### Deployment target
+
+- Minimum macOS 14 (`Package.swift` platforms, `LSMinimumSystemVersion` in `Resources/Info.plist`); keep both in sync. The floor is set by `Observation`.
+- APIs newer than macOS 14 need `if #available` with a fallback.
+- SwiftPM stamps the binary's SDK version with the deployment target. AppKit picks its look and behavior from the SDK version, so `build.sh` rewrites it to the installed SDK via `vtool`. Check: `vtool -show-build build/ySkitch.app/Contents/MacOS/ySkitch` → `minos 14.0`, `sdk <installed SDK>`.
+- A Command Line Tools upgrade changes the SDK version and with it AppKit behavior; check the app after upgrading.
+- Test binaries aren't rewritten; they run with macOS 14 AppKit behavior.
 
 ### Rules
 

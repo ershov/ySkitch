@@ -339,7 +339,7 @@ No Settings UI. Everything uses a sensible default and remembers the last value 
 
 | ID | Req | Stage |
 |---|---|---|
-| NF-1 | macOS only; minimum macOS 26. Apple Silicon native | 1 |
+| NF-1 | macOS only; minimum macOS 14. Apple Silicon native | 1 |
 | NF-2 | Swift 6 (strict concurrency), AppKit for windows/canvas; SwiftUI allowed for the toolbar. Swift Package Manager, no Xcode project. No third-party dependencies | 1 |
 | NF-3 | Responsive in everyday use. No hard performance targets; optimize when real use shows a problem | 1 |
 | NF-5 | Fully offline; no network access; no telemetry | 1 |

@@ -107,7 +107,7 @@ git show HEAD~1:docs/screenshot.png | yskitch -
 
 ## Build from source
 
-Requirements: macOS 26, Command Line Tools (`xcode-select --install`). Xcode is not needed.
+Requirements: macOS 14 or later, Command Line Tools (`xcode-select --install`). Xcode is not needed.
 
 ```sh
 ./build.sh               # release build → build/ySkitch.app (ad-hoc signed)
@@ -116,5 +116,6 @@ open build/ySkitch.app
 ```
 
 - Swift 6, Swift Package Manager, Apple frameworks only.
+- One arm64 binary runs on macOS 14 and later. Notes on the deployment target and SDK version: [`CLAUDE.md`](CLAUDE.md#deployment-target).
 - Version lives in `VERSION`; `./version.sh` prints version and build number.
 - Full specification: [`docs/requirements.md`](docs/requirements.md).
